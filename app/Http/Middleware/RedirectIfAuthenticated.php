@@ -8,23 +8,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class RedirectIfAuthenticated
-{
+class RedirectIfAuthenticated {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next, string ...$guards): Response
-    {
-        $guards = empty($guards) ? [null] : $guards;
+    * Handle an incoming request.
+    *
+    * @param  \Closure( \Illuminate\Http\Request ): ( \Symfony\Component\HttpFoundation\Response )  $next
+    */
 
-        foreach ($guards as $guard) {
-            if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+    public function handle( Request $request, Closure $next, string ...$guards ): Response {
+        $guards = empty( $guards ) ? [ null ] : $guards;
+
+        foreach ( $guards as $guard ) {
+            if ( Auth::guard( $guard )->check() ) {
+                $user = Auth::user();
+
+                // Tambahkan Logika Redirect Berdasarkan Role di Sini
+                if ( $user->hasRole( 'admin' ) ) {
+                    return redirect()->route( 'admin.dashboard' );
+                } elseif ( $user->hasRole( 'operator' ) ) {
+                    return redirect()->route( 'operator.dashboard' );
+                }
+
+                return redirect( RouteServiceProvider::HOME );
             }
         }
 
-        return $next($request);
+        return $next( $request );
     }
 }

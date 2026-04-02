@@ -1,43 +1,44 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-green-800 leading-tight">
-            {{ __('Panel Utama Satgas Pangan - Admin') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12 bg-gray-50 min-h-screen">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
-                    <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Total Luas Lahan</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-2">1,240 <span class="text-sm font-normal text-gray-400">Ha</span></h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-yellow-500">
-                    <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Total Personel</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-2">84 <span class="text-sm font-normal text-gray-400">Anggota</span></h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
-                    <p class="text-sm text-gray-500 uppercase font-bold tracking-wider">Laporan Masuk</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-2">12 <span class="text-sm font-normal text-gray-400">Hari ini</span></h3>
-                </div>
-            </div>
+@section('header', 'Sikappresisi Polda Jawa Timur')
 
-            <div class="bg-white overflow-hidden shadow-sm rounded-2xl border border-gray-100">
-                <div class="p-8">
-                    <h4 class="text-lg font-bold text-gray-800 mb-4">Aktivitas Terkini Satgas</h4>
-                    <div class="space-y-4">
-                        <div class="flex items-center p-4 bg-green-50 rounded-xl border border-green-100">
-                            <div class="bg-green-600 p-2 rounded-lg text-white mr-4">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-green-900">Validasi Data Lahan Selesai</p>
-                                <p class="text-xs text-green-700">Polres Jember telah memperbarui data komoditas jagung.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+@section('content')
+<div class="space-y-6">
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h4 class="text-emerald-700 font-black uppercase text-lg tracking-tight italic">Hello, {{ Auth::user()->name }}</h4>
+        <p class="text-slate-500 text-[10px] mt-1 font-bold leading-relaxed uppercase tracking-wider">
+            Sistem Ketahanan Pangan Presisi - Pantau potensi lahan dan hasil panen wilayah Jawa Timur secara real-time.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+            <h1 class="text-4xl font-black text-slate-800 tracking-tighter">170,715.11 <span class="text-sm font-normal text-slate-400 font-sans">Ha</span></h1>
+            <p class="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-[0.2em]">Total Potensi Lahan (Ha)</p>
+        </div>
+
+        <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ul class="space-y-3">
+                <li class="flex justify-between text-[11px] font-bold border-b border-slate-50 pb-2">
+                    <span class="text-slate-500 uppercase">➤ Milik Polri :</span>
+                    <span class="text-emerald-600 font-black">9.63 <small class="text-slate-400 uppercase">Ha</small></span>
+                </li>
+                <li class="flex justify-between text-[11px] font-bold border-b border-slate-50 pb-2">
+                    <span class="text-slate-500 uppercase">➤ Produktif (Poktan) :</span>
+                    <span class="text-emerald-600 font-black">34,882.86 <small class="text-slate-400 uppercase">Ha</small></span>
+                </li>
+            </ul>
+            <ul class="space-y-3">
+                <li class="flex justify-between text-[11px] font-bold border-b border-slate-50 pb-2">
+                    <span class="text-slate-500 uppercase">➤ Hutan (Perhutani) :</span>
+                    <span class="text-emerald-600 font-black">22,573.23 <small class="text-slate-400 uppercase">Ha</small></span>
+                </li>
+                <li class="flex justify-between text-[11px] font-bold border-b border-slate-50 pb-2">
+                    <span class="text-slate-500 uppercase">➤ Luas Baku Sawah :</span>
+                    <span class="text-emerald-600 font-black">64,792.29 <small class="text-slate-400 uppercase">Ha</small></span>
+                </li>
+            </ul>
         </div>
     </div>
-</x-app-layout>
+</div>
+@endsection

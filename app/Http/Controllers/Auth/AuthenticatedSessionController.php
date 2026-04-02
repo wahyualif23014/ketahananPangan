@@ -27,19 +27,19 @@ class AuthenticatedSessionController extends Controller {
         $request->authenticate();
         $request->session()->regenerate();
 
-        $user = auth()->user();
+        $user = Auth::user();
 
-        // Logic IAM: Redirect berdasarkan Role
+        // Gunakan redirect()->route() tanpa .intended() untuk memastikan
+        // Admin tidak terlempar ke dashboard umum karena session lama.
         if ( $user->hasRole( 'admin' ) ) {
-            return redirect()->intended( route( 'admin.dashboard' ) );
+            return redirect()->route( 'admin.dashboard' );
         }
 
         if ( $user->hasRole( 'operator' ) ) {
-            return redirect()->intended( route( 'operator.dashboard' ) );
+            return redirect()->route( 'operator.dashboard' );
         }
 
-        // Fallback untuk Anggota biasa
-        return redirect()->intended( route( 'dashboard' ) );
+        return redirect()->route( 'dashboard' );
     }
 
     /**

@@ -6,7 +6,7 @@ use App\Http\Controllers\Operator\DashboardController as OperatorDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // 1. Dashboard Standar (Untuk Anggota/User Biasa)
