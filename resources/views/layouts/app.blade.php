@@ -20,16 +20,16 @@
         }
     </style>
 </head>
-<body class="font-sans antialiased bg-slate-50 text-slate-900" 
+<body class="font-sans antialiased bg-slate-50 text-slate-900 overflow-hidden" 
       x-data="{ sidebarOpen: false, desktopCollapsed: false }">
     
-    <div class="flex min-h-screen overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
         
         @include('layouts.sidebar')
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             
-            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 shadow-sm">
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-30 shadow-sm">
                 <div class="flex items-center gap-4">
                     <button @click="sidebarOpen = true" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 md:hidden transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>

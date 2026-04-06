@@ -31,9 +31,9 @@
         'md:w-72': !desktopCollapsed,
         'md:w-20': desktopCollapsed
     }"
-    class="fixed inset-y-0 left-0 w-72 bg-slate-900 text-white z-50 transition-all duration-300 ease-in-out transform md:relative md:translate-x-0 flex flex-col border-r border-slate-800 shadow-2xl">
+    class="fixed inset-y-0 left-0 bg-slate-900 text-white z-50 transition-all duration-300 ease-in-out transform md:relative md:translate-x-0 flex flex-col border-r border-slate-800 shadow-2xl h-full shrink-0">
     
-    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800/50 bg-slate-900/50 sticky top-0 z-10 h-16">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-800/50 bg-slate-900 shrink-0">
         <div class="flex items-center gap-3 overflow-hidden">
             <div class="p-1.5 bg-emerald-500 rounded-lg flex-shrink-0 shadow-lg shadow-emerald-500/20">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,25 +51,22 @@
         </button>
     </div>
 
-    <div x-show="!desktopCollapsed" x-cloak x-transition class="px-6 py-8 text-center border-b border-slate-800/50 bg-gradient-to-b from-slate-900 to-slate-800/30">
+    <div x-show="!desktopCollapsed" x-cloak x-transition class="px-6 py-8 text-center border-b border-slate-800/50 bg-gradient-to-b from-slate-900 to-slate-800/30 shrink-0">
         <div class="relative inline-block mb-4">
             <div class="w-16 h-16 rounded-2xl bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-xl font-black text-white shadow-xl rotate-3">
                 <span class="-rotate-3">{{ collect(explode(' ', Auth::user()->name))->map(fn($n) => $n[0])->take(2)->implode('') }}</span>
             </div>
             <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full"></div>
         </div>
-        
         <h2 class="text-sm font-black text-white uppercase tracking-wide truncate">{{ Auth::user()->name }}</h2>
         <p class="text-[10px] text-slate-500 mt-1 font-mono uppercase">NRP : {{ Auth::user()->nrp ?? '000000' }}</p>
-        
         <div class="mt-2 inline-block px-3 py-1 bg-slate-800/50 border border-slate-700 rounded-full">
             <p class="text-[9px] {{ $roleColor }} font-black tracking-[0.2em] uppercase">{{ $roleLabel }}</p>
         </div>
-        
         <p class="text-[9px] text-slate-500 font-bold mt-2 tracking-widest uppercase italic opacity-50">POLDA JAWA TIMUR</p>
     </div>
 
-    <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+    <nav class="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar py-4">
         <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)" icon="home">
             <span x-show="!desktopCollapsed">BERANDA</span>
         </x-nav-link>
@@ -105,7 +102,7 @@
         </x-nav-link>
     </nav>
 
-    <div class="p-6 border-t border-slate-800/50">
+    <div class="p-6 border-t border-slate-800/50 bg-slate-900 shrink-0">
         <div x-show="!desktopCollapsed" x-cloak class="bg-slate-800/30 p-3 rounded-xl border border-slate-800/50">
             <p class="text-[9px] text-slate-500 text-center font-black tracking-widest uppercase italic">v1.0.26 © SATGAS PANGAN JATIM</p>
         </div>
