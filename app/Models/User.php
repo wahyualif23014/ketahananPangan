@@ -2,21 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles; // Tambahkan ini
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles; 
+    use Notifiable;
+
+    protected $table = 'anggota';
+    protected $primaryKey = 'id_anggota';
+    public $incrementing = false; // Karena kamu ingin isi ID manual
 
     protected $fillable = [
-        'name',
-        'nrp',
-        'statusadmin',
+        'id_anggota',
+        'id_jabatan',
+        'id_tugas',
+        'nama_anggota',
+        'no_telp_anggota',
+        'username',
         'password',
+        'role',
     ];
 
     protected $hidden = [
@@ -24,9 +29,19 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $casts = [
-        // 'email_verified_at' => 'datetime',
-        // 'password' => 'hashed',
-    ];
-}
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
 
+    public function getAuthIdentifierName()
+    {
+        return 'username';
+    }
+
+    // Fungsi bantu untuk cek role manual di Controller/Blade
+    public function hasRole($role)
+    {
+        return $this->role === $role;
+    }
+}

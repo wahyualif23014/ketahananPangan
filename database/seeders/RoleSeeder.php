@@ -12,46 +12,57 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
+        // Bersihkan cache permission agar perubahan langsung terbaca
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Definisi Permissions
+        // 1. Definisikan Permissions
         Permission::create(['name' => 'manage anggota']);
         Permission::create(['name' => 'input laporan']);
         Permission::create(['name' => 'view dashboard']);
 
-        // 2. Definisi Roles
+        // 2. Definisikan Roles (view, admin, operator)
         $adminRole = Role::create(['name' => 'admin']);
         $operatorRole = Role::create(['name' => 'operator']);
-        $anggotaRole = Role::create(['name' => 'anggota']);
+        $viewRole = Role::create(['name' => 'view']);
 
-        // 3. Assign Permissions
+        // 3. Assign Permissions ke Roles
         $adminRole->givePermissionTo(Permission::all());
         $operatorRole->givePermissionTo(['view dashboard', 'input laporan']);
-        $anggotaRole->givePermissionTo(['view dashboard']);
+        $viewRole->givePermissionTo(['view dashboard']);
 
+        // 4. Buat User Contoh untuk masing-masing Role
+
+        // Admin
         $admin = User::create([
-            'name' => 'Wahyu Alif',
-            'nrp' => '12345678', 
+            'id_jabatan' => 1,
+            'id_tugas' => 1,
+            'nama_anggota' => 'Wahyu Alif',
+            'username' => '12345678',
             'password' => Hash::make('password123'),
-            'statusadmin' => '1',
+            'role' => 'admin',
         ]);
         $admin->assignRole($adminRole);
 
+        // Operator
         $operator = User::create([
-            'name' => 'Dio Vladika',
-            'nrp' => '96050789',
+            'id_jabatan' => 2,
+            'id_tugas' => 2,
+            'nama_anggota' => 'Dio Vladika',
+            'username' => '96050789',
             'password' => Hash::make('operator123'),
-            'statusadmin' => '2',
+            'role' => 'operator',
         ]);
         $operator->assignRole($operatorRole);
 
-        $anggota = User::create([
-            'name' => 'dewa',
-            'nrp' => '87654321',
-            'password' => Hash::make('anggota123'),
-            'statusadmin' => '3',
+        // View
+        $viewUser = User::create([
+            'id_jabatan' => 3,
+            'id_tugas' => 3,
+            'nama_anggota' => 'Pengamat Data',
+            'username' => '87654321',
+            'password' => Hash::make('view123'),
+            'role' => 'view',
         ]);
-        $anggota->assignRole($anggotaRole);
-
+        $viewUser->assignRole($viewRole);
     }
 }

@@ -1,33 +1,45 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
-use App\Http\Controllers\Operator\DashboardController as OperatorDashboard;
 use Illuminate\Support\Facades\Route;
 
+// Redirect halaman utama ke login
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 1. Dashboard Standar (Untuk Anggota/User Biasa)
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::middleware(['auth'])->group(function () {
 
-// 2. Dashboard Khusus Admin
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/dashboard', [AdminDashboard::class, 'index'])->name('admin.dashboard');
-});
+    // 1. Route Khusus Admin
+    Route::middleware(['checkrole:admin'])->group(function () {
+        Route::get('/admin/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('admin.dashboard');
 
-// 3. Dashboard Khusus Operator
-Route::middleware(['auth', 'role:operator'])->group(function () {
-    Route::get('/operator/dashboard', [OperatorDashboard::class, 'index'])->name('operator.dashboard');
-});
+        // Tambahkan rute khusus admin lainnya di sini
+    });
 
-Route::middleware('auth')->group(function () {
+    // 2. Route Khusus Operator
+    Route::middleware(['checkrole:operator'])->group(function () {
+        Route::get('/operator/dashboard', function () {
+            return view('operator.dashboard');
+        })->name('operator.dashboard');
+
+        // Tambahkan rute khusus operator lainnya di sini
+    });
+
+    // 3. Route Khusus View (Anggota)
+    // Pastikan baris ini ada di web.php
+    Route::middleware(['checkrole:view'])->group(function () {
+        Route::get('/view/dashboard', function () {
+            return view('view.dashboard');
+        })->name('view.dashboard'); // Nama ini harus ada!
+    });
+
+    // Rute profil standar (opsional)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
