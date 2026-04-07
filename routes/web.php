@@ -24,8 +24,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/operator/dashboard', function () {
             return view('operator.dashboard');
         })->name('operator.dashboard');
-
-        // Tambahkan rute khusus operator lainnya di sini
     });
 
     // 3. Route Khusus View (Anggota)
