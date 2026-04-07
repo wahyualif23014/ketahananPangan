@@ -12,7 +12,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                // Mengganti Figtree menjadi Ramabhadra
+                sans: ['Ramabhadra', ...defaultTheme.fontFamily.sans],
             },
         },
     },

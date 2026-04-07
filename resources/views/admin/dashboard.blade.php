@@ -10,7 +10,7 @@
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
                 <h4 class="text-emerald-400 font-black uppercase text-[10px] tracking-[0.4em] mb-3 opacity-80">Sistem Informasi Ketahanan Pangan</h4>
-                <h1 class="text-4xl font-black text-white tracking-tighter uppercase italic leading-none">
+                <h1 class="text-4xl font-black text-white tracking-tighter uppercase  leading-none">
                     KOMPOL <span class="text-emerald-500">{{ Auth::user()->name }}</span>
                 </h1>
                 <p class="text-slate-400 text-xs mt-4 font-medium max-w-xl leading-relaxed uppercase tracking-widest opacity-70">
@@ -34,8 +34,8 @@
         {{-- Card 2.1: TOTAL POTENSI LAHAN (image_dc1861) --}}
         <div class="bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50 flex flex-col lg:flex-row gap-8 items-center">
             <div class="lg:w-1/3 text-center lg:text-left border-b lg:border-b-0 lg:border-r border-slate-200/50 pb-6 lg:pb-0 lg:pr-8">
-                <h1 class="text-5xl font-black text-slate-800 tracking-tighter italic leading-none">170,715.11 <span class="text-sm font-normal text-slate-400 font-sans uppercase">Ha</span></h1>
-                <p class="text-[11px] font-black text-slate-400 uppercase mt-4 tracking-[0.2em] italic">Total Potensi Lahan Sampai Tahun 2026</p>
+                <h1 class="text-5xl font-black text-slate-800 tracking-tighter leading-none">170,715.11 <span class="text-sm font-normal text-slate-400 font-sans uppercase">Ha</span></h1>
+                <p class="text-[11px] font-black text-slate-400 uppercase mt-4 tracking-[0.2em] ">Total Potensi Lahan Sampai Tahun 2026</p>
             </div>
             <div class="lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
                 <div class="space-y-3">
@@ -74,11 +74,11 @@
             <div class="bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-6">
                     <div>
-                        <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">242.74 <span class="text-xs font-normal text-slate-400 uppercase font-sans">Ha</span></h1>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic mt-2">Total Lahan Tanam Tahun 2026</p>
+                        <h1 class="text-4xl font-black text-slate-800 tracking-tighter ">242.74 <span class="text-xs font-normal text-slate-400 uppercase font-sans">Ha</span></h1>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest  mt-2">Total Lahan Tanam Tahun 2026</p>
                     </div>
                     <div class="p-2 bg-blue-50 text-blue-500 rounded-lg flex items-center gap-1">
-                        <span class="text-[10px] font-black italic">0%</span>
+                        <span class="text-[10px] font-black ">0%</span>
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"></path></svg>
                     </div>
                 </div>
@@ -97,11 +97,11 @@
             <div class="bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-6">
                     <div>
-                        <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">243.72 <span class="text-xs font-normal text-slate-400 uppercase font-sans">Ha</span></h1>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic mt-2">Total Lahan Panen Tahun 2026</p>
+                        <h1 class="text-4xl font-black text-slate-800 tracking-tighter ">243.72 <span class="text-xs font-normal text-slate-400 uppercase font-sans">Ha</span></h1>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest  mt-2">Total Lahan Panen Tahun 2026</p>
                     </div>
                     <div class="p-2 bg-emerald-50 text-emerald-500 rounded-lg flex items-center gap-1">
-                        <span class="text-[10px] font-black italic">0%</span>
+                        <span class="text-[10px] font-black ">0%</span>
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"></path></svg>
                     </div>
                 </div>
@@ -123,8 +123,8 @@
         <div class="lg:col-span-2 bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50">
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg italic">Tren Produktivitas Lahan</h3>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 italic">Statistik pergerakan luasan lahan produktif</p>
+                    <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg ">Tren Produktivitas Lahan</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 ">Statistik pergerakan luasan lahan produktif</p>
                 </div>
                 <div class="flex bg-slate-100/50 p-1 rounded-xl border border-slate-200/50">
                     <button class="px-4 py-1.5 text-[9px] font-black bg-white rounded-lg shadow-sm text-slate-800 uppercase tracking-widest">Bulanan</button>
@@ -137,7 +137,7 @@
         </div>
 
         <div class="bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50 flex flex-col">
-            <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg italic mb-8">Log Aktivitas <span class="text-emerald-500">Real-time</span></h3>
+            <h3 class="font-black text-slate-800 uppercase tracking-tighter text-lg  mb-8">Log Aktivitas <span class="text-emerald-500">Real-time</span></h3>
             <div class="flex-1 space-y-8 overflow-y-auto pr-2 custom-scrollbar">
                 @php
                     $logs = [
@@ -154,7 +154,7 @@
                     <div class="bg-white/30 backdrop-blur-md p-4 rounded-2xl border border-white/40 flex-1 hover:bg-white/50 transition-colors">
                         <p class="text-[11px] font-black text-slate-800 uppercase tracking-tight">{{ $log['title'] }}</p>
                         <p class="text-[9px] text-slate-500 mt-1 font-bold uppercase tracking-tighter">{{ $log['user'] }} — <span class="text-slate-400">{{ $log['satwil'] }}</span></p>
-                        <p class="text-[8px] text-{{ $log['color'] }}-500 font-mono italic mt-2 uppercase font-black">{{ $log['time'] }}</p>
+                        <p class="text-[8px] text-{{ $log['color'] }}-500 font-mono  mt-2 uppercase font-black">{{ $log['time'] }}</p>
                     </div>
                 </div>
                 @endforeach
@@ -167,8 +167,8 @@
     <div class="bg-white/40 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/50">
         <div class="flex items-center justify-between mb-10">
             <div>
-                <h3 class="font-black text-slate-800 uppercase tracking-tighter text-xl italic">Monitoring Target & Hasil <span class="text-emerald-500 italic">Kwartal</span></h3>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 italic">Rangkuman progres capaian per-triwulan tahun 2026</p>
+                <h3 class="font-black text-slate-800 uppercase tracking-tighter text-xl ">Monitoring Target & Hasil <span class="text-emerald-500 ">Kwartal</span></h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 ">Rangkuman progres capaian per-triwulan tahun 2026</p>
             </div>
         </div>
 
@@ -193,7 +193,7 @@
                         </div>
                         <p class="text-[10px] font-black text-{{ $row['color'] }}-500 uppercase tracking-widest mt-4">Kwartal {{ $i }}</p>
                     </div>
-                    <span class="absolute -right-2 -bottom-2 text-7xl font-black text-slate-900/5 italic select-none group-hover:text-{{ $row['color'] }}-500/10 transition-colors">{{ $i }}</span>
+                    <span class="absolute -right-2 -bottom-2 text-7xl font-black text-slate-900/5  select-none group-hover:text-{{ $row['color'] }}-500/10 transition-colors">{{ $i }}</span>
                 </div>
                 @endfor
             </div>
@@ -227,19 +227,19 @@
         {{-- Row 5.2: Map & Pie --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-8 bg-white/40 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/60 shadow-xl min-h-[400px] flex flex-col">
-                <h3 class="font-black text-slate-800 uppercase text-sm mb-4 italic tracking-widest">Peta Penyebaran Potensi Lahan 2026</h3>
-                <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-center opacity-30 italic font-black text-slate-400 uppercase">Interactive Map Container</div>
+                <h3 class="font-black text-slate-800 uppercase text-sm mb-4  tracking-widest">Peta Penyebaran Potensi Lahan 2026</h3>
+                <div class="flex-1 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-center opacity-30  font-black text-slate-400 uppercase">Interactive Map Container</div>
             </div>
             <div class="lg:col-span-4 space-y-6">
                 <div class="bg-white/40 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/60 shadow-xl flex flex-col items-center">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Total Titik Lahan</h4>
                     <div class="w-40 h-40"><canvas id="totalTitikChart"></canvas></div>
-                    <p class="mt-4 text-lg font-black text-slate-800 italic uppercase">5498 <span class="text-xs text-slate-400">Lahan</span></p>
+                    <p class="mt-4 text-lg font-black text-slate-800  uppercase">5498 <span class="text-xs text-slate-400">Lahan</span></p>
                 </div>
                 <div class="bg-white/40 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/60 shadow-xl flex flex-col items-center">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Pengelolaan Lahan Polsek</h4>
                     <div class="w-40 h-40"><canvas id="pengelolaanPolsekChart"></canvas></div>
-                    <p class="mt-4 text-lg font-black text-slate-800 italic uppercase">659 <span class="text-xs text-slate-400">Polsek</span></p>
+                    <p class="mt-4 text-lg font-black text-slate-800  uppercase">659 <span class="text-xs text-slate-400">Polsek</span></p>
                 </div>
             </div>
         </div>
@@ -249,7 +249,7 @@
             @foreach(['Serapan Gudang' => '565.42', 'Pabrik Pakan' => '0', 'Tengkulak' => '423.5', 'Konsumsi Sendiri' => '0'] as $label => $val)
             <div class="bg-white/40 backdrop-blur-xl p-5 rounded-3xl border border-white/60 shadow-lg text-center flex flex-col items-center">
                 <div class="p-2 bg-slate-800 text-white rounded-xl mb-3"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"></path></svg></div>
-                <h4 class="text-xl font-black text-slate-800">{{ $val }} <small class="text-slate-400 font-normal italic">Ton</small></h4>
+                <h4 class="text-xl font-black text-slate-800">{{ $val }} <small class="text-slate-400 font-normal ">Ton</small></h4>
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{{ $label }}</p>
             </div>
             @endforeach
@@ -257,7 +257,7 @@
 
         {{-- Row 5.4: Info Lainnya --}}
         <div class="bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl">
-            <h4 class="text-xs font-black text-slate-800 uppercase italic mb-4 tracking-widest">Informasi Lainnya</h4>
+            <h4 class="text-xs font-black text-slate-800 uppercase  mb-4 tracking-widest">Informasi Lainnya</h4>
             <div class="space-y-2">
                 @foreach(['Polres Jember', 'Polres Jombang', 'Polres Malang', 'Polres Pasuruan Kota'] as $polres)
                 <div class="flex items-center text-[10px] font-bold text-slate-500 uppercase tracking-tighter"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-3"></span> {{ $polres }} Belum Melaksanakan Validasi Pada Tahapan Pendataan Potensi Lahan.</div>
