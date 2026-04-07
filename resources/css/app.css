@@ -1,7 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Ramabhadra&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    body {
+        font-family: 'Ramabhadra', sans-serif;
+    }
+}
 @layer utilities {
     /* Custom Scrollbar for Sidebar */
     .custom-scrollbar::-webkit-scrollbar {
