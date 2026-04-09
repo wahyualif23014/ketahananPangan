@@ -7,37 +7,27 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>PANGAN PRESISI - POLDA JAWA TIMUR</title>
 
-    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ramabhadra&display=swap" rel="stylesheet">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        [x-cloak] {
-            display: none !important;
-        }
-
+        [x-cloak] { display: none !important; }
+        .font-tactical { font-family: 'Ramabhadra', 'Figtree', sans-serif; }
+        
         @layer utilities {
-            .custom-scrollbar::-webkit-scrollbar {
-                width: 4px;
-            }
-
-            .custom-scrollbar::-webkit-scrollbar-track {
-                background: transparent;
-            }
-
-            .custom-scrollbar::-webkit-scrollbar-thumb {
-                background: #334155;
-                border-radius: 10px;
-            }
-
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                background: #10b981;
-            }
+            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #10b981; }
         }
     </style>
 </head>
 
-<body class="font-sans antialiased bg-slate-50 text-slate-900 overflow-hidden"
+<body class="font-sans antialiased bg-[#E2E8F0] text-slate-900 overflow-hidden"
     x-data="{ sidebarOpen: false, desktopCollapsed: false }">
 
     <div class="flex h-screen overflow-hidden">
@@ -46,56 +36,64 @@
 
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0 z-30 shadow-sm">
+            {{-- 1. HEADER UTAMA (Sesuai Gambar) --}}
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-30 shadow-sm">
                 <div class="flex items-center gap-4">
                     <button @click="sidebarOpen = true" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 md:hidden transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
-
-                    <div class="hidden md:flex items-center text-sm font-medium">
-                        <span class="text-slate-400 uppercase tracking-wider">Beranda</span>
-                        <svg class="w-4 h-4 mx-2 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"></path>
-                        </svg>
-                        <span class="text-emerald-600 font-black uppercase tracking-widest">@yield('header', 'Halaman Utama')</span>
-                    </div>
+                    <h1 class="text-lg md:text-xl font-bold text-[#577C8E] tracking-tight uppercase">SISTEM KETAHANAN PANGAN PRESISI</h1>
                 </div>
 
+                {{-- User Profile Section --}}
                 <div class="flex items-center gap-3" x-data="{ userOpen: false }">
-                    <div class="text-right mr-2 hidden sm:block">
-                        {{-- Ganti name menjadi nama_anggota --}}
-                        <p class="text-xs font-black text-slate-800 uppercase leading-none">{{ Auth::user()->nama_anggota }}</p>
-                        {{-- Ganti roles->first() menjadi kolom role langsung --}}
-                        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-tighter mt-1">{{ Auth::user()->role ?? 'User' }}</p>
+                    <div class="text-right hidden sm:block">
+                        <p class="text-[11px] font-black text-[#577C8E] uppercase leading-none">{{ Auth::user()->nama_anggota }}</p>
+                        <p class="text-[10px] font-bold text-[#7D9AA8] uppercase tracking-tighter mt-0.5">{{ Auth::user()->role ?? 'ADMINISTRATOR' }}</p>
                     </div>
 
                     <div class="relative">
-                        <button @click="userOpen = !userOpen" class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black border-2 border-slate-200 shadow-sm focus:outline-none hover:bg-emerald-600 transition-all">
-                            {{-- Perbaikan pengambilan inisial dari nama_anggota --}}
-                            {{ mb_substr(Auth::user()->nama_anggota, 0, 2) }}
+                        <button @click="userOpen = !userOpen" class="w-10 h-10 rounded-full bg-[#7D9AA8] text-white flex items-center justify-center font-black border border-slate-200 shadow-sm focus:outline-none transition-all">
+                            {{ collect(explode(' ', Auth::user()->nama_anggota))->filter(fn($n) => !empty($n))->map(fn($n) => mb_substr($n, 0, 1))->take(2)->implode('') }}
                         </button>
 
+                        {{-- DROPDOWN (Sesuai Gambar) --}}
                         <div x-show="userOpen" x-cloak @click.outside="userOpen = false"
                             x-transition:enter="transition ease-out duration-100"
                             x-transition:enter-start="opacity-0 scale-95"
                             x-transition:enter-end="opacity-100 scale-100"
-                            class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50">
+                            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-slate-200 py-1 z-50">
+                            
+                            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-all uppercase tracking-widest">
+                                <div class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                </div>
+                                Beranda
+                            </a>
 
-                            <form method="POST" action="{{ route('logout') }}">
+                            <a href="#" class="flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-500 hover:bg-slate-50 hover:text-emerald-600 transition-all uppercase tracking-widest border-t border-slate-50">
+                                <div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                </div>
+                                Profil Pengguna
+                            </a>
+
+                            <form method="POST" action="{{ route('logout') }}" class="border-t border-slate-100">
                                 @csrf
-                                <button type="submit" class="w-full text-left px-4 py-2 text-xs font-black text-red-600 hover:bg-red-50 transition uppercase tracking-widest">
-                                    LOGOUT SISTEM
+                                <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-slate-500 hover:bg-slate-50 hover:text-orange-600 transition-all uppercase tracking-widest">
+                                    <div class="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                    </div>
+                                    Keluar Aplikasi
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
             </header>
-
-            <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar bg-slate-50">
-                <div class="max-w-7xl mx-auto">
+            {{-- 3. MAIN CONTENT --}}
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+                <div class="max-w-[1600px] mx-auto">
                     @yield('content')
                 </div>
             </main>

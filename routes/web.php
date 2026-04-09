@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PotensiLahanController;
 use App\Http\Controllers\Admin\KelolaLahanController;
 use App\Http\Controllers\Admin\RekapitulasiController;
 use App\Http\Controllers\Admin\KomoditasController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,8 +43,12 @@ Route::middleware(['auth'])->group(function () {
 
         // Data Anggota/Personel
         Route::get('/anggota', function () {
-            return view('admin.anggota.index');
-        })->name('anggota.index');
+        // Ambil data dari tabel anggota melalui Model User
+        $personels = User::all(); 
+        
+        // Kirim data ke view index
+        return view('admin.anggota.index', compact('personels'));
+    })->name('anggota.index');
 
         // Kelola Lahan
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {

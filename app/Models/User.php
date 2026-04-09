@@ -2,16 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
-{
-    use Notifiable;
+class User extends Authenticatable {
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'anggota';
     protected $primaryKey = 'id_anggota';
-    public $incrementing = false; // Karena kamu ingin isi ID manual
+
+    public $incrementing = false;
+
+    protected $keyType = 'int';
 
     protected $fillable = [
         'id_anggota',
@@ -29,19 +33,20 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function getAuthPassword()
-    {
-        return $this->password;
-    }
+    // Beritahu Laravel untuk login menggunakan kolom 'username'
 
-    public function getAuthIdentifierName()
-    {
+    public function getAuthIdentifierName() {
         return 'username';
     }
 
-    // Fungsi bantu untuk cek role manual di Controller/Blade
-    public function hasRole($role)
-    {
+    // Fungsi cek role untuk navigasi/middleware
+
+    public function hasRole( $role ) {
         return $this->role === $role;
+    }
+
+    public function jabatan() {
+        // Menghubungkan id_jabatan di tabel anggota ke id_jabatan di tabel jabatan
+        return $this->belongsTo( Jabatan::class, 'id_jabatan', 'id_jabatan' );
     }
 }

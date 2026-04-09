@@ -25,7 +25,6 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function (User $user) {
-            // Karena tidak ada kolom statusadmin di SQL, kita pakai id_jabatan atau logika lain
             $user->assignRole('anggota');
         });
     }

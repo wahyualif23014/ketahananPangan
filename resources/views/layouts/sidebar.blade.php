@@ -1,43 +1,40 @@
 @php
-// Tentukan rute default jika role tidak cocok (fallback)
-$dashboardRoute = 'login';
+    // Tentukan rute default jika role tidak cocok (fallback)
+    $dashboardRoute = 'login';
 
-if (Auth::check()) {
-if (Auth::user()->role === 'admin') {
-$dashboardRoute = 'admin.dashboard';
-} elseif (Auth::user()->role === 'operator') {
-$dashboardRoute = 'operator.dashboard';
-} elseif (Auth::user()->role === 'view') {
-$dashboardRoute = 'view.dashboard';
-}
-}
+    if (Auth::check()) {
+        if (Auth::user()->role === 'admin') {
+            $dashboardRoute = 'admin.dashboard';
+        } elseif (Auth::user()->role === 'operator') {
+            $dashboardRoute = 'operator.dashboard';
+        } elseif (Auth::user()->role === 'view') {
+            $dashboardRoute = 'view.dashboard';
+        }
+    }
 
-// Logika Label Status Role
-$roleLabel = 'ANGGOTA SATGAS';
-$roleColor = 'text-slate-400';
+    // Logika Label Status Role
+    $roleLabel = 'ANGGOTA SATGAS';
+    $roleColor = 'text-slate-400';
 
-if (Auth::user()->role === 'admin') {
-$roleLabel = 'ADMINISTRATOR';
-$roleColor = 'text-emerald-400';
-} elseif (Auth::user()->role === 'operator') {
-$roleLabel = 'OPERATOR WILAYAH';
-$roleColor = 'text-amber-400';
-} elseif (Auth::user()->role === 'view') {
-$roleLabel = 'VIEWER DATA';
-$roleColor = 'text-blue-400';
-}
+    if (Auth::user()->role === 'admin') {
+        $roleLabel = 'ADMINISTRATOR';
+        $roleColor = 'text-emerald-400';
+    } elseif (Auth::user()->role === 'operator') {
+        $roleLabel = 'OPERATOR WILAYAH';
+        $roleColor = 'text-amber-400';
+    } elseif (Auth::user()->role === 'view') {
+        $roleLabel = 'VIEWER DATA';
+        $roleColor = 'text-blue-400';
+    }
 @endphp
 
-<div x-show="sidebarOpen" x-cloak
-    x-transition:enter="transition-opacity ease-linear duration-300"
+<div x-show="sidebarOpen" x-cloak x-transition:enter="transition-opacity ease-linear duration-300"
     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-    x-transition:leave="transition-opacity ease-linear duration-300"
-    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-    @click="sidebarOpen = false"
+    x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" @click="sidebarOpen = false"
     class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden"></div>
 
-<aside
-    :class="{
+<aside :class="{
         'translate-x-0': sidebarOpen,
         '-translate-x-full': !sidebarOpen,
         'md:w-72': !desktopCollapsed,
@@ -72,7 +69,8 @@ $roleColor = 'text-blue-400';
     <div x-show="!desktopCollapsed" x-cloak x-transition
         class="px-6 py-8 text-center border-b border-slate-800/50 bg-gradient-to-b from-slate-900 to-slate-800/30 shrink-0">
         <div class="relative inline-block mb-4">
-            <div class="w-16 h-16 rounded-2xl bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-xl font-black text-white shadow-xl rotate-3">
+            <div
+                class="w-16 h-16 rounded-2xl bg-slate-700 border-2 border-slate-600 flex items-center justify-center text-xl font-black text-white shadow-xl rotate-3">
                 <span class="-rotate-3">
                     {{-- Perbaikan inisial menggunakan nama_anggota dan filter string kosong --}}
                     {{ collect(explode(' ', Auth::user()->nama_anggota))->filter(fn($n) => !empty($n))->map(fn($n) => mb_substr($n, 0, 1))->take(2)->implode('') }}
@@ -102,13 +100,18 @@ $roleColor = 'text-blue-400';
             <button @click="open = !open"
                 :class="open ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'"
                 class="w-full group flex items-center px-4 py-3 text-[11px] font-black transition-all rounded-xl uppercase tracking-wider">
-                <div :class="!desktopCollapsed ? 'mr-3' : 'mx-auto'" class="text-slate-500 group-hover:text-emerald-400 transition-colors">
+                <div :class="!desktopCollapsed ? 'mr-3' : 'mx-auto'"
+                    class="text-slate-500 group-hover:text-emerald-400 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                        </path>
                     </svg>
                 </div>
                 <span x-show="!desktopCollapsed" class="flex-1 text-left">Data Utama</span>
-                <svg x-show="!desktopCollapsed" :class="open ? 'rotate-180' : ''" class="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg x-show="!desktopCollapsed" :class="open ? 'rotate-180' : ''"
+                    class="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
             </button>
@@ -135,11 +138,17 @@ $roleColor = 'text-blue-400';
         </div>
 
         {{-- Menggunakan pengecekan role manual untuk menggantikan @hasrole --}}
+        {{-- Section: Master Data --}}
         @if(Auth::user()->role === 'admin')
-        <div x-show="!desktopCollapsed" class="pt-6 pb-2 px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">Master Data</div>
-        <x-nav-link href="/anggota" :active="request()->is('anggota*')" icon="users">
-            <span x-show="!desktopCollapsed">DATA PERSONEL</span>
-        </x-nav-link>
+            <div x-show="!desktopCollapsed"
+                class="pt-6 pb-2 px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                Master Data
+            </div>
+
+            {{-- PERBAIKAN DI SINI: Gunakan route() agar otomatis mengarah ke /admin/anggota --}}
+            <x-nav-link :href="route('admin.anggota.index')" :active="request()->routeIs('admin.anggota.*')" icon="users">
+                <span x-show="!desktopCollapsed">DATA PERSONEL</span>
+            </x-nav-link>
         @endif
 
         {{-- Section: Operasional --}}
