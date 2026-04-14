@@ -481,9 +481,9 @@
                         class="flex flex-col items-center text-center group {{ $idx < 3 ? 'lg:border-r border-slate-100/60' : '' }}">
 
                         {{-- Icon Badge with Smooth Transitions --}}
-                        <div class="p-6 {{ $s['theme']['icon_bg'] }} rounded-[2.2rem] mb-8 
-                                        {{ $s['theme']['hover_bg'] }} group-hover:text-white 
-                                        transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 
+                        <div class="p-6 {{ $s['theme']['icon_bg'] }} rounded-[2.2rem] mb-8
+                                        {{ $s['theme']['hover_bg'] }} group-hover:text-white
+                                        transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3
                                         shadow-sm {{ $s['theme']['shadow'] }} relative overflow-hidden">
 
                             {{-- Decorative inner glow --}}
@@ -528,11 +528,11 @@
         {{-- Validation Info --}}
         {{-- SECTION: TACTICAL VALIDATION STATUS (Dark Command Center Style) --}}
 <div class="relative overflow-hidden bg-slate-900 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-900/50 my-14 border border-slate-800">
-    
+
     {{-- Decorative Background Elements --}}
     <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
     <div class="absolute -left-20 -bottom-20 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl"></div>
-    
+
     {{-- Tactical Icon Accent (Watermark style) --}}
     <div class="absolute right-10 bottom-10 text-white/[0.03] select-none pointer-events-none">
         <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">

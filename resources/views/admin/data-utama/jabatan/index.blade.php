@@ -3,16 +3,16 @@
 @section('header', 'Kelola Jabatan')
 
 @section('content')
-    <div x-data='{ 
-        showModal: false, 
-        selectAll: false, 
+    <div x-data='{
+        showModal: false,
+        selectAll: false,
         selected: [],
         search: "",
         items: @json($jabatans),
 
         get filteredItems() {
             if (this.search === "") return this.items;
-            return this.items.filter(i => 
+            return this.items.filter(i =>
                 i.nama_jabatan.toLowerCase().includes(this.search.toLowerCase())
             );
         },
