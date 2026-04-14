@@ -46,7 +46,7 @@
     </style>
 </head>
 
-<body class="font-sans antialiased bg-[#E2E8F0] text-slate-900 overflow-hidden"
+<body class="font-sans antialiased bg-[#F1F5F9] text-slate-900 overflow-hidden"
     x-data="{ sidebarOpen: false, desktopCollapsed: false }">
 
     <div class="flex h-screen overflow-hidden">
