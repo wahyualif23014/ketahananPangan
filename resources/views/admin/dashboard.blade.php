@@ -4,10 +4,7 @@
 
 @section('content')
     <div class="space-y-6 pb-12 font-sans" style="font-family: 'Ramabhadra', sans-serif;">
-
-        {{-- ==============================================================================
-        1. TOP HEADER & SYSTEM STATUS
-        ============================================================================== --}}
+        {{-- header --}}
         <div class="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 pb-4 mb-2">
             <div>
                 <h1 class="text-3xl md:text-4xl font-black text-slate-800 uppercase tracking-tighter leading-none">
@@ -33,170 +30,131 @@
             </div>
         </div>
 
-        {{-- ==============================================================================
-        2. SECTION UTAMA: STATISTIK POTENSI LAHAN
-        ============================================================================== --}}
-        <div class="space-y-6">
-            <div
-                class="relative overflow-hidden bg-white/90 backdrop-blur-xl p-6 md:p-8 lg:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/40 flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+        {{-- section2 --}}
+        <div class="space-y-6 pt-2 antialiased text-slate-900">
+            {{-- potensi --}}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 items-stretch">
 
-                {{-- Decorative Background Accent --}}
-                <div
-                    class="absolute -left-10 -top-10 w-32 h-32 bg-slate-50 rounded-full blur-3xl opacity-50 hidden md:block">
-                </div>
-
-                {{-- Highlight Angka Utama --}}
-                <div
-                    class="w-full lg:w-1/3 text-center lg:text-left border-b lg:border-b-0 lg:border-r border-slate-100 pb-8 lg:pb-0 lg:pr-12 relative z-10">
-                    <div class="space-y-1">
-                        <h1
-                            class="text-4xl sm:text-5xl lg:text-5xl font-black text-slate-800 tracking-tighter leading-none flex items-baseline justify-center lg:justify-start gap-2">
-                            170,715.11
-                            <span
-                                class="text-[10px] md:text-xs font-black text-slate-400 font-sans uppercase tracking-widest italic">Ha</span>
-                        </h1>
-                        <p
-                            class="text-[11px] md:text-xs font-black text-slate-500 uppercase mt-4 tracking-[0.1em] leading-tight">
-                            Total Potensi Lahan</p>
-                        <div class="mt-5 flex items-center justify-center lg:justify-start gap-3">
-                            <div
-                                class="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20">
-                                Tahun 2026
+                    <div
+                        class="lg:col-span-4 p-6 md:p-8 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-slate-100">
+                        <div class="space-y-1">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Potensi Lahan</p>
+                            <div class="flex items-baseline gap-2">
+                                <h1 class="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tight">170,715.11</h1>
+                                <span class="text-sm font-medium text-slate-400 uppercase">Ha</span>
+                            </div>
+                            <div class="pt-4 flex">
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
+                                    Periode 2026
+                                </span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {{-- Breakdown Grid Data --}}
-                <div class="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-4 relative z-10">
-                    <div class="space-y-3">
-                        @php
-                            $potensi1 = ['Milik Polri' => '9.63', 'Produktif (Poktan)' => '34,882.86', 'Produktif (Masyarakat)' => '27,316.49', 'Produktif (Tumpang Sari)' => '27,316.49'];
-                            $potensi2 = ['Hutan (Perhutani)' => '22,573.23', 'Luas Baku Sawah' => '64,792.29', 'Pesantren' => '64,792.9', 'Lainnya' => '107.52'];
-                        @endphp
-                        @foreach($potensi1 as $label => $val)
-                            <div
-                                class="group flex justify-between items-center text-[10px] md:text-[11px] font-bold border-b border-slate-50 pb-2.5 hover:border-emerald-100 transition-all">
-                                <span class="text-slate-400 uppercase tracking-tighter group-hover:text-slate-600">➤
-                                    {{ $label }}</span>
-                                <span
-                                    class="text-slate-800 font-black tracking-tight bg-slate-50 px-2 py-0.5 rounded-md group-hover:bg-emerald-50 group-hover:text-emerald-700">
-                                    {{ $val }} <small class="text-slate-400 font-normal uppercase">Ha</small>
-                                </span>
+                    <div class="lg:col-span-8 p-6 md:p-8 bg-slate-50/30">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Distribusi Kategori
+                            Lahan</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3">
+                            @php
+                                $potensi1 = ['Milik Polri' => '9.63', 'Produktif (Poktan)' => '34,882.86', 'Produktif (Masyarakat)' => '27,316.49', 'Produktif (Tumpang Sari)' => '27,316.49'];
+                                $potensi2 = ['Hutan (Perhutani)' => '22,573.23', 'Luas Baku Sawah' => '64,792.29', 'Pesantren' => '64,792.9', 'Lainnya' => '107.52'];
+                            @endphp
+
+                            <div class="space-y-3">
+                                @foreach($potensi1 as $label => $val)
+                                    <div class="flex justify-between items-center group transition-all">
+                                        <span
+                                            class="text-xs font-medium text-slate-500 group-hover:text-slate-900 transition-colors">{{ $label }}</span>
+                                        <span class="text-sm font-semibold text-slate-900">{{ $val }} <small
+                                                class="text-slate-400 font-normal uppercase text-[10px] ml-0.5">Ha</small></span>
+                                    </div>
+                                @endforeach
                             </div>
-                        @endforeach
-                    </div>
-                    <div class="space-y-3">
-                        @foreach($potensi2 as $label => $val)
-                            <div
-                                class="group flex justify-between items-center text-[10px] md:text-[11px] font-bold border-b border-slate-50 pb-2.5 hover:border-emerald-100 transition-all">
-                                <span class="text-slate-400 uppercase tracking-tighter group-hover:text-slate-600">➤
-                                    {{ $label }}</span>
-                                <span
-                                    class="text-slate-800 font-black tracking-tight bg-slate-50 px-2 py-0.5 rounded-md group-hover:bg-emerald-50 group-hover:text-emerald-700">
-                                    {{ $val }} <small class="text-slate-400 font-normal uppercase">Ha</small>
-                                </span>
+
+                            <div class="space-y-3">
+                                @foreach($potensi2 as $label => $val)
+                                    <div class="flex justify-between items-center group transition-all">
+                                        <span
+                                            class="text-xs font-medium text-slate-500 group-hover:text-slate-900 transition-colors">{{ $label }}</span>
+                                        <span class="text-sm font-semibold text-slate-900">{{ $val }} <small
+                                                class="text-slate-400 font-normal uppercase text-[10px] ml-0.5">Ha</small></span>
+                                    </div>
+                                @endforeach
                             </div>
-                        @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+            {{-- panen tanam --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {{-- ==============================================================================
-        3. SECTION GRID: TANAM & PANEN
-        ============================================================================== --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 my-10">
-            {{-- Card Tanam --}}
-            <div
-                class="relative overflow-hidden bg-white/90 backdrop-blur-xl p-7 md:p-8 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/30 group">
-                <div class="flex justify-between items-start mb-8 relative z-10">
-                    <div class="space-y-1">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-2">Planting Database
-                        </p>
-                        <h1
-                            class="text-4xl sm:text-5xl font-black text-slate-800 tracking-tighter leading-none flex items-baseline gap-2">
-                            242.74 <span class="text-[10px] font-black text-slate-400 font-sans uppercase italic">Ha</span>
-                        </h1>
-                        <p class="text-[11px] font-black text-slate-500 uppercase mt-4 tracking-[0.1em]">Total Lahan Tanam
-                        </p>
-                        <div class="mt-4 flex items-center gap-2">
-                            <div class="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-[8px] font-black uppercase">
-                                Tahun 2026</div>
-                            <div class="h-[1px] w-6 bg-slate-200"></div>
-                            <div
-                                class="p-1.5 bg-blue-100 text-blue-600 rounded-lg flex items-center gap-1 border border-blue-100 shadow-sm">
-                                <span class="text-[9px] font-black uppercase">0%</span>
-                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                                </svg>
+                <div
+                    class="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col transition-all hover:border-blue-200">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-start">
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Planting Analytics</p>
+                            <div class="flex items-baseline gap-2">
+                                <h3 class="text-3xl font-semibold text-slate-900 tracking-tight">242.74</h3>
+                                <span class="text-xs font-medium text-slate-400 uppercase">Ha</span>
                             </div>
+                            <p class="text-xs font-medium text-slate-500">Total Lahan Tanam (2026)</p>
+                        </div>
+                        <div
+                            class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 text-[10px] font-bold">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round"></path>
+                            </svg>
+                            0%
                         </div>
                     </div>
-                </div>
-                <div class="space-y-2 border-t border-slate-100 pt-6 relative z-10">
-                    @foreach(['Milik Polri' => '0', 'Produktif (Poktan)' => '107.08', 'Masyarakat Binaan' => '39.31', 'Hutan (Sosial)' => '83.25', 'LBS' => '12.1'] as $label => $val)
-                        <div
-                            class="group/item flex justify-between items-center text-[10px] md:text-[11px] font-bold border-b border-slate-50 pb-2.5 hover:border-blue-100 transition-all">
-                            <span class="text-slate-400 uppercase tracking-tighter group-hover/item:text-slate-600">➤
-                                {{ $label }}</span>
-                            <span
-                                class="text-slate-800 font-black tracking-tight bg-slate-50 px-2 py-0.5 rounded-md group-hover/item:bg-blue-100 group-hover/item:text-blue-700">
-                                {{ $val }} <small class="text-slate-400 font-normal ml-0.5">Ha</small>
-                            </span>
-                        </div>
-                    @endforeach
-                </div>
-                <div
-                    class="absolute -right-10 -bottom-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10">
-                </div>
-            </div>
 
-            {{-- Card Panen --}}
-            <div
-                class="relative overflow-hidden bg-white/90 backdrop-blur-xl p-7 md:p-8 rounded-[2.5rem] border border-white shadow-2xl shadow-slate-200/30 group">
-                <div class="flex justify-between items-start mb-8 relative z-10">
-                    <div class="space-y-1">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-2">Harvesting Database
-                        </p>
-                        <h1
-                            class="text-4xl sm:text-5xl font-black text-slate-800 tracking-tighter leading-none flex items-baseline gap-2">
-                            243.72 <span class="text-[10px] font-black text-slate-400 font-sans uppercase italic">Ha</span>
-                        </h1>
-                        <p class="text-[11px] font-black text-slate-500 uppercase mt-4 tracking-[0.1em]">Total Lahan Panen
-                        </p>
-                        <div class="mt-4 flex items-center gap-2">
-                            <div class="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-[8px] font-black uppercase">
-                                Tahun 2026</div>
-                            <div class="h-[1px] w-6 bg-slate-200"></div>
-                            <div
-                                class="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg flex items-center gap-1 border border-emerald-100 shadow-sm">
-                                <span class="text-[9px] font-black uppercase">0%</span>
-                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                        d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                                </svg>
+                    <div class="p-6 bg-slate-50/30 flex-1 space-y-3">
+                        @foreach(['Milik Polri' => '0', 'Produktif (Poktan)' => '107.08', 'Masyarakat Binaan' => '39.31', 'Hutan (Sosial)' => '83.25', 'LBS' => '12.1'] as $label => $val)
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-medium text-slate-500">{{ $label }}</span>
+                                <span class="text-sm font-semibold text-slate-900">{{ $val }} <small
+                                        class="text-slate-400 font-normal uppercase text-[10px] ml-0.5">Ha</small></span>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
-                <div class="space-y-2 border-t border-slate-100 pt-6 relative z-10">
-                    @foreach(['Milik Polri' => '0.98', 'Produktif (Poktan)' => '107.08', 'Masyarakat Binaan' => '39.31', 'Hutan (Sosial)' => '83.25', 'LBS' => '12.1'] as $label => $val)
-                        <div
-                            class="group/item flex justify-between items-center text-[10px] md:text-[11px] font-bold border-b border-slate-50 pb-2.5 hover:border-emerald-100 transition-all">
-                            <span class="text-slate-400 uppercase tracking-tighter group-hover/item:text-slate-600">➤
-                                {{ $label }}</span>
-                            <span
-                                class="text-slate-800 font-black tracking-tight bg-slate-50 px-2 py-0.5 rounded-md group-hover/item:bg-emerald-100 group-hover/item:text-emerald-700">
-                                {{ $val }} <small class="text-slate-400 font-normal ml-0.5">Ha</small>
-                            </span>
-                        </div>
-                    @endforeach
-                </div>
+
                 <div
-                    class="absolute -right-10 -bottom-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10">
+                    class="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col transition-all hover:border-emerald-200">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-start">
+                        <div class="space-y-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Harvesting Analytics
+                            </p>
+                            <div class="flex items-baseline gap-2">
+                                <h3 class="text-3xl font-semibold text-slate-900 tracking-tight">243.72</h3>
+                                <span class="text-xs font-medium text-slate-400 uppercase">Ha</span>
+                            </div>
+                            <p class="text-xs font-medium text-slate-500">Total Lahan Panen (2026)</p>
+                        </div>
+                        <div
+                            class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100 text-[10px] font-bold">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round"></path>
+                            </svg>
+                            0%
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-slate-50/30 flex-1 space-y-3">
+                        @foreach(['Milik Polri' => '0.98', 'Produktif (Poktan)' => '107.08', 'Masyarakat Binaan' => '39.31', 'Hutan (Sosial)' => '83.25', 'LBS' => '12.1'] as $label => $val)
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-medium text-slate-500">{{ $label }}</span>
+                                <span class="text-sm font-semibold text-slate-900">{{ $val }} <small
+                                        class="text-slate-400 font-normal uppercase text-[10px] ml-0.5">Ha</small></span>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
+
             </div>
         </div>
 
@@ -482,9 +440,9 @@
 
                         {{-- Icon Badge with Smooth Transitions --}}
                         <div class="p-6 {{ $s['theme']['icon_bg'] }} rounded-[2.2rem] mb-8
-                                        {{ $s['theme']['hover_bg'] }} group-hover:text-white
-                                        transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3
-                                        shadow-sm {{ $s['theme']['shadow'] }} relative overflow-hidden">
+                                                            {{ $s['theme']['hover_bg'] }} group-hover:text-white
+                                                            transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3
+                                                            shadow-sm {{ $s['theme']['shadow'] }} relative overflow-hidden">
 
                             {{-- Decorative inner glow --}}
                             <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -527,184 +485,194 @@
 
         {{-- Validation Info --}}
         {{-- SECTION: TACTICAL VALIDATION STATUS (Dark Command Center Style) --}}
-<div class="relative overflow-hidden bg-slate-900 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-900/50 my-14 border border-slate-800">
+        <div
+            class="relative overflow-hidden bg-slate-900 p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-slate-900/50 my-14 border border-slate-800">
 
-    {{-- Decorative Background Elements --}}
-    <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
-    <div class="absolute -left-20 -bottom-20 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl"></div>
+            {{-- Decorative Background Elements --}}
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -left-20 -bottom-20 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl"></div>
 
-    {{-- Tactical Icon Accent (Watermark style) --}}
-    <div class="absolute right-10 bottom-10 text-white/[0.03] select-none pointer-events-none">
-        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L1 21h22L12 2zm0 3.45l8.28 14.55H3.72L12 5.45zM11 16h2v2h-2v-2zm0-7h2v5h-2V9z"/>
-        </svg>
-    </div>
-
-    <div class="relative z-10">
-        {{-- Header dengan Spacing Taktis --}}
-        <div class="flex items-center gap-3 mb-8">
-            <div class="h-[1px] w-8 bg-emerald-500/50"></div>
-            <h4 class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] italic">
-                Sistem Validasi Satwil Terintegrasi
-            </h4>
-        </div>
-
-        <div class="mb-8">
-            <h3 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-none">
-                Laporan <span class="text-emerald-500">Pending</span> Validasi
-            </h3>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">
-                Daftar Satuan Wilayah yang belum melakukan sinkronisasi data final
-            </p>
-        </div>
-
-        {{-- Grid Items dengan Glassmorphism Dark --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @php
-                $pendingSatwil = ['Polres Jember', 'Polres Jombang', 'Polres Malang', 'Polres Pasuruan Kota'];
-            @endphp
-
-            @foreach($pendingSatwil as $polres)
-            <div class="group flex items-center p-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl hover:bg-white/[0.06] hover:border-emerald-500/30 transition-all duration-300">
-                {{-- Status Indicator --}}
-                <div class="relative flex h-3 w-3 mr-4">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-20"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500/80 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-                </div>
-
-                {{-- Text Info --}}
-                <div class="flex flex-col">
-                    <span class="text-[11px] font-black text-slate-100 uppercase tracking-tight group-hover:text-emerald-400 transition-colors">
-                        {{ $polres }}
-                    </span>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">
-                        Status: Menunggu Validasi Pendataan
-                    </span>
-                </div>
-
-                {{-- Micro-action Icon --}}
-                <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
+            {{-- Tactical Icon Accent (Watermark style) --}}
+            <div class="absolute right-10 bottom-10 text-white/[0.03] select-none pointer-events-none">
+                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L1 21h22L12 2zm0 3.45l8.28 14.55H3.72L12 5.45zM11 16h2v2h-2v-2zm0-7h2v5h-2V9z" />
+                </svg>
             </div>
-            @endforeach
-        </div>
 
-        {{-- Footer Action / Info --}}
-        <div class="mt-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-white/[0.05]">
-            <div class="flex items-center gap-4">
-                <div class="flex -space-x-2">
-                    @for($i=0; $i<3; $i++)
-                        <div class="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center">
-                            <span class="text-[8px] font-bold text-slate-500 uppercase">P</span>
+            <div class="relative z-10">
+                {{-- Header dengan Spacing Taktis --}}
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="h-[1px] w-8 bg-emerald-500/50"></div>
+                    <h4 class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] italic">
+                        Sistem Validasi Satwil Terintegrasi
+                    </h4>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl md:text-2xl font-black text-white uppercase tracking-tighter leading-none">
+                        Laporan <span class="text-emerald-500">Pending</span> Validasi
+                    </h3>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">
+                        Daftar Satuan Wilayah yang belum melakukan sinkronisasi data final
+                    </p>
+                </div>
+
+                {{-- Grid Items dengan Glassmorphism Dark --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @php
+                        $pendingSatwil = ['Polres Jember', 'Polres Jombang', 'Polres Malang', 'Polres Pasuruan Kota'];
+                    @endphp
+
+                    @foreach($pendingSatwil as $polres)
+                        <div
+                            class="group flex items-center p-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl hover:bg-white/[0.06] hover:border-emerald-500/30 transition-all duration-300">
+                            {{-- Status Indicator --}}
+                            <div class="relative flex h-3 w-3 mr-4">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-20"></span>
+                                <span
+                                    class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500/80 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+                            </div>
+
+                            {{-- Text Info --}}
+                            <div class="flex flex-col">
+                                <span
+                                    class="text-[11px] font-black text-slate-100 uppercase tracking-tight group-hover:text-emerald-400 transition-colors">
+                                    {{ $polres }}
+                                </span>
+                                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-0.5">
+                                    Status: Menunggu Validasi Pendataan
+                                </span>
+                            </div>
+
+                            {{-- Micro-action Icon --}}
+                            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                                    </path>
+                                </svg>
+                            </div>
                         </div>
-                    @endfor
+                    @endforeach
                 </div>
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total 4 Satwil memerlukan tindakan segera</p>
+
+                {{-- Footer Action / Info --}}
+                <div
+                    class="mt-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pt-6 border-t border-white/[0.05]">
+                    <div class="flex items-center gap-4">
+                        <div class="flex -space-x-2">
+                            @for($i = 0; $i < 3; $i++)
+                                <div
+                                    class="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center">
+                                    <span class="text-[8px] font-bold text-slate-500 uppercase">P</span>
+                                </div>
+                            @endfor
+                        </div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total 4 Satwil memerlukan
+                            tindakan segera</p>
+                    </div>
+                    <button
+                        class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                        Kirim Notifikasi Massal
+                    </button>
+                </div>
             </div>
-            <button class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
-                Kirim Notifikasi Massal
-            </button>
-        </div>
-    </div>
 
-    {{-- ==============================================================================
-    5. CONSOLIDATED JAVASCRIPT INITIALIZATION
-    ============================================================================== --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
+            {{-- ==============================================================================
+            5. CONSOLIDATED JAVASCRIPT INITIALIZATION
+            ============================================================================== --}}
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
 
-            // --- 1. PRODUCTIVITY LINE CHART ---
-            const lineCtx = document.getElementById('productivityChart').getContext('2d');
-            const grad = lineCtx.createLinearGradient(0, 0, 0, 300);
-            grad.addColorStop(0, 'rgba(37, 99, 235, 0.15)');
-            grad.addColorStop(1, 'rgba(37, 99, 235, 0)');
+                    // --- 1. PRODUCTIVITY LINE CHART ---
+                    const lineCtx = document.getElementById('productivityChart').getContext('2d');
+                    const grad = lineCtx.createLinearGradient(0, 0, 0, 300);
+                    grad.addColorStop(0, 'rgba(37, 99, 235, 0.15)');
+                    grad.addColorStop(1, 'rgba(37, 99, 235, 0)');
 
-            new Chart(lineCtx, {
-                type: 'line',
-                data: {
-                    labels: ['2021', '2022', '2023', '2024', '2025', '2026'],
-                    datasets: [{
-                        label: 'Luas Lahan',
-                        data: [85000, 105000, 95000, 140000, 165000, 170715],
-                        borderColor: '#2563eb',
-                        backgroundColor: grad,
-                        borderWidth: 4,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#fff',
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { display: false },
-                        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } }
-                    }
-                }
-            });
+                    new Chart(lineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: ['2021', '2022', '2023', '2024', '2025', '2026'],
+                            datasets: [{
+                                label: 'Luas Lahan',
+                                data: [85000, 105000, 95000, 140000, 165000, 170715],
+                                borderColor: '#2563eb',
+                                backgroundColor: grad,
+                                borderWidth: 4,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#fff',
+                                pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { display: false },
+                                x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' }, color: '#94a3b8' } }
+                            }
+                        }
+                    });
 
-            // --- 2. LEAFLET MAP INITIALIZATION ---
-            var map = L.map('map', {
-                zoomControl: false,
-                scrollWheelZoom: false
-            }).setView([-7.5360, 112.2384], 8);
+                    // --- 2. LEAFLET MAP INITIALIZATION ---
+                    var map = L.map('map', {
+                        zoomControl: false,
+                        scrollWheelZoom: false
+                    }).setView([-7.5360, 112.2384], 8);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(map);
 
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+                    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Sample Markers
-            var sampleData = [
-                { lat: -7.2504, lng: 112.7688, title: "Polrestabes Surabaya", status: "Produktif" },
-                { lat: -7.9839, lng: 112.6214, title: "Polres Malang", status: "Panen" }
-            ];
+                    // Sample Markers
+                    var sampleData = [
+                        { lat: -7.2504, lng: 112.7688, title: "Polrestabes Surabaya", status: "Produktif" },
+                        { lat: -7.9839, lng: 112.6214, title: "Polres Malang", status: "Panen" }
+                    ];
 
-            sampleData.forEach(function (point) {
-                L.circleMarker([point.lat, point.lng], {
-                    radius: 8, fillColor: "#3b82f6", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
-                }).addTo(map).bindPopup("<b class='uppercase'>" + point.title + "</b>");
-            });
+                    sampleData.forEach(function (point) {
+                        L.circleMarker([point.lat, point.lng], {
+                            radius: 8, fillColor: "#3b82f6", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
+                        }).addTo(map).bindPopup("<b class='uppercase'>" + point.title + "</b>");
+                    });
 
-            // --- 3. DONUT ANALYTICS CHARTS ---
-            const donutConfig = {
-                cutout: '80%',
-                plugins: { legend: { display: false } },
-                animation: { animateScale: true, animateRotate: true }
-            };
+                    // --- 3. DONUT ANALYTICS CHARTS ---
+                    const donutConfig = {
+                        cutout: '80%',
+                        plugins: { legend: { display: false } },
+                        animation: { animateScale: true, animateRotate: true }
+                    };
 
-            new Chart(document.getElementById('totalTitikChart'), {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [5528, 1200],
-                        backgroundColor: ['#3b82f6', '#f1f5f9'],
-                        borderWidth: 0
-                    }]
-                },
-                options: donutConfig
-            });
+                    new Chart(document.getElementById('totalTitikChart'), {
+                        type: 'doughnut',
+                        data: {
+                            datasets: [{
+                                data: [5528, 1200],
+                                backgroundColor: ['#3b82f6', '#f1f5f9'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: donutConfig
+                    });
 
-            new Chart(document.getElementById('pengelolaanPolsekChart'), {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [659, 200],
-                        backgroundColor: ['#10b981', '#f1f5f9'],
-                        borderWidth: 0
-                    }]
-                },
-                options: donutConfig
-            });
-        });
-    </script>
+                    new Chart(document.getElementById('pengelolaanPolsekChart'), {
+                        type: 'doughnut',
+                        data: {
+                            datasets: [{
+                                data: [659, 200],
+                                backgroundColor: ['#10b981', '#f1f5f9'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: donutConfig
+                    });
+                });
+            </script>
 @endsection
