@@ -36,7 +36,12 @@ Route::middleware(['auth'])->group(function () {
         // Grouping Data Utama
         Route::prefix('data-utama')->group(function () {
             Route::get('/tingkat-kesatuan', [TingkatKesatuanController::class, 'index'])->name('tingkat-kesatuan.index');
+            // jabatan
             Route::get('/jabatan', [JabatanController::class, 'index'])->name('jabatan.index');
+            Route::delete('/admin/jabatan/batch-delete', [JabatanController::class, 'batchDelete'])
+            ->name('jabatan.batch-delete');
+            Route::put('/jabatan/{id}', [JabatanController::class, 'update'])->name('jabatan.update');
+
             Route::get('/wilayah', [WilayahController::class, 'index'])->name('wilayah.index');
             Route::get('/komoditas', [KomoditasController::class, 'index'])->name('komoditas.index');
         });
