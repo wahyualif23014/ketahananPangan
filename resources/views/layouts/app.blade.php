@@ -46,7 +46,7 @@
     </style>
 </head>
 
-<body class="font-sans antialiased bg-[#F1F5F9] text-slate-900 overflow-hidden"
+<body class="font-sans antialiased bg-gradient-to-br from-slate-100 to-slate-200 text-slate-900 overflow-hidden"
     x-data="{ sidebarOpen: false, desktopCollapsed: false }">
 
     <div class="flex h-screen overflow-hidden">
@@ -84,9 +84,11 @@
                 <div class="flex items-center gap-3" x-data="{ userOpen: false }">
                     <div class="text-right hidden sm:block">
                         <p class="text-[11px] font-black text-[#577C8E] uppercase leading-none">
-                            {{ Auth::user()->nama_anggota }}</p>
+                            {{ Auth::user()->nama_anggota }}
+                        </p>
                         <p class="text-[10px] font-bold text-[#7D9AA8] uppercase tracking-tighter mt-0.5">
-                            {{ Auth::user()->role ?? 'ADMINISTRATOR' }}</p>
+                            {{ Auth::user()->role ?? 'ADMINISTRATOR' }}
+                        </p>
                     </div>
                     <div class="relative">
                         <button @click="userOpen = !userOpen"
@@ -132,7 +134,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar bg-[#F1F5F9]">
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar bg-transparent">
                 <div class="max-w-[1600px] mx-auto">
                     @yield('content')
                 </div>
