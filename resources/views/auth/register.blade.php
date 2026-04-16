@@ -64,7 +64,7 @@
                             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nama Lengkap</label>
                             <input type="text" name="nama_anggota" value="{{ old('nama_anggota') }}" required
                                 class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/30 transition-all"
-                                placeholder="Nama Lengkap Sesuai KTA">
+                                placeholder="Nama Lengkap Sesuai KTP">
                         </div>
                     </div>
 
@@ -97,9 +97,9 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">ID Tugas</label>
-                            <input type="number" name="id_tugas" value="{{ old('id_tugas') }}"
+                            <input type="text" name="id_tugas" value="{{ old('id_tugas') }}"
                                 class="block w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                                placeholder="Opsional">
+                                placeholder="Contoh: 11.01">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">No. Telepon</label>

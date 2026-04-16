@@ -9,7 +9,7 @@ use App\Http\Controllers\Admin\WilayahController;
 use App\Http\Controllers\Admin\PotensiLahanController;
 use App\Http\Controllers\Admin\KelolaLahanController;
 use App\Http\Controllers\Admin\RekapitulasiController;
-use App\Http\Controllers\Admin\KomoditasController;
+use App\Http\Controllers\Admin\KomoditiController;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -38,7 +38,14 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/tingkat-kesatuan', [TingkatKesatuanController::class, 'index'])->name('tingkat-kesatuan.index');
             Route::get('/jabatan', [JabatanController::class, 'index'])->name('jabatan.index');
             Route::get('/wilayah', [WilayahController::class, 'index'])->name('wilayah.index');
-            Route::get('/komoditas', [KomoditasController::class, 'index'])->name('komoditas.index');
+            Route::put('/wilayah/update-lokasi', [WilayahController::class, 'updateLokasi'])->name('wilayah.update-lokasi');
+            
+            Route::prefix('komoditi')->name('komoditi.')->group(function () {
+                Route::get('/', [KomoditiController::class, 'index'])->name('index');
+                Route::post('/store', [KomoditiController::class, 'store'])->name('store');
+                Route::put('/update', [KomoditiController::class, 'update'])->name('update');
+                Route::delete('/destroy', [KomoditiController::class, 'destroy'])->name('destroy');
+            });
         });
 
         // Data Anggota/Personel
@@ -52,7 +59,12 @@ Route::middleware(['auth'])->group(function () {
 
         // Kelola Lahan
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
-            Route::get('/potensi', [PotensiLahanController::class, 'index'])->name('potensi.index');
+            Route::prefix('potensi')->name('potensi.')->group(function () {
+                Route::get('/', [PotensiLahanController::class, 'index'])->name('index');
+                Route::put('/verify/{id}', [PotensiLahanController::class, 'verify'])->name('verify');
+                Route::put('/update/{id}', [PotensiLahanController::class, 'update'])->name('update');
+                Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
+            });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
         });
 

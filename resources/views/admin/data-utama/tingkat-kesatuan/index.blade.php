@@ -1,252 +1,288 @@
 @extends('layouts.app')
 
-@section('header', 'Kelola Tingkat Kesatuan')
+@section('header', 'Tingkat Kesatuan')
 
 @section('content')
-    <div class="space-y-8 pb-20 antialiased text-slate-900"
-        style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+    
+    .kesatuan-container {
+        font-family: 'Outfit', sans-serif;
+    }
+    
+    [x-cloak] {
+        display: none !important;
+    }
 
-        <div
-            class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-4 transition-all mb-10 duration-700 animate-in fade-in slide-in-from-top-4">
-            <div>
-                <nav class="flex items-center gap-2 text-xs font-medium text-slate-400 mb-1">
-                    <span>Data Utama</span>
-                    <svg class="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                    <span class="text-emerald-600">Tingkat Kesatuan</span>
-                </nav>
-                <h2 class="text-3xl lg:text-4xl font-semibold text-slate-900 tracking-tight">
-                    Tingkat <span class="text-emerald-600">Kesatuan</span>
-                </h2>
-            </div>
+    .topo-pattern {
+        background-color: transparent;
+        background-image: radial-gradient(#10b981 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.1;
+    }
+</style>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="relative group">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
-                    <input type="text" placeholder="CARI DATA KESATUAN..."
-                        class="block w-full md:w-64 pl-10 pr-4 py-3 bg-slate-100 border-none rounded-2xl text-[11px] font-bold text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase">
-                </div>
+<div class="space-y-8 pb-24 kesatuan-container max-w-7xl mx-auto" x-data="{ searchQuery: '' }">
 
-                <button onclick="window.location.reload()"
-                    class="p-3 bg-white text-emerald-600 rounded-2xl shadow-sm border border-slate-200 hover:bg-emerald-50 transition-all active:scale-90">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                        </path>
-                    </svg>
-                </button>
-            </div>
+    {{-- Top Header Section --}}
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
+        <div>
+            <nav class="flex items-center gap-2 font-black tracking-[0.2em] uppercase text-slate-400 mb-2">
+                <span class="text-[10px] border-b-2 border-slate-300 pb-0.5">MANAJEMEN STRUKTUR</span>
+                <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">Tingkat Kesatuan</span>
+            </nav>
+            <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
+                KESATUAN <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-indigo-500">WILAYAH</span>
+            </h2>
+            <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Hierarki kepolisian berdasarkan klasifikasi struktur penanggung jawab wilayah.</p>
         </div>
 
-        @php
-            // Mengambil semua data wilayah dari tabel wilayah
-            $allWilayah = DB::table('wilayah')->get();
-
-            // 1. Ambil data setingkat Kecamatan (Format: 35.XX)
-            $kecamatanList = $allWilayah->filter(function ($item) {
-                $parts = explode('.', $item->kode_wilayah);
-                return count($parts) == 2 && $parts[0] == '35';
-            });
-
-            // 2. Hitung total Kabupaten (Format: 35.XX.XX)
-            $totalKabupaten = $allWilayah->filter(function ($item) {
-                return count(explode('.', $item->kode_wilayah)) == 3;
-            })->count();
-        @endphp
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div
-                class="group relative overflow-hidden bg-white/60 backdrop-blur-xl p-5 rounded-[1.8rem] border border-white shadow-xl shadow-slate-200/40 transition-all hover:-translate-y-1">
-                <div class="flex items-center gap-4 relative z-10">
-                    <div
-                        class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                            </path>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-[8px] font-black uppercase tracking-[0.3em] mb-0.5">Cakupan Wilayah
-                        </p>
-                        <h3 class="text-lg font-black text-slate-800 uppercase italic leading-none">
-                            Terdapat <span
-                                class="text-emerald-600 text-2xl tracking-tighter">{{ $kecamatanList->count() }}</span>
-                            Kecamatan
-                        </h3>
-                    </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <div
-                    class="absolute bottom-0 left-0 w-full h-1 bg-emerald-500/20 group-hover:bg-emerald-500 transition-all">
-                </div>
+                <input type="text" x-model="searchQuery" placeholder="CARI KESATUAN..." 
+                    class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
             </div>
-
-            <div
-                class="group relative overflow-hidden bg-white/60 backdrop-blur-xl p-5 rounded-[1.8rem] border border-white shadow-xl shadow-slate-200/40 transition-all hover:-translate-y-1">
-                <div class="flex items-center gap-4 relative z-10">
-                    <div
-                        class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                            </path>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-400 text-[8px] font-black uppercase tracking-[0.3em] mb-0.5">Sub-Unit Kerja</p>
-                        <h3 class="text-lg font-black text-slate-800 uppercase italic leading-none">
-                            Terdapat <span class="text-blue-600 text-2xl tracking-tighter">{{ $totalKabupaten }}</span>
-                            Kabupaten
-                        </h3>
-                    </div>
-                </div>
-                <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-600/20 group-hover:bg-blue-600 transition-all">
-                </div>
-            </div>
-        </div>
-
-        <div
-            class="bg-white/80 backdrop-blur-xl rounded-[2.2rem] border border-white shadow-2xl shadow-slate-200/40 overflow-hidden">
-            <div class="grid grid-cols-12 bg-slate-900/[0.02] border-b border-slate-100">
-                <div class="col-span-8 px-10 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Struktur
-                    Kecamatan & Kabupaten</div>
-                <div
-                    class="col-span-4 px-10 py-5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">
-                    Kode Wilayah</div>
-            </div>
-
-            @foreach($kecamatanList as $kec)
-                @php
-                    // Mengambil Kabupaten yang kodenya berawalan kode Kecamatan ini (Format: 35.XX.XX)
-                    $kabupatenList = $allWilayah->filter(function ($item) use ($kec) {
-                        $parts = explode('.', $item->kode_wilayah);
-                        return count($parts) == 3 && str_starts_with($item->kode_wilayah, $kec->kode_wilayah);
-                    });
-
-                    // Mencari Personel Penanggung Jawab dari tabel anggota
-                    $pj = DB::table('anggota')->where('id_anggota', $kec->id_anggota)->first();
-                @endphp
-
-                <div x-data="{ expanded: false }" class="group/parent border-b border-slate-50 last:border-0">
-                    <div @click="expanded = !expanded" :class="expanded ? 'bg-emerald-50/20' : 'bg-white hover:bg-slate-50'"
-                        class="grid grid-cols-12 items-center transition-all duration-300 cursor-pointer">
-
-                        <div class="col-span-8 px-10 py-7">
-                            <div class="flex items-center gap-5">
-                                <div :class="expanded ? 'bg-emerald-600 text-white rotate-180 shadow-emerald-200' : 'bg-white text-slate-400 border border-slate-100'"
-                                    class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500 shadow-lg group-hover/parent:scale-105">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                            d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-
-                                <div class="space-y-1">
-                                    <h3
-                                        class="text-lg font-black text-slate-800 uppercase italic tracking-tight group-hover/parent:text-emerald-600 transition-colors leading-none">
-                                        {{ $kec->nama_wilayah }}
-                                    </h3>
-                                    <div
-                                        class="flex flex-wrap items-center gap-x-4 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                                        <span
-                                            class="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-lg border border-slate-100">
-                                            <span class="text-slate-300 italic">PENANGGUNG JAWAB:</span>
-                                            <span class="text-slate-700">{{ $pj->nama_anggota ?? 'TIDAK ADA DATA' }}</span>
-                                        </span>
-                                        <span class="flex items-center gap-1.5 text-emerald-600">
-                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                <path
-                                                    d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 004.815 4.815l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z">
-                                                </path>
-                                            </svg>
-                                            {{ $pj->no_telp_anggota ?? '-' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-span-4 px-10 text-right">
-                            <span
-                                class="inline-flex items-center px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.15em] shadow-md shadow-emerald-200">
-                                {{ $kabupatenList->count() }} Kabupaten
-                            </span>
-                        </div>
-                    </div>
-
-                    <div x-show="expanded" x-collapse>
-                        <div class="relative bg-slate-50/40">
-                            <div
-                                class="absolute left-[3.1rem] top-0 bottom-10 w-[2px] bg-gradient-to-b from-emerald-200 to-transparent opacity-40">
-                            </div>
-
-                            @foreach($kabupatenList as $kab)
-                                @php
-                                    // Mengambil Desa yang kodenya berawalan kode Kabupaten ini (Format: 35.XX.XX.XXXX)
-                                    $desaList = $allWilayah->filter(function ($item) use ($kab) {
-                                        $parts = explode('.', $item->kode_wilayah);
-                                        return count($parts) == 4 && str_starts_with($item->kode_wilayah, $kab->kode_wilayah);
-                                    });
-                                    $pjKab = DB::table('anggota')->where('id_anggota', $kab->id_anggota)->first();
-                                @endphp
-                                <div class="border-t border-white/60">
-                                    <div
-                                        class="grid grid-cols-12 items-center hover:bg-white transition-all duration-300 group/child">
-                                        <div class="col-span-8 px-24 py-5 relative">
-                                            <div
-                                                class="absolute left-[3.1rem] top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-[3px] border-emerald-400 rounded-full shadow-sm group-hover/child:bg-emerald-500 group-hover/child:border-white transition-all">
-                                            </div>
-
-                                            <div class="space-y-1">
-                                                <h4
-                                                    class="text-[13px] font-black text-slate-700 uppercase italic tracking-wide group-hover/child:text-emerald-600 transition-colors leading-none">
-                                                    {{ $kab->nama_wilayah }}
-                                                </h4>
-                                                <div
-                                                    class="flex items-center gap-3 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                                                    <span>DESA TERDAFTAR: <span
-                                                            class="text-slate-600">{{ $desaList->count() }}</span></span>
-                                                    <span class="text-slate-200">/</span>
-                                                    <span class="italic text-slate-500 font-medium">PJ:
-                                                        {{ $pjKab->nama_anggota ?? 'N/A' }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-span-4 px-10 text-right">
-                                            <span
-                                                class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] bg-white border border-slate-100 px-3 py-1 rounded-lg shadow-sm group-hover/child:text-emerald-600 transition-all">
-                                                {{ $kab->kode_wilayah }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {{-- Daftar Desa (Opsional: Ditampilkan sebagai list kecil) --}}
-                                    @if($desaList->isNotEmpty())
-                                        <div class="px-32 pb-4 space-y-2">
-                                            @foreach($desaList as $desa)
-                                                <div
-                                                    class="flex items-center justify-between bg-white/40 p-2 rounded-lg border border-slate-100">
-                                                    <span
-                                                        class="text-[10px] font-bold text-slate-500 uppercase">{{ $desa->nama_wilayah }}</span>
-                                                    <span class="text-[8px] font-black text-slate-300">{{ $desa->kode_wilayah }}</span>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endforeach
+            <button onclick="window.location.reload()" title="Refresh Data"
+                class="p-3.5 bg-slate-900 text-emerald-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
         </div>
     </div>
 
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    @php
+        // Fetch core data
+        $allTingkat = DB::table('tingkat')->get();
+
+        $tingkatWilayah = DB::table('tingkatwilayah')
+            ->join('anggota', 'tingkatwilayah.id_anggota', '=', 'anggota.id_anggota')
+            ->select('tingkatwilayah.id_tingkat', 'anggota.nama_anggota', 'anggota.no_telp_anggota')
+            ->get()
+            ->keyBy('id_tingkat');
+
+        // Stats Counters
+        $totalPolres = $allTingkat->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 2)->count();
+        $totalPolsek = $allTingkat->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 3)->count();
+
+        // Kategori Roots (Polda length 1, Polres length 2)
+        $kategoriListTotal = $allTingkat->filter(function ($item) {
+            $parts = count(explode('.', $item->id_tingkat));
+            return $parts == 1 || $parts == 2;
+        })->sortBy('id_tingkat');
+
+        $currentPage = request()->get('page', 1);
+        $perPage = 6;
+
+        $kategoriList = new \Illuminate\Pagination\LengthAwarePaginator(
+            $kategoriListTotal->forPage($currentPage, $perPage),
+            $kategoriListTotal->count(),
+            $perPage,
+            $currentPage,
+            ['path' => url()->current(), 'query' => request()->query()]
+        );
+    @endphp
+
+    {{-- Stats Dashboard --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative px-2">
+        <!-- Decor pattern behind cards -->
+        <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-105"></div>
+        <div class="absolute inset-0 topo-pattern -z-10 rounded-[3rem]"></div>
+
+        <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 overflow-hidden flex items-center justify-between">
+            <div class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex flex-col justify-center">
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TINGKAT MENEGAH</p>
+                <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">
+                    Terdapat <span class="text-emerald-500 text-4xl mx-1" x-data="{ count: 0 }" x-init="let end = {{ $totalPolres }}; let duration = 1000; let start = null; let step = timestamp => { if (!start) start = timestamp; let progress = Math.min((timestamp - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step);" x-text="count">0</span>
+                    Polres
+                </h3>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-[1.2rem] flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30 relative z-10">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            </div>
+        </div>
+
+        <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-blue-100 shadow-xl shadow-blue-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 overflow-hidden flex items-center justify-between">
+            <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex flex-col justify-center">
+                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TINGKAT DASAR</p>
+                <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">
+                    Terdapat <span class="text-blue-500 text-4xl mx-1" x-data="{ count: 0 }" x-init="let end = {{ $totalPolsek }}; let duration = 1500; let start = null; let step = timestamp => { if (!start) start = timestamp; let progress = Math.min((timestamp - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step);" x-text="count">0</span>
+                    Polsek
+                </h3>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 text-white rounded-[1.2rem] flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-500/30 relative z-10">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+
+    {{-- Main Tree Accordion --}}
+    <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-2 mt-12 bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-70">
+        
+        <!-- Header Panel -->
+        <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
+            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
+            <div class="flex items-center gap-4 relative z-10 w-full">
+                <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
+                <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR KESATUAN (POLDA & POLRES)</h3>
+            </div>
+            <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
+                PENGELOMPOKAN WILAYAH
+            </div>
+        </div>
+
+        <!-- Accordion Loop -->
+        <div class="divide-y divide-slate-100/80">
+            @forelse($kategoriList as $kategori)
+                @php
+                    $isPolda = count(explode('.', $kategori->id_tingkat)) == 1;
+                    
+                    // Ambil Polsek dibawahnya hanya jika dia Polres (level 2)
+                    $polsekList = collect();
+                    if (!$isPolda) {
+                        $polsekList = $allTingkat->filter(function ($item) use ($kategori) {
+                            $parts = explode('.', $item->id_tingkat);
+                            return count($parts) == 3 && str_starts_with($item->id_tingkat, $kategori->id_tingkat . '.');
+                        })->sortBy('id_tingkat');
+                    }
+                    
+                    $pj = $tingkatWilayah->get($kategori->id_tingkat);
+                @endphp
+
+                <div x-data="{ expanded: false }" 
+                     x-show="searchQuery === '' || '{{ strtolower($kategori->nama_tingkat) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($kategori->id_tingkat) }}'.includes(searchQuery.toLowerCase())"
+                     class="group/parent transition-all duration-300 hover:bg-slate-50/50"
+                     :class="expanded ? 'bg-slate-50/50' : ''">
+                     
+                    <!-- Root Item Header -->
+                    <div @click="expanded = !expanded" class="p-6 md:px-8 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-start md:items-center gap-5">
+                            
+                            <!-- Toggle Button -->
+                            <div :class="expanded ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 rotate-180' : 'bg-white text-slate-400 shadow-sm border border-slate-200 group-hover/parent:border-emerald-300 group-hover/parent:text-emerald-500'"
+                                class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 z-10">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h3 class="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight group-hover/parent:text-emerald-600 transition-colors">
+                                        {{ $kategori->nama_tingkat }}
+                                    </h3>
+                                    
+                                    @if($isPolda)
+                                        <span class="inline-flex items-center justify-center bg-gradient-to-r from-amber-400 to-orange-500 text-white px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+                                            POLDA
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center justify-center bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+                                            POLRES
+                                        </span>
+                                    @endif
+                                </div>
+                                
+                                <div class="flex flex-wrap items-center gap-2 md:gap-4 text-xs font-semibold uppercase tracking-wider text-slate-500 mt-1">
+                                    <div class="flex items-center gap-2 bg-white/80 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                        <span class="text-slate-400">PJ:</span>
+                                        <span class="{{ isset($pj) && $pj->nama_anggota ? 'text-slate-800' : 'text-slate-400 italic' }} font-bold">
+                                            {{ $pj->nama_anggota ?? 'BELUM DITENTUKAN' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 004.815 4.815l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                                        {{ $pj->no_telp_anggota ?? '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Stats/ID -->
+                        <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
+                            @if(!$isPolda)
+                                <div class="flex flex-col items-center justify-center px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                                    <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Polsek</span>
+                                    <span class="text-lg font-black text-blue-600 leading-none">{{ $polsekList->count() }}</span>
+                                </div>
+                            @endif
+                            <div class="flex flex-col items-end justify-center px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl shadow-inner">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID Registry</span>
+                                <span class="text-sm font-black text-slate-700 leading-none">{{ $kategori->id_tingkat }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Polsek Sub-List Dropsdown -->
+                    @if(!$isPolda && $polsekList->isNotEmpty())
+                        <div x-show="expanded" x-collapse>
+                            <div class="px-4 pb-6 md:px-8 md:pl-16">
+                                <div class="pl-7 relative border-l-[3px] border-emerald-200/60 pb-2">
+                                    <div class="w-full h-px bg-slate-200 my-4 mb-6"></div>
+                                    <div class="space-y-4">
+                                        @foreach($polsekList as $polsek)
+                                            @php
+                                                $pjPolsek = $tingkatWilayah->get($polsek->id_tingkat);
+                                            @endphp
+                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 group/polsek">
+                                                <!-- Branch node connector -->
+                                                <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
+                                                <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/polsek:scale-150 transition-transform"></div>
+
+                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-blue-500 flex items-center justify-center font-bold shadow-inner group-hover/polsek:bg-blue-500 group-hover/polsek:text-white transition-colors">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
+                                                        </div>
+                                                        <div class="space-y-1">
+                                                            <h4 class="text-base font-black text-slate-800 uppercase tracking-wide group-hover/polsek:text-blue-600 transition-colors">
+                                                                {{ $polsek->nama_tingkat }}
+                                                            </h4>
+                                                            <div class="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+                                                                <span>PENANGGUNG JAWAB:</span>
+                                                                <span class="{{ isset($pjPolsek) && $pjPolsek->nama_anggota ? 'text-slate-800 font-black' : 'text-slate-400 italic font-semibold' }}">
+                                                                    {{ $pjPolsek->nama_anggota ?? 'BELUM ADA PJ' }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="bg-slate-50 border border-slate-100 text-slate-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-[0.2em] flex-shrink-0 self-start sm:self-center">
+                                                        {{ $polsek->id_tingkat }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="text-center py-20 px-4">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-6">
+                        <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-black text-slate-800 uppercase mb-2">Data Kosong</h3>
+                    <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest max-w-sm mx-auto">Tidak ada data tingkat kesatuan yang ditemukan.</p>
+                </div>
+            @endforelse
+        </div>
+
+        @if($kategoriList->hasPages())
+        <div class="px-8 py-5 border-t border-slate-200/60 bg-slate-50/50">
+            {{ $kategoriList->links() }}
+        </div>
+        @endif
+    </div>
+</div>
+
+<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 @endsection

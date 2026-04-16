@@ -103,7 +103,7 @@
                 <a href="{{ route('admin.tingkat-kesatuan.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.tingkat-kesatuan.index') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Tingkat Kesatuan</a>
                 <a href="{{ route('admin.jabatan.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.jabatan.index') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Jabatan</a>
                 <a href="{{ route('admin.wilayah.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.wilayah.index') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Wilayah</a>
-                <a href="{{ route('admin.komoditas.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.komoditas.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-emerald-400 transition' }}">Komoditas Lahan</a>
+                <a href="{{ route('admin.komoditi.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.komoditi.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-emerald-400 transition' }}">Komoditi Lahan</a>
             </div>
         </div>
 

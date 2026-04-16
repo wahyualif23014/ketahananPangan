@@ -10,12 +10,14 @@ class JabatanController extends Controller
 {
     public function index()
     {
-        // Fetch semua data dari tabel jabatan
         $jabatans = Jabatan::all()->map(function ($item) {
-        $item->created_at_formatted = $item->created_at->format('d-m-Y H:i');
-        return $item;
-    });
-        
+            $item->created_at_formatted = $item->created_at
+                ? $item->created_at->format('d M Y')
+                : null;
+
+            return $item;
+        });
+
         return view('admin.data-utama.jabatan.index', compact('jabatans'));
     }
 }
