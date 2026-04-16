@@ -118,6 +118,92 @@
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             </div>
         </div>
+
+        {{-- 3. Modal Form Section --}}
+        <div x-show="showModal" x-cloak class="fixed inset-0 z-[99] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block sm:p-0">
+        <div x-show="showModal" 
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" 
+            class="fixed inset-0 transition-opacity bg-slate-500/30" aria-hidden="true"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div x-show="showModal" 
+            x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 sm:scale-[0.98]" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+            x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-2 sm:scale-[0.98]" 
+            class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl border border-slate-200 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <div class="px-6 py-4 border-b border-slate-100">
+                <h3 class="text-base font-semibold text-slate-900" id="modal-title">
+                    Data Personel Kepolisian
+                </h3>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                
+                {{-- Field: Nama Personel --}}
+                <div class="space-y-1.5">
+                    <label class="text-sm font-medium text-slate-700">Nama Lengkap</label>
+                    <input type="text" x-model="formData.nama_anggota" placeholder="Contoh: Briptu John Doe"
+                        class="w-full h-9 px-3 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-shadow">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-medium text-slate-700">NRP</label>
+                        <input type="text" x-model="formData.username" placeholder="Nomor Registrasi"
+                            class="w-full h-9 px-3 bg-white border border-slate-300 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-shadow">
+                    </div>
+                    {{-- Field: Kontak --}}
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-medium text-slate-700">Nomor Telepon</label>
+                        <div class="flex">
+                            <span class="inline-flex items-center px-2.5 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-xs">
+                                +62
+                            </span>
+                            <input type="text" x-model="formData.no_telp_anggota"
+                                class="w-full h-9 px-3 border border-slate-300 rounded-r-md text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-shadow">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Field: Satuan --}}
+                <div class="space-y-1.5">
+                    <label class="text-sm font-medium text-slate-700">Satuan Kerja</label>
+                    <select x-model="formData.id_kesatuan" class="w-full h-9 px-3 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+                        <option value="">Pilih Kesatuan</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-medium text-slate-700">Jabatan</label>
+                        <select x-model="formData.id_jabatan" class="w-full h-9 px-3 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+                            <option value="">Pilih Jabatan</option>
+                        </select>
+                    </div>
+
+                    {{-- Field: Akses Sebagai --}}
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-medium text-slate-700">Hak Akses</label>
+                        <select x-model="formData.role" class="w-full h-9 px-3 bg-white border border-slate-300 rounded-md text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+                            <option value="admin">Admin System</option>
+                            <option value="operator">Operator</option>
+                            <option value="view">Viewer</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal Footer: Standard buttons, no heavy shadows --}}
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button @click="closeModal()" class="h-9 px-4 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors">
+                    Batal
+                </button>
+                <button @click="submitForm()" class="h-9 px-4 text-sm font-medium text-white bg-slate-900 rounded-md hover:bg-slate-800 transition-colors">
+                    <span x-text="isEdit ? 'Simpan Perubahan' : 'Tambah Personel'"></span>
+                </button>
+            </div>
+        </div>
     </div>
 
 
