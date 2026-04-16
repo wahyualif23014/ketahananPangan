@@ -54,6 +54,98 @@
             </div>
         </div>
 
+        {{-- [SEC 1.5] - Dashboard Filter Bar (Alpine.js + Tailwind) --}}
+        <div x-data="{ periodMode: 'semua' }" class="mx-4 mb-6 bg-white border border-slate-200 rounded-xl shadow-sm px-5 py-4">
+            <div class="flex flex-col gap-4">
+                {{-- Row 1: Institutional Filters --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Resor</label>
+                        <select class="w-full h-8 text-xs font-medium px-2.5 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700">
+                            <option value="">Semua Resor</option>
+                            <option value="1">Resor A</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sektor</label>
+                        <select class="w-full h-8 text-xs font-medium px-2.5 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700">
+                            <option value="">Semua Sektor</option>
+                            <option value="1">Sektor 1</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Jenis Lahan</label>
+                        <select class="w-full h-8 text-xs font-medium px-2.5 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700">
+                            <option value="">Semua Jenis</option>
+                            <option value="sawah">Sawah</option>
+                            <option value="ladang">Ladang</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Komoditi</label>
+                        <select class="w-full h-8 text-xs font-medium px-2.5 bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-slate-700">
+                            <option value="">Semua Komoditi</option>
+                            <option value="padi">Padi</option>
+                            <option value="jagung">Jagung</option>
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Row 2: Period & Actions --}}
+                <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pt-4 border-t border-slate-100">
+                    <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Periode Waktu</label>
+                            <div class="flex items-center h-8 bg-slate-100/80 p-0.5 rounded-md border border-slate-200/60 w-full sm:w-auto">
+                                <button type="button" @click="periodMode = 'semua'" 
+                                    :class="periodMode === 'semua' ? 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-slate-800' : 'text-slate-500 hover:text-slate-700'"
+                                    class="flex-1 sm:px-3 h-full text-[11px] font-semibold rounded-[4px] transition-all">
+                                    Semua
+                                </button>
+                                <button type="button" @click="periodMode = 'tanggal'" 
+                                    :class="periodMode === 'tanggal' ? 'bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-slate-800' : 'text-slate-500 hover:text-slate-700'"
+                                    class="flex-1 sm:px-3 h-full text-[11px] font-semibold rounded-[4px] transition-all">
+                                    Tanggal
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <div class="space-y-1.5 flex-1 sm:flex-none">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest transition-opacity" :class="periodMode === 'semua' ? 'opacity-40' : ''">Mulai</label>
+                                <div class="relative">
+                                    <input type="date" :disabled="periodMode === 'semua'"
+                                        :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-400 border-slate-200/50 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-text'"
+                                        class="w-full sm:w-32 h-8 text-[11px] font-medium px-2.5 border rounded-md outline-none transition-all">
+                                </div>
+                            </div>
+                            <span class="text-slate-300 pb-1 mt-5">-</span>
+                            <div class="space-y-1.5 flex-1 sm:flex-none">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest transition-opacity" :class="periodMode === 'semua' ? 'opacity-40' : ''">Selesai</label>
+                                <div class="relative">
+                                    <input type="date" :disabled="periodMode === 'semua'"
+                                        :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-400 border-slate-200/50 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-text'"
+                                        class="w-full sm:w-32 h-8 text-[11px] font-medium px-2.5 border rounded-md outline-none transition-all">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-end gap-3 shrink-0 mt-2 lg:mt-0">
+                        <div class="w-full sm:w-auto space-y-1.5">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Kategori Lahan</label>
+                            <select class="w-full sm:w-40 h-8 text-xs font-bold px-2.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-md focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all uppercase tracking-wider cursor-pointer">
+                                <option value="">Tanam Lahan</option>
+                                <option value="panen">Panen Lahan</option>
+                                <option value="potensi">Potensi Lahan</option>
+                            </select>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- [SEC 2] - Modular Metric Grid --}}
         <div class="px-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
