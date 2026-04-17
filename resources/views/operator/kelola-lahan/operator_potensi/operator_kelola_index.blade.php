@@ -288,6 +288,7 @@
                                 </td>
                             </tr>
                             {{-- Row Loop (Static for UI example, update with @foreach) --}}
+                            @forelse([1] as $item)
                             <tr class="hover:bg-slate-50/50 transition-colors group">
                                 <td class="px-6 py-4" data-label="Personel">
                                     <div class="font-semibold text-slate-900">Bambang Priono</div>

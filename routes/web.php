@@ -55,10 +55,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Data Anggota/Personel
         Route::get('/anggota', function () {
-        // Ambil data dari tabel anggota melalui Model User
         $personels = User::all(); 
         
-        // Kirim data ke view index
         return view('admin.anggota.index', compact('personels'));
     })->name('anggota.index');
 
@@ -82,6 +80,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', function () {
             return view('operator.dashboard');
         })->name('dashboard');
+
+        Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
+            Route::get('/potensi', function () {
+                $lahans = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+                return view('operator.kelola-lahan.operator_potensi.operator_kelola_index', compact('lahans'));
+            })->name('potensi.index');
+
+            Route::get('/daftar', function () {
+                return view('operator.kelola-lahan.operator_kelola.operator_kelola_index');
+            })->name('daftar.index');
+        });
+
+        Route::get('/rekapitulasi', function () {
+            return view('operator.rekapitulasi.operator_rekap');
+        })->name('rekapitulasi.index');
     });
 
     // 3. Group Khusus View
@@ -89,6 +102,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', function () {
             return view('view.dashboard');
         })->name('dashboard');
+
+        Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
+            Route::get('/', function () {
+                return view('view.kelola-lahan.view_kelola');
+            })->name('index');
+        });
+
+        Route::get('/rekapitulasi', function () {
+            return view('admin.rekapitulasi.index');
+        })->name('rekapitulasi.index');
     });
 
     // Rute Profil Standar
