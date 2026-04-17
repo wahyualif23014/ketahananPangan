@@ -111,7 +111,7 @@
                 <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL DATA</p>
                 <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">
                     Terdapat <span class="text-emerald-500 text-4xl mx-1" x-data="{ count: 0 }" x-init="let end = {{ $totalItems }}; let duration = 1000; let start = null; let step = timestamp => { if (!start) start = timestamp; let progress = Math.min((timestamp - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step);" x-text="count">0</span>
-                    Komoditi
+                    Tanaman
                 </h3>
             </div>
             <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-[1.2rem] flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30 relative z-10">
@@ -125,7 +125,7 @@
                 <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL KATEGORI</p>
                 <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">
                     Terdapat <span class="text-blue-500 text-4xl mx-1" x-data="{ count: 0 }" x-init="let end = {{ count($groupedKomoditiTotal) }}; let duration = 1500; let start = null; let step = timestamp => { if (!start) start = timestamp; let progress = Math.min((timestamp - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step);" x-text="count">0</span>
-                    Jenis (Grup)
+                    Jenis komoditi
                 </h3>
             </div>
             <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 text-white rounded-[1.2rem] flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-500/30 relative z-10">

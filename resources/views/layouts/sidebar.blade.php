@@ -36,7 +36,7 @@
         '-translate-x-full': !sidebarOpen,
         'md:translate-x-0': true
     }"
-    class="fixed inset-y-0 left-0 z-50 flex flex-col h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] bg-slate-900 text-white border-r border-white/5 shadow-2xl md:relative shrink-0 overflow-hidden">
+    class="w-72 -translate-x-full md:translate-x-0 fixed inset-y-0 left-0 z-50 flex flex-col h-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-slate-900 text-white border-r border-white/5 shadow-2xl md:relative shrink-0 overflow-hidden">
     
     {{-- Sidebar Header --}}
     <div class="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-slate-900 shrink-0 overflow-hidden">
