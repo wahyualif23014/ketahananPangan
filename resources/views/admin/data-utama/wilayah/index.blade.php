@@ -79,8 +79,9 @@
             ->count();
 
         // Server-side database pagination for Kabupaten (Root Nodes)
-        $perPage = 1;
+        // If searching, show all matches on one page (limit max to 100). Otherwise, show 1.
         $search = request('search');
+        $perPage = !empty($search) ? 100 : 1;
         
         $kabupatenQuery = DB::table('wilayah')
             ->where('id_wilayah', 'like', '%.%')
