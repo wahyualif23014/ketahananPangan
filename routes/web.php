@@ -91,6 +91,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
                 Route::get('/', [PotensiLahanController::class, 'index'])->name('index');
+                Route::post('/store', [PotensiLahanController::class, 'store'])->name('store');
                 Route::put('/verify/{id}', [PotensiLahanController::class, 'verify'])->name('verify');
                 Route::put('/update/{id}', [PotensiLahanController::class, 'update'])->name('update');
                 Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');

@@ -38,7 +38,9 @@
     }
 </style>
 
-<div class="space-y-8 pb-24 potensi-container max-w-7xl mx-auto" x-data="potensiLahanManager()">
+<div class="space-y-8 pb-24 potensi-container max-w-7xl mx-auto" x-data="potensiLahanManager()"
+    @set-penggerak.window="formData.nama_personel = $event.detail.nama; formData.hp_personel = $event.detail.hp"
+    @set-pj.window="formData.pj_lahan = $event.detail.nama; formData.hp_pj = $event.detail.hp; formData.id_pj_anggota = $event.detail.id">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -61,7 +63,18 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <input type="text" placeholder="CARI LAHAN..." 
+                <input type="text" 
+                    id="search-lahan"
+                    placeholder="CARI LAHAN..." 
+                    value="{{ request('search') }}"
+                    @input.debounce.400ms="
+                        const q = $event.target.value;
+                        const url = new URL(window.location.href);
+                        if (q) url.searchParams.set('search', q);
+                        else url.searchParams.delete('search');
+                        url.searchParams.delete('page');
+                        window.location.href = url.toString();
+                    "
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
             </div>
             <button onclick="window.location.reload()" title="Refresh Data"
@@ -292,9 +305,18 @@
                 <span class="text-[10px] font-black text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
                     {{ $lahanList->total() }} Data
                 </span>
+                @if(request('search'))
+                <span class="text-[10px] font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30 flex items-center gap-1.5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    "{{ request('search') }}"
+                </span>
+                <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                    ✕ Hapus Filter
+                </a>
+                @endif
             </div>
             <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 flex-shrink-0">
-                SEMUA WILAYAH
+                {{ request('search') ? 'HASIL PENCARIAN' : 'SEMUA WILAYAH' }}
             </div>
         </div>
 
@@ -491,17 +513,49 @@
         8: 'HUTAN (PERHUTANI/INHUTANI)', 9: 'LAHAN LAINNYA'
     };
     function openViewModal(item) {
-        // Polisi Penggerak = cp_polisi, Penanggung Jawab = cp_lahan (sesuai swap)
-        document.getElementById('vm_cp_polisi').textContent    = item.cp_polisi || '-';
-        document.getElementById('vm_no_cp_polisi').textContent = item.no_cp_polisi || '-';
-        document.getElementById('vm_cp_lahan').textContent     = item.cp_lahan || '-';
-        document.getElementById('vm_no_cp_lahan').textContent  = item.no_cp_lahan || '-';
-        document.getElementById('vm_alamat').textContent       = item.alamat_lahan || '-';
-        document.getElementById('vm_lokasi').textContent       = [item.kab_nama, item.kec_nama, item.desa_nama].filter(Boolean).join(' → ');
-        document.getElementById('vm_luas').textContent         = parseFloat(item.luas_lahan || 0).toFixed(2);
-        document.getElementById('vm_jenis').textContent        = jenisLabels[item.id_jenis_lahan] || 'LAHAN LAINNYA';
-        document.getElementById('vm_edit_oleh').textContent    = item.edit_oleh || 'Belum diproses';
-        document.getElementById('vm_tgl_edit').textContent     = item.tgl_edit || '-';
+        var labels = {
+            1:'PRODUKTIF (POKTAN BINAAN POLRI)',2:'HUTAN (PERHUTANAN SOSIAL)',
+            3:'LUAS BAKU SAWAH (LBS)',4:'PESANTREN',5:'MILIK POLRI',
+            6:'PRODUKTIF (MASYARAKAT BINAAN POLRI)',7:'PRODUKTIF (TUMPANG SARI)',
+            8:'HUTAN (PERHUTANI/INHUTANI)',9:'LAHAN LAINNYA'
+        };
+        function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val || '-'; }
+        // Institusi
+        set('vm_id_tingkat', item.id_tingkat);
+        set('vm_id_lahan', item.id_lahan);
+        // Personel
+        set('vm_cp_polisi', item.cp_polisi);
+        set('vm_no_cp_polisi', item.no_cp_polisi);
+        set('vm_cp_lahan', item.cp_lahan);
+        set('vm_no_cp_lahan', item.no_cp_lahan);
+        set('vm_ket_polisi', item.ket_polisi);
+        // Teknis
+        set('vm_jenis', labels[item.id_jenis_lahan] || 'LAHAN LAINNYA');
+        set('vm_luas', parseFloat(item.luas_lahan || 0).toFixed(2));
+        set('vm_poktan', item.poktan);
+        set('vm_jml_petani', item.jml_petani);
+        // Lokasi
+        set('vm_lokasi', [item.kab_nama, item.kec_nama, item.desa_nama].filter(Boolean).join(' → '));
+        set('vm_alamat', item.alamat_lahan);
+        set('vm_keterangan_lahan', item.keterangan_lahan);
+        // Koordinat
+        set('vm_lat', item.latitude);
+        set('vm_lng', item.longitude);
+        var mapsLink = document.getElementById('vm_maps_link');
+        if (item.latitude && item.longitude) {
+            mapsLink.href = 'https://www.google.com/maps?q=' + item.latitude + ',' + item.longitude;
+            mapsLink.classList.remove('hidden');
+        } else { mapsLink.classList.add('hidden'); }
+        // Dokumentasi
+        var fotoEl = document.getElementById('vm_foto');
+        var fotoWrap = document.getElementById('vm_foto_wrap');
+        if (item.dokumentasi_lahan) {
+            fotoEl.src = '/' + item.dokumentasi_lahan;
+            fotoWrap.classList.remove('hidden');
+        } else { fotoWrap.classList.add('hidden'); }
+        // Validasi & Edit
+        set('vm_edit_oleh', item.edit_oleh);
+        set('vm_tgl_edit', item.tgl_edit);
         var vBox = document.getElementById('vm_validasi_box');
         if (item.valid_oleh) {
             vBox.className = 'p-4 rounded-xl border bg-emerald-50 border-emerald-100';
@@ -512,16 +566,25 @@
             document.getElementById('vm_valid_oleh').className = 'text-sm font-bold text-amber-600';
             document.getElementById('vm_valid_oleh').textContent = 'Menunggu Validasi';
         }
-        document.getElementById('vm_tgl_valid').textContent = item.tgl_valid || '-';
-        var mapsLink = document.getElementById('vm_maps_link');
-        if (item.latitude && item.longitude) {
-            mapsLink.href = 'https://www.google.com/maps?q=' + item.latitude + ',' + item.longitude;
-            mapsLink.classList.remove('hidden');
-        } else { mapsLink.classList.add('hidden'); }
+        set('vm_tgl_valid', item.tgl_valid);
+        // Tab reset
+        switchTab('tab-personel');
         var modal = document.getElementById('viewModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
+    }
+    function switchTab(tabId) {
+        ['tab-personel','tab-teknis','tab-lokasi','tab-validasi'].forEach(function(t) {
+            document.getElementById(t).classList.add('hidden');
+            var btn = document.getElementById('btn-' + t);
+            btn.classList.remove('bg-indigo-600','text-white');
+            btn.classList.add('text-slate-500','hover:text-slate-800');
+        });
+        document.getElementById(tabId).classList.remove('hidden');
+        var activeBtn = document.getElementById('btn-' + tabId);
+        activeBtn.classList.add('bg-indigo-600','text-white');
+        activeBtn.classList.remove('text-slate-500','hover:text-slate-800');
     }
     function closeViewModal() {
         var modal = document.getElementById('viewModal');
@@ -540,46 +603,136 @@
             {{-- MODALS SECTION (ALPINE JS)    --}}
             {{-- ----------------------------- --}}
 
-            <!-- 1. VIEW MODAL -->
-            <div x-show="isViewOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
-                <div @click.outside="isViewOpen = false" x-show="isViewOpen" x-transition.opacity.duration.300ms class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-                    <div class="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
-                        <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                            Detail Potensi Lahan
-                        </h3>
-                        <button @click="isViewOpen = false" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+<!-- VIEW MODAL (Plain JS) -->
+<div id="viewModal" class="hidden fixed inset-0 z-[200] items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100 flex flex-col max-h-[92vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-white uppercase tracking-widest">Detail Potensi Lahan</h3>
+                    <p class="text-[10px] text-blue-200 font-medium">ID: <span id="vm_id_lahan" class="font-black"></span> &bull; Tingkat: <span id="vm_id_tingkat"></span></p>
+                </div>
+            </div>
+            <button onclick="closeViewModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <!-- Tab Nav -->
+        <div class="flex gap-1 px-6 pt-4 pb-0 bg-slate-50 border-b border-slate-100 flex-shrink-0">
+            <button id="btn-tab-personel" onclick="switchTab('tab-personel')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all bg-indigo-600 text-white">👤 Personel</button>
+            <button id="btn-tab-teknis" onclick="switchTab('tab-teknis')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all text-slate-500 hover:text-slate-800">📊 Teknis</button>
+            <button id="btn-tab-lokasi" onclick="switchTab('tab-lokasi')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all text-slate-500 hover:text-slate-800">📍 Lokasi</button>
+            <button id="btn-tab-validasi" onclick="switchTab('tab-validasi')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all text-slate-500 hover:text-slate-800">✅ Validasi</button>
+        </div>
+        <!-- Tab Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+            {{-- TAB: PERSONEL --}}
+            <div id="tab-personel" class="p-6 space-y-4">
+                <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-2">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1">🚔 Polisi Penggerak</p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-bold text-slate-800" id="vm_cp_polisi"></p>
+                        <p class="text-xs text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_polisi"></p>
                     </div>
-                    <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Penggerak</p>
-                                <p class="text-sm font-bold text-slate-800" x-text="activeData?.cp_lahan || '-'"></p>
-                                <p class="text-xs text-slate-500" x-text="activeData?.no_cp_lahan || '-'"></p>
-                            </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Polisi T. Jawab</p>
-                                <p class="text-sm font-bold text-slate-800" x-text="activeData?.cp_polisi || '-'"></p>
-                                <p class="text-xs text-slate-500" x-text="activeData?.no_cp_polisi || '-'"></p>
-                            </div>
-                        </div>
-                        <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1" x-text="activeLabel"></p>
-                            <h4 class="text-3xl font-black text-emerald-700"><span x-text="activeData?.luas_lahan || '0'"></span><span class="text-sm text-emerald-600 ml-1">HA</span></h4>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 border-b pb-2">Informasi Validasi</p>
-                            <div class="text-xs font-medium text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100" x-html="
-                                activeData?.tgl_valid 
-                                ? `<span class='text-emerald-500 font-bold'>✓ Tervalidasi</span> oleh ${activeData?.nama_validator || 'Admin'} pada ${activeData?.tgl_valid}` 
-                                : `<span class='text-amber-500 font-bold'>⏳ Menunggu Validasi</span>` 
-                            "></div>
-                        </div>
+                </div>
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl space-y-2">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1">👥 Penanggung Jawab Lahan</p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-bold text-slate-800" id="vm_cp_lahan"></p>
+                        <p class="text-xs text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_lahan"></p>
+                    </div>
+                </div>
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Peran / Catatan</p>
+                    <p class="text-sm text-slate-700 font-medium" id="vm_ket_polisi"></p>
+                </div>
+            </div>
+
+            {{-- TAB: TEKNIS --}}
+            <div id="tab-teknis" class="hidden p-6 space-y-4">
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Jenis Lahan</p>
+                    <p class="text-sm font-black text-slate-800" id="vm_jenis"></p>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1">Luas Lahan</p>
+                        <p class="text-2xl font-black text-emerald-700" id="vm_luas"></p>
+                        <p class="text-[10px] text-emerald-500 font-bold">HA</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Jml. Poktan</p>
+                        <p class="text-2xl font-black text-slate-700" id="vm_poktan"></p>
+                        <p class="text-[10px] text-slate-400 font-bold">Poktan</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Jml. Petani</p>
+                        <p class="text-2xl font-black text-slate-700" id="vm_jml_petani"></p>
+                        <p class="text-[10px] text-slate-400 font-bold">Orang</p>
                     </div>
                 </div>
             </div>
+
+            {{-- TAB: LOKASI --}}
+            <div id="tab-lokasi" class="hidden p-6 space-y-4">
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Wilayah</p>
+                    <p class="text-sm font-bold text-slate-800" id="vm_lokasi"></p>
+                </div>
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Alamat Lengkap</p>
+                    <p class="text-sm text-slate-700 font-medium" id="vm_alamat"></p>
+                </div>
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Tambahan</p>
+                    <p class="text-sm text-slate-700 font-medium" id="vm_keterangan_lahan"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Latitude</p>
+                        <p class="text-sm font-mono font-bold text-slate-700" id="vm_lat"></p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Longitude</p>
+                        <p class="text-sm font-mono font-bold text-slate-700" id="vm_lng"></p>
+                    </div>
+                </div>
+                <a id="vm_maps_link" href="#" target="_blank" class="hidden flex items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                    Buka di Google Maps
+                </a>
+                <div id="vm_foto_wrap" class="hidden">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Dokumentasi Foto Lahan</p>
+                    <img id="vm_foto" src="" alt="Dokumentasi Lahan" class="w-full rounded-2xl object-cover max-h-48 border border-slate-200">
+                </div>
+            </div>
+
+            {{-- TAB: VALIDASI --}}
+            <div id="tab-validasi" class="hidden p-6 space-y-4">
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Diinput Oleh</p>
+                    <p class="text-sm font-bold text-slate-800" id="vm_edit_oleh"></p>
+                    <p class="text-xs text-slate-400 mt-1" id="vm_tgl_edit"></p>
+                </div>
+                <div id="vm_validasi_box" class="p-4 rounded-xl border">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Status Validasi</p>
+                    <p class="text-sm font-bold" id="vm_valid_oleh"></p>
+                    <p class="text-xs text-slate-400 mt-1" id="vm_tgl_valid"></p>
+                </div>
+            </div>
+
+        </div>
+        <!-- Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end flex-shrink-0">
+            <button onclick="closeViewModal()" class="px-6 py-2.5 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-all uppercase tracking-widest">Tutup</button>
+        </div>
+    </div>
+</div>
 
             <!-- 2. EDIT MODAL -->
             <div x-show="isEditOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
@@ -750,9 +903,12 @@
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600 ml-1">Kepolisian
                                             Resor</label>
-                                        <select x-model="formData.id_resor"
+                                        <select x-model="formData.id_resor" @change="formData.id_sektor = ''"
                                             class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat">
                                             <option value="">PILIH KEPOLISIAN RESOR</option>
+                                            <template x-for="p in polresList" :key="p.id_tingkat">
+                                                <option :value="p.id_tingkat" x-text="`${p.id_tingkat} - ${p.nama_tingkat}`"></option>
+                                            </template>
                                         </select>
                                     </div>
                                     <div class="space-y-1.5">
@@ -761,14 +917,20 @@
                                         <select x-model="formData.id_sektor"
                                             class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat">
                                             <option value="">PILIH KEPOLISIAN SEKTOR</option>
+                                            <template x-for="p in filteredPolsek" :key="p.id_tingkat">
+                                                <option :value="p.id_tingkat" x-text="`${p.id_tingkat} - ${p.nama_tingkat}`"></option>
+                                            </template>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1.5">
                                     <label class="text-xs font-semibold text-slate-600 ml-1">Jenis Lahan</label>
-                                    <select x-model="formData.jenis_lahan"
+                                    <select x-model="formData.id_jenis_lahan"
                                         class="w-full h-11 px-4 bg-white border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
                                         <option value="">PILIH JENIS LAHAN</option>
+                                        @foreach($kategoriMapping as $k => $v)
+                                            <option value="{{ $k }}">{{ $v }}</option>
+                                        @endforeach
                                     </select>
                                     <p class="text-[10px] text-slate-400 italic">* Klasifikasi lahan menentukan proses
                                         validasi lanjutan.</p>
@@ -796,12 +958,21 @@
                                         Polisi Penggerak
                                     </h5>
                                     <div class="grid grid-cols-12 gap-4">
-                                        <div class="col-span-12 md:col-span-7 space-y-1.5">
-                                            <label class="text-xs font-medium text-slate-500 ml-1">Nama Lengkap
-                                                Personel</label>
-                                            <input type="text" x-model="formData.nama_personel"
-                                                class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
-                                                placeholder="Contoh: Aiptu John Doe">
+                                        <div class="col-span-12 md:col-span-7 space-y-1.5" x-data="searchAnggota('penggerak')">
+                                            <label class="text-xs font-medium text-slate-500 ml-1">Nama Lengkap Personel</label>
+                                            <div class="relative">
+                                                <input type="text" x-model="query" @input="onInput()" @focus="showDropdown = true" @click.outside="showDropdown = false"
+                                                    class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
+                                                    placeholder="Ketik nama personel...">
+                                                <div x-show="showDropdown && filtered.length > 0" class="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                                                    <template x-for="a in filtered" :key="a.id_anggota">
+                                                        <div @click="select(a)" class="px-4 py-2.5 text-sm hover:bg-emerald-50 cursor-pointer flex items-center gap-2">
+                                                            <span class="w-6 h-6 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black flex items-center justify-center flex-shrink-0" x-text="a.id_anggota"></span>
+                                                            <span x-text="a.nama_anggota" class="font-medium text-slate-800"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-span-12 md:col-span-5 space-y-1.5">
                                             <label class="text-xs font-medium text-slate-500 ml-1">Nomor
@@ -829,12 +1000,21 @@
                                         Penanggung Jawab Lahan
                                     </h5>
                                     <div class="grid grid-cols-12 gap-4">
-                                        <div class="col-span-12 md:col-span-7 space-y-1.5">
-                                            <label class="text-xs font-medium text-slate-500 ml-1">Nama Penanggung
-                                                Jawab</label>
-                                            <input type="text" x-model="formData.pj_lahan"
-                                                class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
-                                                placeholder="Nama Pemilik / Ketua Poktan">
+                                        <div class="col-span-12 md:col-span-7 space-y-1.5" x-data="searchAnggota('pj')">
+                                            <label class="text-xs font-medium text-slate-500 ml-1">Nama Penanggung Jawab</label>
+                                            <div class="relative">
+                                                <input type="text" x-model="query" @input="onInput()" @focus="showDropdown = true" @click.outside="showDropdown = false"
+                                                    class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
+                                                    placeholder="Ketik nama penanggung jawab...">
+                                                <div x-show="showDropdown && filtered.length > 0" class="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                                                    <template x-for="a in filtered" :key="a.id_anggota">
+                                                        <div @click="select(a)" class="px-4 py-2.5 text-sm hover:bg-emerald-50 cursor-pointer flex items-center gap-2">
+                                                            <span class="w-6 h-6 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black flex items-center justify-center flex-shrink-0" x-text="a.id_anggota"></span>
+                                                            <span x-text="a.nama_anggota" class="font-medium text-slate-800"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-span-12 md:col-span-5 space-y-1.5">
                                             <label class="text-xs font-medium text-slate-500 ml-1">Kontak Person</label>
@@ -903,10 +1083,10 @@
                                     <label class="text-xs font-semibold text-slate-600 ml-1">Komoditi Utama</label>
                                     <select x-model="formData.komoditi"
                                         class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all">
-                                        <option value="AKASIA">AKASIA</option>
-                                        <option value="JAGUNG">JAGUNG</option>
-                                        <option value="PADI">PADI</option>
-                                        <option value="SINGKONG">SINGKONG</option>
+                                        <option value="">PILIH KOMODITI</option>
+                                        @foreach($komoditiList as $km)
+                                            <option value="{{ $km->id_komoditi }}">{{ $km->jenis_komoditi }} - {{ $km->nama_komoditi }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                             </div>
@@ -935,25 +1115,34 @@
                                         <div class="space-y-1">
                                             <label
                                                 class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kabupaten</label>
-                                            <select
+                                            <select x-model="formData.id_kabupaten" @change="formData.id_kecamatan = ''; formData.id_desa = ''"
                                                 class="w-full h-10 px-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-emerald-500">
-                                                <option>PILIH KABUPATEN</option>
+                                                <option value="">PILIH KABUPATEN</option>
+                                                <template x-for="kb in kabupatenList" :key="kb.id_wilayah">
+                                                    <option :value="kb.id_wilayah" x-text="`${kb.id_wilayah} - ${kb.nama_wilayah}`"></option>
+                                                </template>
                                             </select>
                                         </div>
                                         <div class="space-y-1">
                                             <label
                                                 class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kecamatan</label>
-                                            <select
+                                            <select x-model="formData.id_kecamatan" @change="formData.id_desa = ''"
                                                 class="w-full h-10 px-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-emerald-500">
-                                                <option>PILIH KECAMATAN</option>
+                                                <option value="">PILIH KECAMATAN</option>
+                                                <template x-for="kc in filteredKecamatan" :key="kc.id_wilayah">
+                                                    <option :value="kc.id_wilayah" x-text="`${kc.id_wilayah} - ${kc.nama_wilayah}`"></option>
+                                                </template>
                                             </select>
                                         </div>
                                         <div class="space-y-1">
                                             <label
                                                 class="text-[10px] font-bold text-slate-400 uppercase ml-1">Desa</label>
-                                            <select
+                                            <select x-model="formData.id_desa"
                                                 class="w-full h-10 px-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:border-emerald-500">
-                                                <option>PILIH DESA</option>
+                                                <option value="">PILIH DESA</option>
+                                                <template x-for="ds in filteredDesa" :key="ds.id_wilayah">
+                                                    <option :value="ds.id_wilayah" x-text="`${ds.id_wilayah} - ${ds.nama_wilayah}`"></option>
+                                                </template>
                                             </select>
                                         </div>
                                     </div>
@@ -965,15 +1154,15 @@
                                             Tambahan</label>
                                         <textarea x-model="formData.keterangan_lain" rows="2"
                                             class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-emerald-600 transition-all"
-                                            placeholder="Catatan mengenai akses jalan atau kondisi tanah..."></textarea>
+                                            placeholder="Contoh: milik polisi, pemilik lahan, lahan sendiri"></textarea>
                                     </div>
                                 </div>
                             </div>
 
                             {{-- RIGHT COLUMN: Visuals (Peta & Dokumentasi) --}}
                             <div
-                                :class="currentStep === 4 ? 'flex' : 'hidden md:flex'"
-                                class="flex-col w-full lg:w-[650px] xl:w-[700px] bg-slate-50/50 md:border-l border-t md:border-t-0 border-slate-100 overflow-y-auto shrink-0">
+                                x-show="currentStep === 4"
+                                class="flex-col w-full lg:w-[650px] xl:w-[700px] bg-slate-50/50 md:border-l border-t md:border-t-0 border-slate-100 overflow-y-auto shrink-0 flex">
                                 <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {{-- Map Section --}}
                                     <div class="space-y-4">
@@ -1123,8 +1312,69 @@
 </div>{{-- END: x-data="potensiLahanManager()" --}}
 
     <script>
+        const polresData = @json($polresList ?? []);
+        const polsekData = @json($polsekList ?? []);
+        const kabupatenData = @json($kabupatenList ?? []);
+        const kecamatanData = @json($kecamatanList ?? []);
+        const anggotaData = @json($anggotaList ?? []);
+
+        // Searchable combobox for Polisi Penggerak & Penanggung Jawab
+        // type: 'penggerak' | 'pj'
+        function searchAnggota(type) {
+            return {
+                allAnggota: anggotaData,
+                query: '',
+                filtered: [],
+                showDropdown: false,
+                onInput() {
+                    const q = this.query.toLowerCase().trim();
+                    if (q.length < 1) { this.filtered = []; return; }
+                    this.filtered = this.allAnggota
+                        .filter(a => a.nama_anggota && a.nama_anggota.toLowerCase().includes(q))
+                        .slice(0, 20); // max 20 results
+                    this.showDropdown = true;
+                },
+                select(anggota) {
+                    this.query = anggota.nama_anggota;
+                    this.showDropdown = false;
+                    // Get parent Alpine scope via $dispatch or direct parent access
+                    const parentEl = this.$el.closest('[x-data*="potensiLahanManager"]');
+                    if (type === 'penggerak') {
+                        this.$root._x_dataStack?.forEach(d => {
+                            if (d.formData) {
+                                d.formData.nama_personel = anggota.nama_anggota;
+                                d.formData.hp_personel = anggota.no_telp_anggota || '';
+                            }
+                        });
+                        // Dispatch to parent
+                        this.$dispatch('set-penggerak', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '' });
+                    } else {
+                        this.$dispatch('set-pj', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '', id: anggota.id_anggota });
+                    }
+                }
+            };
+        }
+        const desaData = @json($desaList ?? []);
+
         function potensiLahanManager() {
             return {
+                polresList: polresData,
+                polsekList: polsekData,
+                kabupatenList: kabupatenData,
+                kecamatanList: kecamatanData,
+                desaList: desaData,
+                get filteredPolsek() {
+                    if (!this.formData.id_resor) return [];
+                    return this.polsekList.filter(p => p.id_tingkat.startsWith(this.formData.id_resor + '.'));
+                },
+                get filteredKecamatan() {
+                    if (!this.formData.id_kabupaten) return [];
+                    return this.kecamatanList.filter(k => k.id_wilayah.startsWith(this.formData.id_kabupaten + '.'));
+                },
+                get filteredDesa() {
+                    if (!this.formData.id_kecamatan) return [];
+                    return this.desaList.filter(d => d.id_wilayah.startsWith(this.formData.id_kecamatan + '.'));
+                },
                 currentStep: 1,
                 totalSteps: 4,
                 isOpen: false,
@@ -1138,10 +1388,16 @@
                     id: null,
                     id_resor: '',
                     id_sektor: '',
+                    id_jenis_lahan: '',
                     jenis_lahan: 'Produktif',
+                    photoFile: null,
+                    id_kabupaten: '',
+                    id_kecamatan: '',
+                    id_desa: '',
                     luas: '',
                     nama_personel: '',
                     pj_lahan: '',
+                    id_pj_anggota: '',
                     lat: '',
                     lng: '',
                     alamat: '',
@@ -1261,6 +1517,8 @@
                     const file = event.target.files[0];
                     if (!file) return;
 
+                    this.formData.photoFile = file;
+
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         this.imagePreview = e.target.result;
@@ -1293,10 +1551,16 @@
                         id: null,
                         id_resor: '',
                         id_sektor: '',
+                        id_jenis_lahan: '',
                         jenis_lahan: 'Produktif',
+                        photoFile: null,
+                        id_kabupaten: '',
+                        id_kecamatan: '',
+                        id_desa: '',
                         luas: '',
                         nama_personel: '',
                         pj_lahan: '',
+                        id_pj_anggota: '',
                         lat: '',
                         lng: '',
                         alamat: '',
@@ -1319,33 +1583,78 @@
                 },
 
                 async saveData() {
+                    // Validasi: Pastikan SEMUA kolom terisi
+                    const requiredFields = [
+                        'id_resor', 'id_sektor', 'id_jenis_lahan',
+                        'nama_personel', 'hp_personel', 'pj_lahan', 'hp_pj', 'ket_pj',
+                        'jml_poktan', 'luas', 'jml_petani', 'komoditi',
+                        'alamat', 'id_kabupaten', 'id_kecamatan', 'id_desa', 'lat', 'lng'
+                    ];
+
+                    for (const field of requiredFields) {
+                        if (!this.formData[field] && this.formData[field] !== 0) {
+                            alert('Mohon lengkapi semua data formulir yang tersedia di setiap tahapan!');
+                            return;
+                        }
+                    }
+
+                    if (!this.isEdit && !this.formData.photoFile) {
+                        alert('Mohon unggah Foto Dokumentasi Lahan!');
+                        return;
+                    }
+
                     this.isLoading = true;
 
-                    // Method & URL Selection
-                    const method = this.isEdit ? 'PUT' : 'POST';
-                    const url = this.isEdit ? `/api/potensi-lahan/${this.formData.id}` : '/api/potensi-lahan';
+                    const method = this.isEdit ? 'POST' : 'POST';
+                    const urlStore = this.isEdit ? `/admin/kelola-lahan/potensi/update/${this.formData.id}` : `/admin/kelola-lahan/potensi/store`;
 
                     try {
-                        // Logic Fetch API (Aktifkan jika backend sudah siap)
-                        /*
-                        const response = await fetch(url, {
+                        const fd = new FormData();
+                        if (this.isEdit) fd.append('_method', 'PUT');
+
+                        fd.append('id_resor', this.formData.id_resor);
+                        fd.append('id_sektor', this.formData.id_sektor);
+                        fd.append('id_jenis_lahan', this.formData.id_jenis_lahan || 1);
+                        fd.append('id_desa', this.formData.id_desa);
+                        fd.append('latitude', this.formData.lat);
+                        fd.append('longitude', this.formData.lng);
+                        fd.append('luas_lahan', this.formData.luas);
+                        fd.append('cp_polisi', this.formData.nama_personel);
+                        fd.append('no_cp_polisi', this.formData.hp_personel);
+                        fd.append('cp_lahan', this.formData.pj_lahan);
+                        fd.append('no_cp_lahan', this.formData.hp_pj);
+                        fd.append('id_anggota', this.formData.id_pj_anggota);
+                        fd.append('ket_pj', this.formData.ket_pj);
+                        fd.append('alamat_lahan', this.formData.alamat);
+                        fd.append('keterangan_lain', this.formData.keterangan_lain);
+                        fd.append('jml_poktan', this.formData.jml_poktan);
+                        fd.append('jml_petani', this.formData.jml_petani);
+                        fd.append('id_komoditi', this.formData.komoditi);
+                        
+                        if (this.formData.photoFile) {
+                            fd.append('dokumentasi_lahan', this.formData.photoFile);
+                        }
+
+                        const response = await fetch(urlStore, {
                             method: method,
                             headers: { 
-                                'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
-                            body: JSON.stringify(this.formData)
+                            body: fd
                         });
-                        */
 
-                        // Simulasi Proses
-                        await new Promise(r => setTimeout(r, 1000));
+                        const result = await response.json();
 
-                        console.log('Success:', this.formData);
-                        this.closeModal();
-                        // window.location.reload(); 
+                        if (response.ok) {
+                            alert('Data berhasil disimpan!');
+                            this.closeModal();
+                            window.location.reload(); 
+                        } else {
+                            alert('Gagal menyimpan data: ' + JSON.stringify(result));
+                        }
                     } catch (e) {
-                        alert('Gagal menyimpan data.');
+                        alert('Terjadi kesalahan koneksi.');
+                        console.error(e);
                     } finally {
                         this.isLoading = false;
                     }
