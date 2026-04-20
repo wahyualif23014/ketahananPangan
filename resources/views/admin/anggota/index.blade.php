@@ -57,7 +57,7 @@
             <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
                 PERSONEL <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">ANGGOTA</span>
             </h2>
-            <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Kelola pendaftaran anggota dan otorisasi _role_ per wilayah tugas.</p>
+            <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Kelola pendaftaran anggota dan otorisasi role per wilayah tugas.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -124,7 +124,6 @@
     {{-- Main Tree Accordion --}}
     <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-2 mt-12 bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-70">
         
-        <!-- Header Panel -->
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
             <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
             <div class="flex items-center gap-4 relative z-10 w-full">
@@ -136,7 +135,6 @@
             </div>
         </div>
 
-        <!-- Accordion Loop -->
         <div class="divide-y divide-slate-100/80">
             @forelse($groupedPersonels as $unit => $members)
 
@@ -145,11 +143,9 @@
                      class="group/unit transition-all duration-300 hover:bg-slate-50/50"
                      :class="expanded ? 'bg-slate-50/50' : ''">
                      
-                    <!-- Root Item Header (Nama Kesatuan) -->
                     <div @click="expanded = !expanded" class="p-6 md:px-8 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="flex items-start md:items-center gap-5">
                             
-                            <!-- Toggle Button -->
                             <div :class="expanded ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 rotate-180' : 'bg-white text-slate-400 shadow-sm border border-slate-200 group-hover/unit:border-emerald-300 group-hover/unit:text-emerald-500'"
                                 class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 z-10">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
@@ -164,7 +160,6 @@
                             </div>
                         </div>
 
-                        <!-- Right Stats -->
                         <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
                             <div class="flex flex-col items-center justify-center px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total Personel</span>
@@ -173,7 +168,6 @@
                         </div>
                     </div>
 
-                    <!-- Child Items (Daftar Personel) -->
                     @if($members->isNotEmpty())
                         <div x-show="expanded" x-collapse>
                             <div class="px-4 pb-6 md:px-8 md:pl-16">
@@ -184,7 +178,6 @@
                                             <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/p"
                                                  x-show="searchQuery === '' || '{{ strtolower($p->nama_anggota) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($p->username) }}'.includes(searchQuery.toLowerCase())">
                                                 
-                                                <!-- Branch node connector -->
                                                 <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
                                                 <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/p:scale-150 transition-transform"></div>
 
@@ -306,76 +299,139 @@
         @endif
     </div>
 
-
-    {{-- Universal Modal Component (Dummy Endpoint) --}}
-    <div x-show="modalMode !== null" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" aria-modal="true">
-        <div x-show="modalMode !== null" x-transition.opacity.duration.300ms @click="closeModal()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+    {{-- Universal Modal Component (Desain Baru yang Sederhana) --}}
+    <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" aria-modal="true">
+        <div x-show="isModalOpen" x-transition.opacity.duration.300ms @click="closeModal()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
         
-        <div x-show="modalMode !== null" 
+        <div x-show="isModalOpen"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 scale-95 translate-y-4"
              x-transition:enter-end="opacity-100 scale-100 translate-y-0"
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-             class="bg-white rounded-[2rem] shadow-2xl shadow-blue-900/20 w-full max-w-lg relative z-10 flex flex-col overflow-hidden border border-slate-100">
-            
-            <form action="#" method="POST" @submit.prevent="alert('Endpoint API untuk manipulasi Personel belum dikonfigurasi.')">
+             class="relative z-10 w-full max-w-lg flex flex-col bg-white rounded-xl shadow-lg overflow-hidden max-h-[95vh]">
+
+            <form :action="getFormAction()" method="POST">
                 @csrf
                 <input type="hidden" name="_method" x-bind:value="getFormMethod()">
-                <input type="hidden" name="id_anggota" x-model="formData.id_anggota" x-if="modalMode === 'edit' || modalMode === 'delete'">
-                
-                <div class="px-8 py-5 border-b border-slate-100" :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-slate-50'">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-inner"
-                                 :class="modalMode === 'delete' ? 'bg-rose-500' : (modalMode === 'edit' ? 'bg-indigo-500' : 'bg-blue-500')">
-                                <template x-if="modalMode === 'add'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg></template>
-                                <template x-if="modalMode === 'edit'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></template>
-                                <template x-if="modalMode === 'delete'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></template>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-bold tracking-widest uppercase text-slate-400">Data Personel</p>
-                                <h3 class="text-xl font-black text-slate-800 uppercase" x-text="getModalTitle()"></h3>
-                            </div>
-                        </div>
-                        <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-200 p-2 rounded-xl transition-colors border border-slate-200">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+                <input type="hidden" name="id_anggota" x-model="formData.id_anggota">
+
+                {{-- Header --}}
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800" x-text="getModalTitle()"></h3>
+                        <p class="text-sm text-slate-500" x-text="getModalSubtitle()"></p>
                     </div>
+                    <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
 
-                <div class="px-8 py-6 space-y-5">
+                {{-- Body --}}
+                <div class="px-6 py-5 overflow-y-auto max-h-[65vh]">
+                    @if($errors->any())
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
+                        <ul class="list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
+                    {{-- DELETE MODE --}}
                     <template x-if="modalMode === 'delete'">
-                        <div class="bg-white border-2 border-rose-200 rounded-2xl p-5 text-center shadow-sm">
-                            <h4 class="text-lg font-bold text-slate-800">Copot Personel?</h4>
-                            <p class="text-sm text-slate-500 font-medium mt-1 mb-3">Tindakan ini akan menghentikan hak akses dan data personel (<span class="text-rose-600 font-bold" x-text="formData.nama_anggota"></span>) dari sistem ini.</p>
+                        <div class="py-4 text-center">
+                            <p class="text-slate-700">Kamu yakin ingin mencopot personel <strong class="text-slate-900 font-bold" x-text="formData.nama_anggota"></strong>?</p>
+                            <p class="text-sm text-slate-500 mt-2">Data ini akan dihapus dari sistem secara permanen.</p>
                         </div>
                     </template>
 
+                    {{-- ADD / EDIT MODE --}}
                     <template x-if="modalMode !== 'delete'">
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Nama Lengkap Anggota <span class="text-rose-500">*</span></label>
-                                <input type="text" name="nama_anggota" x-model="formData.nama_anggota" required placeholder="Sertakan Pangkat (Contoh: IPTU BAMBANG)" 
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">ID Anggota</label>
+                                    <input type="number" name="id_anggota" x-model="formData.id_anggota" required placeholder="Contoh: 1001" 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">NRP / Username</label>
+                                    <input type="text" name="username" x-model="formData.username" required placeholder="NRP Personel" 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                </div>
                             </div>
+
                             <div>
-                                <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">NRP / Username <span class="text-rose-500">*</span></label>
-                                <input type="text" name="username" x-model="formData.username" required placeholder="Contoh: 85010023" 
-                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap & Pangkat</label>
+                                <input type="text" name="nama_anggota" x-model="formData.nama_anggota" required placeholder="Contoh: IPTU BAMBANG SETIAWAN" 
+                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
                             </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Jabatan</label>
+                                    <select name="id_jabatan" x-model="formData.id_jabatan" required 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow bg-white">
+                                        <option value="" disabled selected>Pilih Jabatan</option>
+                                        @foreach($jabatans as $j)
+                                            <option value="{{ $j->id_jabatan }}">{{ $j->nama_jabatan }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Role Akses</label>
+                                    <select name="role" x-model="formData.role" required 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow bg-white">
+                                        <option value="view">View</option>
+                                        <option value="operator">Operator</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">ID Wilayah Tugas</label>
+                                    <input type="text" name="id_tugas" x-model="formData.id_tugas" placeholder="Misal: 11.01" 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Telepon / WA</label>
+                                    <input type="text" name="no_telp_anggota" x-model="formData.no_telp_anggota" placeholder="0812xxxxxxxx" 
+                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                </div>
+                            </div>
+
+                            <template x-if="modalMode === 'add'">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Sandi</label>
+                                        <input type="password" name="password" required placeholder="Minimal 8 karakter" 
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Ulangi Sandi</label>
+                                        <input type="password" name="password_confirmation" required placeholder="Ketik ulang sandi" 
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </template>
                 </div>
 
-                <div class="px-8 py-5 bg-slate-50 border-t border-slate-100 flex gap-3">
-                    <button type="button" @click="closeModal()" class="flex-1 bg-white hover:bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl transition-colors border border-slate-200 uppercase tracking-widest text-xs">
+                {{-- Footer --}}
+                <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50">
+                    <button type="button" @click="closeModal()" 
+                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
                         Batal
                     </button>
                     <button type="submit" 
-                        class="flex-1 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors uppercase tracking-widest text-xs"
-                        :class="modalMode === 'delete' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30' : (modalMode === 'edit' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30')"
+                        class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors" 
+                        :class="modalMode === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'" 
                         x-text="getSubmitText()">
                     </button>
                 </div>
@@ -388,42 +444,65 @@
     function personelApp() {
         return {
             searchQuery: '',
-            modalMode: null,
+            isModalOpen: {{ $errors->any() ? 'true' : 'false' }},
+            modalMode: {{ $errors->any() ? "'add'" : 'null' }},
             formData: {
-                id_anggota: '',
-                nama_anggota: '',
-                username: ''
+                id_anggota: '{!! old('id_anggota') !!}',
+                nama_anggota: '{!! addslashes(old('nama_anggota')) !!}',
+                username: '{!! addslashes(old('username')) !!}',
+                id_jabatan: '{!! old('id_jabatan') !!}',
+                role: '{!! old('role', 'view') !!}',
+                id_tugas: '{!! addslashes(old('id_tugas')) !!}',
+                no_telp_anggota: '{!! addslashes(old('no_telp_anggota')) !!}'
             },
             
             openModal(mode, data = null) {
                 this.modalMode = mode;
+                this.isModalOpen = true;
                 if (mode === 'add') {
-                    this.formData = { id_anggota: '', nama_anggota: '', username: '' };
+                    this.formData = { id_anggota: '', nama_anggota: '', username: '', id_jabatan: '', role: 'view', id_tugas: '', no_telp_anggota: '' };
                 } else if (data) {
                     this.formData = { 
                         id_anggota: data.id_anggota, 
                         nama_anggota: data.nama_anggota,
-                        username: data.username
+                        username: data.username,
+                        id_jabatan: data.id_jabatan,
+                        role: data.role,
+                        id_tugas: data.id_tugas,
+                        no_telp_anggota: data.no_telp_anggota
                     };
                 }
             },
             
             closeModal() {
+                this.isModalOpen = false;
                 this.modalMode = null;
             },
             
             getModalTitle() {
-                if (this.modalMode === 'add') return 'Pendaftaran Anggota';
+                if (this.modalMode === 'add') return 'Pendaftaran Anggota Baru';
                 if (this.modalMode === 'edit') return 'Edit Data Anggota';
                 if (this.modalMode === 'delete') return 'Copot Personel';
                 return '';
             },
 
-            getSubmitText() {
-                if (this.modalMode === 'add') return 'Simpan Akun';
-                if (this.modalMode === 'edit') return 'Simpan Perubahan';
-                if (this.modalMode === 'delete') return 'Konfirmasi Copot';
+            getModalSubtitle() {
+                if (this.modalMode === 'add') return 'Isi data berikut untuk mendaftarkan personel baru.';
+                if (this.modalMode === 'edit') return 'Perbarui informasi data personel yang dipilih.';
+                if (this.modalMode === 'delete') return 'Tindakan ini tidak dapat dibatalkan.';
                 return '';
+            },
+
+            getSubmitText() {
+                if (this.modalMode === 'add') return 'Simpan Data';
+                if (this.modalMode === 'edit') return 'Simpan Perubahan';
+                if (this.modalMode === 'delete') return 'Ya, Copot Sekarang';
+                return '';
+            },
+
+            getFormAction() {
+                if (this.modalMode === 'add') return "{{ route('admin.anggota.store') }}";
+                return "#";
             },
             
             getFormMethod() {

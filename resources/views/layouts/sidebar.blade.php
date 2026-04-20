@@ -86,9 +86,10 @@
             <span x-show="!desktopCollapsed" class="text-xs font-medium tracking-wide uppercase">Beranda</span>
         </x-nav-link>
 
+        @if(Auth::user()->role === 'admin')
         <div x-show="!desktopCollapsed" class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Navigasi Utama</div>
 
-        <div x-data="{ open: {{ request()->is('data-utama*') ? 'true' : 'false' }} }">
+        <div x-data="{ open: {{ request()->routeIs('admin.tingkat-kesatuan.*', 'admin.jabatan.*', 'admin.wilayah.*', 'admin.komoditi.*') ? 'true' : 'false' }} }">
             <button @click="open = !open" 
                 :class="(open && !desktopCollapsed) ? 'bg-white/5 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
                 class="w-full group flex items-center px-4 py-3 text-xs font-medium transition-all rounded-xl uppercase">
@@ -106,6 +107,7 @@
                 <a href="{{ route('admin.komoditi.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.komoditi.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-emerald-400 transition' }}">Komoditi Lahan</a>
             </div>
         </div>
+        @endif
 
         @if(Auth::user()->role === 'admin')
             <div x-show="!desktopCollapsed" class="pt-6 pb-2 px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Konfigurasi</div>
@@ -116,7 +118,7 @@
 
         <div x-show="!desktopCollapsed" class="pt-6 pb-2 px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Operasional</div>
 
-        <div x-data="{ open: {{ request()->is('admin/kelola-lahan*') ? 'true' : 'false' }} }">
+        <div x-data="{ open: {{ request()->is('*/kelola-lahan*') ? 'true' : 'false' }} }">
             <button @click="open = !open" 
                 :class="(open && !desktopCollapsed) ? 'bg-white/5 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
                 class="w-full group flex items-center px-4 py-3 text-xs font-medium transition-all rounded-xl uppercase">
@@ -128,13 +130,32 @@
             </button>
 
             <div x-show="open && !desktopCollapsed" x-cloak x-transition class="pl-12 space-y-1 pr-2 py-1 border-l border-white/5 ml-6">
-                <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.kelola-lahan.potensi.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Data Potensi</a>
-                <a href="{{ route('admin.kelola-lahan.daftar.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.kelola-lahan.daftar.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Daftar Kelola</a>
+                @if(Auth::user()->role === 'view')
+                    <a href="{{ route('view.kelola-lahan.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('view.kelola-lahan.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Data Kelola</a>
+                @elseif(Auth::user()->role === 'operator')
+                    <a href="{{ route('operator.kelola-lahan.potensi.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('operator.kelola-lahan.potensi.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Data Potensi</a>
+                    <a href="{{ route('operator.kelola-lahan.daftar.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('operator.kelola-lahan.daftar.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Daftar Kelola</a>
+                @else
+                    <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.kelola-lahan.potensi.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Data Potensi</a>
+                    <a href="{{ route('admin.kelola-lahan.daftar.index') }}" class="block py-2 text-[11px] font-medium transition-colors {{ request()->routeIs('admin.kelola-lahan.daftar.*') ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-200' }}">Daftar Kelola</a>
+                @endif
             </div>
         </div>
 
-        <x-nav-link :href="route('admin.rekapitulasi.index')" :active="request()->routeIs('admin.rekapitulasi.*')">
-            <div :class="!desktopCollapsed ? 'mr-3' : 'mx-auto'" class="{{ request()->routeIs('admin.rekapitulasi.*') ? 'text-emerald-400' : 'text-slate-500' }} group-hover:text-emerald-400 transition-colors">
+        @php
+            $rekapRoute = match(Auth::user()->role) {
+                'operator' => 'operator.rekapitulasi.index',
+                'view' => 'view.rekapitulasi.index',
+                default => 'admin.rekapitulasi.index'
+            };
+            $rekapActive = match(Auth::user()->role) {
+                'operator' => 'operator.rekapitulasi.*',
+                'view' => 'view.rekapitulasi.*',
+                default => 'admin.rekapitulasi.*'
+            };
+        @endphp
+        <x-nav-link :href="route($rekapRoute)" :active="request()->routeIs($rekapActive)">
+            <div :class="!desktopCollapsed ? 'mr-3' : 'mx-auto'" class="{{ request()->routeIs($rekapActive) ? 'text-emerald-400' : 'text-slate-500' }} group-hover:text-emerald-400 transition-colors">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </div>
             <span x-show="!desktopCollapsed" class="text-xs font-medium tracking-wide uppercase">Rekapitulasi</span>

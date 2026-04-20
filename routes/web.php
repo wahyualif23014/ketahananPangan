@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/tingkat-kesatuan', [TingkatKesatuanController::class, 'index'])->name('tingkat-kesatuan.index');
             // jabatan
             Route::get('/jabatan', [JabatanController::class, 'index'])->name('jabatan.index');
+            Route::post('/jabatan', [JabatanController::class, 'store'])->name('jabatan.store');
             Route::delete('/admin/jabatan/batch-delete', [JabatanController::class, 'batchDelete'])
             ->name('jabatan.batch-delete');
             Route::put('/jabatan/{id}', [JabatanController::class, 'update'])->name('jabatan.update');
@@ -55,12 +56,36 @@ Route::middleware(['auth'])->group(function () {
 
         // Data Anggota/Personel
         Route::get('/anggota', function () {
-        // Ambil data dari tabel anggota melalui Model User
-        $personels = User::all(); 
-        
-        // Kirim data ke view index
-        return view('admin.anggota.index', compact('personels'));
-    })->name('anggota.index');
+            $personels = User::all(); 
+            $jabatans = \Illuminate\Support\Facades\DB::table('jabatan')->get();
+            return view('admin.anggota.index', compact('personels', 'jabatans'));
+        })->name('anggota.index');
+
+        Route::post('/anggota', function (Illuminate\Http\Request $request) {
+            $request->validate([
+                'id_anggota' => ['required', 'integer', 'unique:anggota,id_anggota'],
+                'id_jabatan' => ['required', 'exists:jabatan,id_jabatan'],
+                'nama_anggota' => ['required', 'string', 'max:100'],
+                'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
+                'no_telp_anggota' => ['nullable', 'string', 'max:15'],
+                'id_tugas' => ['nullable', 'string', 'max:13'],
+                'role' => ['required', 'in:view,admin,operator'],
+                'password' => ['required', 'confirmed'],
+            ]);
+
+            User::create([
+                'id_anggota' => $request->id_anggota,
+                'id_jabatan' => $request->id_jabatan,
+                'id_tugas' => $request->id_tugas ?? '0',
+                'nama_anggota' => $request->nama_anggota,
+                'username' => $request->username,
+                'no_telp_anggota' => $request->no_telp_anggota,
+                'role' => $request->role,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            ]);
+
+            return redirect()->route('admin.anggota.index')->with('success', 'Akun personel berhasil disimpan!');
+        })->name('anggota.store');
 
         // Kelola Lahan
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
@@ -82,6 +107,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', function () {
             return view('operator.dashboard');
         })->name('dashboard');
+
+        Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
+            Route::get('/potensi', function () {
+                $lahans = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+                return view('operator.kelola-lahan.operator_potensi.operator_kelola_index', compact('lahans'));
+            })->name('potensi.index');
+
+            Route::get('/daftar', function () {
+                return view('operator.kelola-lahan.operator_kelola.operator_kelola_index');
+            })->name('daftar.index');
+        });
+
+        Route::get('/rekapitulasi', function () {
+            return view('operator.rekapitulasi.operator_rekap');
+        })->name('rekapitulasi.index');
     });
 
     // 3. Group Khusus View
@@ -89,6 +129,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', function () {
             return view('view.dashboard');
         })->name('dashboard');
+
+        Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
+            Route::get('/', function () {
+                return view('view.kelola-lahan.view_kelola');
+            })->name('index');
+        });
+
+        Route::get('/rekapitulasi', function () {
+            return view('admin.rekapitulasi.index');
+        })->name('rekapitulasi.index');
     });
 
     // Rute Profil Standar

@@ -3,538 +3,359 @@
 @section('header', 'Data Potensi Lahan')
 
 @section('content')
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+<div x-data="potensiLahanManager()" class="min-h-screen antialiased text-slate-900 pb-20"
+    style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
 
-    .potensi-container {
-        font-family: 'Outfit', sans-serif;
-    }
+    <div class="max-w-[1400px] mx-auto space-y-6 pt-4">
 
-    [x-cloak] {
-        display: none !important;
-    }
-
-    .topo-pattern {
-        background-color: transparent;
-        background-image: radial-gradient(#10b981 1px, transparent 1px);
-        background-size: 20px 20px;
-        opacity: 0.1;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(241, 245, 249, 0.5);
-        border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
-
-<div class="space-y-8 pb-24 potensi-container max-w-7xl mx-auto" x-data="potensiLahanManager()">
-
-    {{-- Top Header Section --}}
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
-        <div>
-            <nav class="flex items-center gap-2 font-black tracking-[0.2em] uppercase text-slate-400 mb-2">
-                <span class="text-[10px] border-b-2 border-slate-300 pb-0.5">MANAJEMEN STRUKTUR</span>
-                <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
-                </svg>
-                <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">Potensi Lahan</span>
-            </nav>
-            <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
-                POTENSI <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
-            </h2>
-            <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Pendataan lokasi dan statistik pemanfaatan lahan untuk ketahanan pangan operasional.</p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-            <div class="relative group hidden sm:block">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <input type="text" placeholder="CARI LAHAN..." 
-                    class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
-            </div>
-            <button onclick="window.location.reload()" title="Refresh Data"
-                class="p-3.5 bg-slate-900 text-emerald-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-            </button>
-            <button @click="openModal()" 
-                class="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest border-emerald-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
-                </svg>
-                Tambah
-            </button>
-        </div>
-    </div>
-
-    @php
-        // Pemetaan Klasifikasi Lahan untuk Modal Form
-        $kategoriMapping = [
-            1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',
-            2 => 'HUTAN (PERHUTANAN SOSIAL)',
-            3 => 'LUAS BAKU SAWAH (LBS)',
-            4 => 'PESANTREN',
-            5 => 'MILIK POLRI',
-            6 => 'PRODUKTIF (MASYARAKAT BINAAN POLRI)',
-            7 => 'PRODUKTIF (TUMPANG SARI)',
-            8 => 'HUTAN (PERHUTANI/INHUTANI)',
-            9 => 'LAHAN LAINNYA'
-        ];
-
-        // LOGIKA PENYIAPAN DATA STATISTIK
-        $allLahanData = DB::table('lahan')->where('deletestatus', '!=', '0')->get();
-
-        $totalLuasLahan = 0;
-        $totalLokasiLahan = 0;
-        $unikLokasi = [];
-        $breakdownByJenis = [];
-
-        $luasBelumValidasi = 0;
-        $countBelumValidasi = 0;
-        $totalCount = count($allLahanData);
-
-        foreach ($kategoriMapping as $k => $v) {
-            $breakdownByJenis[$k] = ['nama' => $v, 'luas' => 0, 'lokasi' => []];
-        }
-
-        $tingkatAdaLahan = [];
-
-        foreach ($allLahanData as $lahan) {
-            // Track Polres (asumsi 2 segmen pertama dari id_tingkat merepresentasikan Polres)
-            $parts = explode('.', $lahan->id_tingkat);
-            if (count($parts) >= 2) {
-                $tingkatAdaLahan[$parts[0] . '.' . $parts[1]] = true;
-            }
-
-            if ($lahan->status_lahan == '1') {
-                $luas = (float) $lahan->luas_lahan;
-                $totalLuasLahan += $luas;
-                $unikLokasi[$lahan->id_wilayah] = true;
-
-                if (isset($breakdownByJenis[$lahan->id_jenis_lahan])) {
-                    $breakdownByJenis[$lahan->id_jenis_lahan]['luas'] += $luas;
-                    $breakdownByJenis[$lahan->id_jenis_lahan]['lokasi'][$lahan->id_wilayah] = true;
-                }
-            } else {
-                $luasBelumValidasi += (float) $lahan->luas_lahan;
-                $countBelumValidasi++;
-            }
-        }
-
-        $totalLokasiLahan = count($unikLokasi);
-        $persenBelumValidasi = $totalCount > 0 ? round(($countBelumValidasi / $totalCount) * 100, 2) : 0;
-
-        // Hitung Sumber Data (Perhitungan Unik/Distinct)
-        $distinctPolsek = [];
-        $distinctKabKota = [];
-        $distinctKecamatan = [];
-        $distinctDesa = [];
-
-        foreach ($allLahanData as $lahan) {
-            // Polsek Unik = id_tingkat dengan 2 titik atau lebih
-            $idT = (string)$lahan->id_tingkat;
-            if (mb_substr_count($idT, '.') >= 2) {
-                $distinctPolsek[$idT] = true;
-            }
-
-            // Wilayah Unik = pecah id_wilayah untuk mendeteksi parent-nya
-            $idW = (string)$lahan->id_wilayah;
-            $parts = explode('.', $idW);
-            $dotsW = count($parts) - 1;
-
-            // Jika punya minimal 1 titik (misal 35.01), catat sebagai partisipasi Kab/Kota
-            if ($dotsW >= 1) {
-                $kabId = $parts[0] . '.' . $parts[1];
-                $distinctKabKota[$kabId] = true;
-            }
-            // Jika punya minimal 2 titik (misal 35.01.01), catat sebagai partisipasi Kecamatan
-            if ($dotsW >= 2) {
-                $kecId = $parts[0] . '.' . $parts[1] . '.' . $parts[2];
-                $distinctKecamatan[$kecId] = true;
-            }
-            // Jika punya minimal 3 titik (misal 35.01.01.2001), catat sebagai partisipasi Desa
-            if ($dotsW >= 3) {
-                $distinctDesa[$idW] = true;
-            }
-        }
-
-        $submissionByKategori = [
-            'POLSEK' => count($distinctPolsek),
-            'KAB_KOTA' => count($distinctKabKota),
-            'KECAMATAN' => count($distinctKecamatan),
-            'DESA' => count($distinctDesa)
-        ];
-    @endphp
-
-    {{-- Stats Dashboard --}}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative px-2">
-        <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-105"></div>
-        <div class="absolute inset-0 topo-pattern -z-10 rounded-[3rem]"></div>
-
-        <!-- TOTAL POTENSI LAHAN -->
-        <div class="lg:col-span-7 group relative bg-white p-6 md:p-8 rounded-[2rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 transition-all duration-500 overflow-hidden flex flex-col justify-between min-h-[380px]">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-            
-            <div class="flex justify-between items-start mb-4 relative z-10 w-full">
-                <div>
-                    <h3 class="text-[12px] font-black text-slate-400 border-b border-emerald-100 pb-1 mb-2 uppercase tracking-[0.2em] inline-block">TOTAL POTENSI LAHAN</h3>
-                    <div class="flex items-end gap-2 text-slate-800 tracking-tight leading-none truncate">
-                        <h2 class="text-4xl md:text-5xl font-black">
-                            {{ number_format($totalLuasLahan, 2) }}
-                        </h2>
-                        <span class="text-emerald-500 text-lg md:text-xl font-bold mb-0.5 md:mb-1 w-8">Ha</span>
-                    </div>
-                    <p class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mt-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 inline-block">Terdiri dari <span class="text-slate-800 font-black text-sm">{{ $totalLokasiLahan }}</span> Lokasi Potensi Lahan</p>
-                </div>
+        {{-- [SEC 1] - HEADER SECTION --}}
+        <div class="px-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div class="space-y-1">
+                <nav class="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                    <span>Data Utama</span>
+                    <svg class="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                    <span class="text-emerald-600">Potensi Lahan</span>
+                </nav>
+                <h2 class="text-2xl font-bold tracking-tight text-slate-900">
+                    Potensi Lahan <span class="text-slate-400 font-normal ml-1">Statistik</span>
+                </h2>
             </div>
 
-            <!-- List Distribusi -->
-            <div class="relative z-10 flex-1 overflow-y-auto custom-scrollbar pr-2 mt-2 space-y-1">
-                @foreach($breakdownByJenis as $id => $data)
-                    @if($data['luas'] > 0 || count($data['lokasi']) > 0)
-                    <div class="flex items-center justify-between text-xs py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors group/item">
-                        <div class="flex items-center gap-2 truncate max-w-[55%]">
-                            <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover/item:bg-emerald-500 transition-colors flex-shrink-0"></div>
-                            <span class="font-black text-slate-600 tabular-nums">{{ $id }}.</span>
-                            <span class="font-bold text-slate-600 truncate group-hover/item:text-emerald-600 transition-colors" title="{{ $data['nama'] }}">{{ $data['nama'] }}</span>
-                        </div>
-                        <span class="font-black text-slate-800 tabular-nums flex-shrink-0 text-right">{{ number_format($data['luas'], 2) }} <span class="text-emerald-600 font-semibold italic">Ha</span> <span class="text-slate-300 mx-1">/</span> <span class="text-slate-500">{{ count($data['lokasi']) }}</span> <span class="text-slate-400 font-medium">lokasi</span></span>
+            <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                <div class="relative w-full sm:w-64 group">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
                     </div>
-                    @endif
-                @endforeach
-            </div>
-            
-            <div class="absolute right-4 bottom-4 w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-600 text-white rounded-[1rem] flex items-center justify-center transform group-hover:-rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30 opacity-20">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-            </div>
-        </div>
+                    <input type="text" placeholder="Cari lokasi atau personel..."
+                        class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none">
+                </div>
 
-        <!-- KOLOM KANAN -->
-        <div class="lg:col-span-5 flex flex-col gap-6">
-            <!-- DISTRIBUSI TINGKATAN -->
-            <div class="flex-1 group relative bg-white p-5 rounded-[2rem] border border-blue-100 shadow-xl shadow-blue-900/5 hover:-translate-x-2 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 overflow-hidden flex flex-col justify-center gap-2.5">
-                <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-                
-                <div class="relative z-10 flex items-center gap-2 mb-1">
-                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight">SUMBER DATA</h3>
-                        <p class="text-[11px] font-bold text-slate-800 leading-tight">Berdasarkan Tingkatan</p>
-                    </div>
-                </div>
-                
-                <div class="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-                    <div class="text-center bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-sm relative group/stat hover:border-indigo-200 transition-colors">
-                        <div class="absolute inset-0 bg-indigo-500/5 rounded-2xl opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
-                        <p class="text-xl md:text-2xl font-black text-indigo-600 relative z-10" x-data="{ count: 0 }" x-init="let end = {{ $submissionByKategori['POLSEK'] }}; let duration = 1500; window.requestAnimationFrame(function step(t) { let start = this.start || (this.start = t); let progress = Math.min((t - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) requestAnimationFrame(step); else count = end; })" x-text="count">0</p>
-                        <p class="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 relative z-10">Polsek</p>
-                    </div>
-                    <div class="text-center bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-sm relative group/stat hover:border-blue-200 transition-colors">
-                        <div class="absolute inset-0 bg-blue-500/5 rounded-2xl opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
-                        <p class="text-xl md:text-2xl font-black text-blue-600 relative z-10" x-data="{ count: 0 }" x-init="let end = {{ $submissionByKategori['KAB_KOTA'] }}; let duration = 1500; window.requestAnimationFrame(function step(t) { let start = this.start || (this.start = t); let progress = Math.min((t - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) requestAnimationFrame(step); else count = end; })" x-text="count">0</p>
-                        <p class="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 relative z-10">Kab/Kota</p>
-                    </div>
-                    <div class="text-center bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-sm relative group/stat hover:border-teal-200 transition-colors">
-                        <div class="absolute inset-0 bg-teal-500/5 rounded-2xl opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
-                        <p class="text-xl md:text-2xl font-black text-teal-600 relative z-10" x-data="{ count: 0 }" x-init="let end = {{ $submissionByKategori['KECAMATAN'] }}; let duration = 1500; window.requestAnimationFrame(function step(t) { let start = this.start || (this.start = t); let progress = Math.min((t - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) requestAnimationFrame(step); else count = end; })" x-text="count">0</p>
-                        <p class="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 relative z-10">Kecamatan</p>
-                    </div>
-                    <div class="text-center bg-slate-50 p-2.5 rounded-2xl border border-slate-100 shadow-sm relative group/stat hover:border-emerald-200 transition-colors">
-                        <div class="absolute inset-0 bg-emerald-500/5 rounded-2xl opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
-                        <p class="text-xl md:text-2xl font-black text-emerald-600 relative z-10" x-data="{ count: 0 }" x-init="let end = {{ $submissionByKategori['DESA'] }}; let duration = 1500; window.requestAnimationFrame(function step(t) { let start = this.start || (this.start = t); let progress = Math.min((t - start) / duration, 1); count = Math.floor(progress * end); if (progress < 1) requestAnimationFrame(step); else count = end; })" x-text="count">0</p>
-                        <p class="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 relative z-10">Kel/Desa</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BELUM DIVALIDASI -->
-            <div class="flex-1 group relative bg-white p-6 rounded-[2rem] border border-amber-100 shadow-xl shadow-amber-900/5 hover:-translate-x-2 hover:shadow-2xl hover:shadow-amber-900/10 transition-all duration-500 overflow-hidden flex items-center gap-5">
-                <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-                <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-600 text-white rounded-[1.2rem] flex items-center justify-center transform group-hover:rotate-12 transition-all duration-500 shadow-lg shadow-amber-500/30 flex-shrink-0 relative z-10">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div class="relative z-10 flex flex-col justify-center">
-                    <h3 class="text-3xl font-black text-slate-800 leading-none mb-1">
-                        Total <span class="text-amber-500 italic"><span x-data="{ count: 0 }" x-init="let end = {{ $persenBelumValidasi }}; let duration = 1500; window.requestAnimationFrame(function step(t) { let start = this.start || (this.start = t); let progress = Math.min((t - start) / duration, 1); count = (progress * end).toFixed(2); if (progress < 1) requestAnimationFrame(step); else count = end; })" x-text="count">0</span>%</span>
-                    </h3>
-                    <p class="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-                        Data Belum Divalidasi,<br>dari <span class="text-slate-800 font-black">{{ number_format($luasBelumValidasi, 2) }} Ha</span> Lahan
-                    </p>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button onclick="window.location.reload()" title="Refresh Data"
+                        class="p-2 bg-white text-slate-500 rounded-lg border border-slate-200 hover:bg-slate-50 hover:text-emerald-600 transition-colors shadow-sm active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                    </button>
+                    {{-- Trigger Modal Tambah --}}
+                    <button @click="openModal()"
+                        class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg shadow-sm hover:bg-slate-800 transition-all active:scale-95 font-semibold text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        Tambah Data
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    {{-- Main Dataset Card --}}
-    <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-2 mt-12">
+        {{-- [SEC 2] - COMPACT FILTER BAR --}}
+        <div class="px-4">
+            <div class="bg-white p-1 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 flex-1 gap-1">
+                    <select
+                        class="bg-transparent border-none text-sm font-medium text-slate-600 focus:ring-0 cursor-pointer py-2 px-4 rounded-lg hover:bg-slate-50">
+                        <option value="">Semua Resor</option>
+                    </select>
+                    <select
+                        class="bg-transparent border-none text-sm font-medium text-slate-600 focus:ring-0 cursor-pointer py-2 px-4 rounded-lg hover:bg-slate-50">
+                        <option value="">Semua Sektor</option>
+                    </select>
+                    <select
+                        class="bg-transparent border-none text-sm font-medium text-slate-600 focus:ring-0 cursor-pointer py-2 px-4 rounded-lg hover:bg-slate-50">
+                        <option value="">Jenis Lahan</option>
+                    </select>
+                </div>
 
-        <!-- Header Panel -->
-        <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
-            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
-            <div class="flex items-center gap-3 relative z-10">
-                <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
-                <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR PENGAJUAN LAHAN</h3>
-                <span class="text-[10px] font-black text-slate-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
-                    {{ $lahanList->total() }} Data
-                </span>
-            </div>
-            <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 flex-shrink-0">
-                SEMUA WILAYAH
+                <button @click="is_validated = !is_validated"
+                    :class="is_validated ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-transparent'"
+                    class="flex items-center justify-between px-4 py-2 border rounded-lg transition-all min-w-[180px]">
+                    <span class="text-[11px] font-bold uppercase tracking-tight"
+                        x-text="is_validated ? 'Tervalidasi' : 'Belum Validasi'"></span>
+                    <div :class="is_validated ? 'bg-emerald-500' : 'bg-slate-300'" class="w-1.5 h-1.5 rounded-full">
+                    </div>
+                </button>
             </div>
         </div>
 
         @php
-            $jenisInfo = [
-                1 => ['label' => 'POKTAN BINAAN', 'cls' => 'bg-emerald-100 text-emerald-700 border-emerald-200', 'dot' => 'bg-emerald-500'],
-                2 => ['label' => 'HUTAN SOSIAL',  'cls' => 'bg-green-100 text-green-700 border-green-200',     'dot' => 'bg-green-500'],
-                3 => ['label' => 'LBS (SAWAH)',   'cls' => 'bg-teal-100 text-teal-700 border-teal-200',       'dot' => 'bg-teal-500'],
-                4 => ['label' => 'PESANTREN',     'cls' => 'bg-blue-100 text-blue-700 border-blue-200',       'dot' => 'bg-blue-500'],
-                5 => ['label' => 'MILIK POLRI',   'cls' => 'bg-indigo-100 text-indigo-700 border-indigo-200', 'dot' => 'bg-indigo-500'],
-                6 => ['label' => 'MASY. BINAAN',  'cls' => 'bg-cyan-100 text-cyan-700 border-cyan-200',       'dot' => 'bg-cyan-500'],
-                7 => ['label' => 'TUMPANG SARI',  'cls' => 'bg-lime-100 text-lime-700 border-lime-200',       'dot' => 'bg-lime-500'],
-                8 => ['label' => 'PERHUTANI',     'cls' => 'bg-orange-100 text-orange-700 border-orange-200', 'dot' => 'bg-orange-500'],
-                9 => ['label' => 'LAINNYA',       'cls' => 'bg-slate-100 text-slate-600 border-slate-200',    'dot' => 'bg-slate-400'],
+            // -- LOGIKA PENGAMBILAN DATA (Lahan dengan status_lahan = 2) -- //
+            
+            // 1. Distribusi per Jenis Lahan & Total Luas Area
+            $kategoriMapping = [
+                1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',
+                2 => 'HUTAN (PERHUTANAN SOSIAL)',
+                3 => 'LUAS BAKU SAWAH (LBS)',
+                4 => 'PESANTREN',
+                5 => 'MILIK POLRI',
+                6 => 'PRODUKTIF (MASYARAKAT BINAAN POLRI)',
+                7 => 'PRODUKTIF (TUMPANG SARI)',
+                8 => 'HUTAN (PERHUTANI/INHUTANI)',
+                9 => 'LAHAN LAINNYA'
             ];
+
+            $lahanGroups = DB::table('lahan')
+                ->where('status_lahan', '1')
+                ->where('deletestatus', '!=', '0')
+                ->select(
+                    'id_jenis_lahan', 
+                    DB::raw('SUM(CAST(luas_lahan AS DECIMAL(15,2))) as total_luas'),
+                    DB::raw('COUNT(DISTINCT id_wilayah) as total_lokasi')
+                )
+                ->groupBy('id_jenis_lahan')
+                ->get()
+                ->keyBy('id_jenis_lahan');
+
+            $totalLuasGlobal = $lahanGroups->sum('total_luas');
+
+            // 2. Sistem Peringatan: Ekstraksi Data id_wilayah & id_tingkat
+            $lahanWilayahList = DB::table('lahan')
+                ->where('status_lahan', '1')
+                ->where('deletestatus', '!=', '0')
+                ->pluck('id_wilayah')
+                ->filter();
+
+            $lahanTingkatList = DB::table('lahan')
+                ->where('status_lahan', '1')
+                ->where('deletestatus', '!=', '0')
+                ->pluck('id_tingkat')
+                ->filter()
+                ->unique();
+                
+            $countPolsek = $lahanTingkatList->count();
+
+            // Dekonstruksi id_wilayah untuk menghitung Kabupaten, Kecamatan, dan Kel/Desa secara unik (terlepas dari level mana ID itu disimpan)
+            $uniqueKab = [];
+            $uniqueKec = [];
+            $uniqueDesa = [];
+
+            foreach($lahanWilayahList as $idWilayah) {
+                $parts = explode('.', $idWilayah);
+                if(count($parts) >= 2) {
+                    $uniqueKab[$parts[0].'.'.$parts[1]] = true;
+                }
+                if(count($parts) >= 3) {
+                    $uniqueKec[$parts[0].'.'.$parts[1].'.'.$parts[2]] = true;
+                }
+                if(count($parts) >= 4) {
+                    $uniqueDesa[$idWilayah] = true;
+                }
+            }
         @endphp
 
-        {{-- DATA TABLE --}}
-        <div class="p-4 md:p-6 space-y-4">
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200">
-                            <th class="px-4 py-3 rounded-tl-xl text-center w-12 text-xs font-black text-slate-500 uppercase tracking-widest">No</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Lokasi</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Penanggung Jawab</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Detail Lahan</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Validasi</th>
-                            <th class="px-4 py-3 rounded-tr-xl text-right text-xs font-black text-slate-500 uppercase tracking-widest">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse($lahanList as $idx => $item)
-                        @php
-                            $jenis   = $jenisInfo[$item['id_jenis_lahan']] ?? $jenisInfo[9];
-                        @endphp
-                        <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="px-4 py-4 text-center text-xs font-bold text-slate-400">
-                                {{ $lahanList->firstItem() + $idx }}
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="text-xs font-black text-slate-800 uppercase">{{ $item['kab_nama'] }}</div>
-                                <div class="text-[10px] font-bold text-emerald-600 uppercase">{{ $item['kec_nama'] }} &bull; {{ $item['desa_nama'] }}</div>
-                                <div class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{{ $item['alamat_lahan'] ?: '-' }}</div>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[9px] font-black uppercase text-emerald-500 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded w-16 text-center shadow-sm">Penggerak</span>
-                                    <span class="text-[11px] font-bold text-slate-700 uppercase line-clamp-1 flex-1">{{ $item['cp_polisi'] ?: '-' }}</span>
+        {{-- [SEC 3] - MAIN CONTENT GRID --}}
+        <div class="px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {{-- Statistik Utama --}}
+            <div class="lg:col-span-8">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Capaian
+                                    Luas Area</p>
+                                <div class="flex items-baseline gap-2">
+                                    <h1 class="text-4xl font-bold text-slate-900 tracking-tighter">170,969<span
+                                            class="text-slate-300">.02</span></h1>
+                                    <span class="text-slate-400 font-medium">Ha</span>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[9px] font-black uppercase text-blue-500 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded w-16 text-center shadow-sm">T. Jawab</span>
-                                    <span class="text-[11px] font-bold text-slate-700 uppercase line-clamp-1 flex-1">{{ $item['cp_lahan'] ?: '-' }}</span>
+                            </div>
+                            <div class="text-right">
+                                <div
+                                    class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-xs font-bold border border-emerald-100">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                    12.5%
                                 </div>
-                            </td>
-                            <td class="px-4 py-4">
-                                <div class="mb-1.5">
-                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black border rounded-md uppercase {{ $jenis['cls'] }}">
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $jenis['dot'] }}"></span>
-                                        {{ $jenis['label'] }}
-                                    </span>
-                                </div>
-                                <div class="flex items-end gap-1">
-                                    <span class="text-[13px] font-black text-slate-800 italic leading-none">{{ number_format((float)$item['luas_lahan'], 2) }}</span>
-                                    <span class="text-[9px] font-black text-slate-400 mb-0.5">HA</span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-4 w-36">
-                                @if(!$item['valid_oleh'])
-                                <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg shadow-sm">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Belum Divalidasi
-                                </span>
-                                @else
-                                <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Tervalidasi
-                                </span>
-                                <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[120px]" title="{{ $item['valid_oleh'] }}">{{ $item['valid_oleh'] }}</div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-4 w-72">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick='openViewModal(@json($item))'
-                                        class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
-                                        Detail
-                                    </button>
-                                    @if(!$item['valid_oleh'])
-                                    <form action="/admin/kelola-lahan/potensi/validasi/{{ $item['id_lahan'] }}" method="POST" class="inline m-0">
-                                        @csrf @method('PUT')
-                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
-                                            Validasi
-                                        </button>
-                                    </form>
-                                    @endif
-                                    <button onclick='openEditModal(@json($item))'
-                                        class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
-                                        Edit
-                                    </button>
-                                    <form action="/admin/kelola-lahan/potensi/delete/{{ $item['id_lahan'] }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
-                                            Hapus
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-16">
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="w-16 h-16 bg-slate-50 rounded-[1.5rem] flex items-center justify-center border border-slate-100">
-                                        <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                                <p class="text-[10px] text-slate-400 mt-1 uppercase font-medium">MoM Growth</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h4
+                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                                Distribusi Kategori Lahan</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+                                @foreach($cats ?? [] as $c)
+                                <div
+                                    class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors px-2 rounded-md group">
+                                    <div class="flex items-center gap-2">
+                                        <div
+                                            class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-emerald-500 transition-colors">
+                                        </div>
+                                        <span class="text-sm text-slate-600 font-medium">{{ $c['label'] }}</span>
                                     </div>
-                                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Belum ada data lahan</p>
+                                    <span class="text-sm font-bold text-slate-800">{{ $c['val'] }} <small
+                                            class="text-slate-400 font-normal ml-0.5">Ha</small></span>
                                 </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            @if($lahanList->hasPages())
-            <div class="border-t border-slate-100 pt-5 mt-2">
-                {{ $lahanList->links() }}
-            </div>
-            @endif
-        </div>
-    </div>
-
-
-    {{-- VIEW DETAIL MODAL --}}
-    <div id="viewModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4" aria-modal="true">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeViewModal()"></div>
-        <div class="relative w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="bg-white rounded-[2rem] shadow-2xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-                <div class="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between flex-shrink-0">
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        Detail Potensi Lahan
-                    </h3>
-                    <button onclick="closeViewModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Polisi Penggerak</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_polisi">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_polisi">-</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Penanggung Jawab</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_lahan">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_lahan">-</p>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Alamat Lahan</p>
-                        <p class="text-sm font-bold text-slate-700" id="vm_alamat">-</p>
-                        <p class="text-xs text-slate-400 mt-0.5" id="vm_lokasi">-</p>
-                        <a id="vm_maps_link" href="#" target="_blank" class="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 rounded-lg transition-all shadow hidden">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                            Buka di Google Maps
-                        </a>
-                    </div>
-                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1" id="vm_jenis">-</p>
-                        <h4 class="text-3xl font-black text-emerald-700"><span id="vm_luas">0</span> <span class="text-sm text-emerald-600">HA</span></h4>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-2">Proses Oleh</p>
-                            <p class="text-sm font-bold text-slate-700" id="vm_edit_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_edit">-</p>
-                        </div>
-                        <div class="p-4 rounded-xl border" id="vm_validasi_box">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Validasi Oleh</p>
-                            <p class="text-sm font-bold" id="vm_valid_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_valid">-</p>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <script>
-    var jenisLabels = {
-        1: 'PRODUKTIF (POKTAN BINAAN POLRI)', 2: 'HUTAN (PERHUTANAN SOSIAL)',
-        3: 'LUAS BAKU SAWAH (LBS)', 4: 'PESANTREN', 5: 'MILIK POLRI',
-        6: 'PRODUKTIF (MASYARAKAT BINAAN POLRI)', 7: 'PRODUKTIF (TUMPANG SARI)',
-        8: 'HUTAN (PERHUTANI/INHUTANI)', 9: 'LAHAN LAINNYA'
-    };
-    function openViewModal(item) {
-        // Polisi Penggerak = cp_polisi, Penanggung Jawab = cp_lahan (sesuai swap)
-        document.getElementById('vm_cp_polisi').textContent    = item.cp_polisi || '-';
-        document.getElementById('vm_no_cp_polisi').textContent = item.no_cp_polisi || '-';
-        document.getElementById('vm_cp_lahan').textContent     = item.cp_lahan || '-';
-        document.getElementById('vm_no_cp_lahan').textContent  = item.no_cp_lahan || '-';
-        document.getElementById('vm_alamat').textContent       = item.alamat_lahan || '-';
-        document.getElementById('vm_lokasi').textContent       = [item.kab_nama, item.kec_nama, item.desa_nama].filter(Boolean).join(' → ');
-        document.getElementById('vm_luas').textContent         = parseFloat(item.luas_lahan || 0).toFixed(2);
-        document.getElementById('vm_jenis').textContent        = jenisLabels[item.id_jenis_lahan] || 'LAHAN LAINNYA';
-        document.getElementById('vm_edit_oleh').textContent    = item.edit_oleh || 'Belum diproses';
-        document.getElementById('vm_tgl_edit').textContent     = item.tgl_edit || '-';
-        var vBox = document.getElementById('vm_validasi_box');
-        if (item.valid_oleh) {
-            vBox.className = 'p-4 rounded-xl border bg-emerald-50 border-emerald-100';
-            document.getElementById('vm_valid_oleh').className = 'text-sm font-bold text-emerald-700';
-            document.getElementById('vm_valid_oleh').textContent = item.valid_oleh;
-        } else {
-            vBox.className = 'p-4 rounded-xl border bg-amber-50 border-amber-100';
-            document.getElementById('vm_valid_oleh').className = 'text-sm font-bold text-amber-600';
-            document.getElementById('vm_valid_oleh').textContent = 'Menunggu Validasi';
-        }
-        document.getElementById('vm_tgl_valid').textContent = item.tgl_valid || '-';
-        var mapsLink = document.getElementById('vm_maps_link');
-        if (item.latitude && item.longitude) {
-            mapsLink.href = 'https://www.google.com/maps?q=' + item.latitude + ',' + item.longitude;
-            mapsLink.classList.remove('hidden');
-        } else { mapsLink.classList.add('hidden'); }
-        var modal = document.getElementById('viewModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeViewModal() {
-        var modal = document.getElementById('viewModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.style.overflow = '';
-    }
-    function openEditModal(item) {
-        var event = new CustomEvent('open-edit-modal', { detail: item });
-        document.dispatchEvent(event);
-    }
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeViewModal(); } });
-    </script>
+            {{-- Side Panels --}}
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="w-7 h-7 bg-amber-50 text-amber-600 rounded flex items-center justify-center border border-amber-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-tight">Status Operasional</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <span class="block text-2xl font-bold text-slate-900">66</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Polsek Aktif</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <span class="block text-2xl font-bold text-slate-900">5.6k</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Desa Binaan</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-slate-900 p-5 rounded-xl shadow-lg shadow-slate-900/10 text-white relative overflow-hidden group">
+                    <div class="relative z-10 space-y-4">
+                        <div>
+                            <p class="text-blue-300 text-[10px] font-bold uppercase tracking-widest mb-1">Validasi
+                                Tertunda</p>
+                            <h4 class="text-3xl font-bold">10.31 <span
+                                    class="text-sm font-normal text-blue-300/60 uppercase">Ha</span></h4>
+                        </div>
+                        <button
+                            class="w-full py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-semibold transition-all">
+                            Proses Verifikasi Sekarang
+                        </button>
+                    </div>
+                    <svg class="absolute right-[-20%] bottom-[-20%] w-48 h-48 opacity-10 group-hover:scale-110 transition-transform"
+                        fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        {{-- [SEC 4] - RESPONSIVE DATA TABLE --}}
+        <div id="tabel-potensi" class="px-4">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 border-b border-slate-100">
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Polisi Penggerak</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Penanggung Jawab</th>
+                                <th
+                                    class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                    Luas (HA)</th>
+                                <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    Status Validasi</th>
+                                <th
+                                    class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">
+                                    Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-slate-50">
+                            {{-- Group Header --}}
+                            <tr class="bg-emerald-50/20">
+                                <td colspan="5" class="px-6 py-2">
+                                    <div
+                                        class="flex items-center gap-2 text-[10px] font-bold text-emerald-700 uppercase">
+                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                                clip-rule="evenodd"></path>
+                                        </svg>
+                                        Kab. Bangkalan, Kec. Arosbaya, Desa Dlemer
+                                    </div>
+                                </td>
+                            </tr>
+                            {{-- Row Loop (Static for UI example, update with @foreach) --}}
+                            @forelse([1] as $item)
+                            <tr class="hover:bg-slate-50/50 transition-colors group">
+                                <td class="px-6 py-4" data-label="Personel">
+                                    <div class="font-semibold text-slate-900">Bambang Priono</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">+62 878-4523-7310</div>
+                                </td>
+                                <td class="px-6 py-4" data-label="PJ">
+                                    <div class="text-slate-700">Rohmatulloh</div>
+                                    <div class="text-[10px] text-slate-400">Dusun Ronceh</div>
+                                </td>
+                                <td class="px-6 py-4 text-center" data-label="Luas">
+                                    <div class="text-base font-bold text-slate-900 tracking-tighter">3.50</div>
+                                    <span
+                                        class="inline-block px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase">Produktif</span>
+                                </td>
+                                <td class="px-6 py-4" data-label="Validasi">
+                                    <div class="space-y-1">
+                                        <span
+                                            class="block text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded w-fit">Achmad
+                                            Furkon (Polda)</span>
+                                        <span class="block text-[10px] font-bold text-emerald-600">Terverifikasi: Dwi
+                                            Achmat</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right" data-label="Aksi">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        {{-- Trigger Modal Edit --}}
+                                        <button
+                                            @click="openModal({id: 1, nama_personel: 'Bambang Priono', pj_lahan: 'Rohmatulloh', luas: '3.50', jenis_lahan: 'Produktif'})"
+                                            class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"
+                                            title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button @click="deleteItem(1)"
+                                            class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
+                                            title="Hapus">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="px-8 py-20 text-center">
+                                    <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-50 border border-slate-100 shadow-inner rounded-full mb-4 group-hover:scale-110 transition-transform">
+                                        <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <h3 class="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Data Lahan Nihil</h3>
+                                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest max-w-sm mx-auto">Sistem belum menemukan pendaftaran lahan baru dari kelompok tani manapun di seluruh wilayah.</p>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                
+                @if($lahans->hasPages())
+                <div class="px-6 py-5 border-t border-slate-100 bg-slate-50/50">
+                    {{ $lahans->links() }}
+                </div>
+                @endif
+            </div>
 
             {{-- ----------------------------- --}}
             {{-- MODALS SECTION (ALPINE JS)    --}}
@@ -660,6 +481,9 @@
                     </form>
                 </div>
             </div>
+
+        </div>
+    </div>
 
     {{-- [MODAL] - PROGRESSIVE STEP FORM --}}
     <template x-teleport="body">
@@ -1120,8 +944,6 @@
             </div>
     </template>
 
-</div>{{-- END: x-data="potensiLahanManager()" --}}
-
     <script>
         function potensiLahanManager() {
             return {
@@ -1360,6 +1182,5 @@
             }
         }
     </script>
+
     @endsection
-
-

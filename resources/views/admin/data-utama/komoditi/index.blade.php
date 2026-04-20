@@ -181,8 +181,15 @@
                             </div>
                         </div>
 
-                        <!-- Right Stats -->
+                        <!-- Right Stats & Actions -->
                         <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
+                            
+                            <button @click.stop="openModal('add_tanaman', '{{ addslashes($jenis) }}')" title="Tambah tanaman ke dalam kategori {{ $jenis }}" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl border border-emerald-200 transition-all shadow-sm text-[10px] font-black uppercase tracking-wider group/addbtn active:scale-95 z-20">
+                                <svg class="w-4 h-4 group-hover/addbtn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                                <span class="hidden sm:inline">Tambah Tanaman</span>
+                                <span class="sm:hidden">Tambah</span>
+                            </button>
+
                             <div class="flex flex-col items-center justify-center px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Sub-Item</span>
                                 <span class="text-lg font-black text-blue-600 leading-none">{{ $items->count() }}</span>
@@ -320,9 +327,20 @@
 
                     <template x-if="modalMode !== 'delete'">
                         <div>
-                            <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Jenis Komoditi <span class="text-rose-500">*</span></label>
-                            <input type="text" name="jenis_komoditi" x-model="formData.jenis_komoditi" required placeholder="Contoh: Padi-padian" 
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
+                            <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
+                                Jenis Komoditi <span class="text-rose-500">*</span>
+                                <span x-show="isJenisLocked" class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-2 border border-emerald-200">TERKUNCI</span>
+                            </label>
+                            <input type="text" name="jenis_komoditi" list="kategori-list" x-model="formData.jenis_komoditi" required placeholder="Pilih kategori dari daftar atau ketik kategori baru..." 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide"
+                                :class="isJenisLocked ? 'cursor-not-allowed opacity-80' : ''"
+                                :readonly="isJenisLocked">
+                            
+                            <datalist id="kategori-list">
+                                @foreach($groupedKomoditiTotal->keys() as $jk)
+                                    <option value="{{ $jk }}"></option>
+                                @endforeach
+                            </datalist>
                         </div>
                     </template>
                     
@@ -357,6 +375,7 @@
         return {
             searchQuery: '',
             modalMode: null, // 'add', 'edit', 'delete'
+            isJenisLocked: false,
             formData: {
                 id_komoditi: '',
                 jenis_komoditi: '',
@@ -364,10 +383,17 @@
             },
             
             openModal(mode, data = null) {
-                this.modalMode = mode;
                 if (mode === 'add') {
+                    this.modalMode = 'add';
+                    this.isJenisLocked = false;
                     this.formData = { id_komoditi: '', jenis_komoditi: '', nama_komoditi: '' };
+                } else if (mode === 'add_tanaman') {
+                    this.modalMode = 'add'; // Re-use the Add form route and title
+                    this.isJenisLocked = true;
+                    this.formData = { id_komoditi: '', jenis_komoditi: data, nama_komoditi: '' };
                 } else if (data) {
+                    this.modalMode = mode;
+                    this.isJenisLocked = false;
                     this.formData = { 
                         id_komoditi: data.id_komoditi, 
                         jenis_komoditi: data.jenis_komoditi, 

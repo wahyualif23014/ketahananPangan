@@ -11,9 +11,13 @@ class Jabatan extends Model
 
     protected $table = 'jabatan'; // Nama tabel di DB
     protected $primaryKey = 'id_jabatan'; // Primary key custom
+    public $timestamps = false;
     
     protected $fillable = [
+        'id_jabatan',
         'nama_jabatan',
         'keterangan',
+        'deletestatus',
+        'datetransaction'
     ];
 }

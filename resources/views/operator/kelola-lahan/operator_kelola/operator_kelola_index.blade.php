@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('header', 'Data Potensi Lahan')
+@section('header', 'Data Kelola Lahan')
 
 @section('content')
 <div class="space-y-8 pb-20 antialiased text-slate-900"

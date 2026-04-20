@@ -66,6 +66,32 @@
         </div>
     </div>
 
+    {{-- Flash Messages --}}
+    @if(session('success'))
+    <div class="px-4 mb-4">
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-600 px-6 py-4 rounded-2xl shadow-sm flex items-center gap-4 animate-in fade-in slide-in-from-top-4 relative z-50">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="font-bold text-sm tracking-wide">{{ session('success') }}</span>
+        </div>
+    </div>
+    @endif
+
+    @if($errors->any())
+    <div class="px-4 mb-4">
+        <div class="bg-rose-50 border border-rose-200 text-rose-600 px-6 py-4 rounded-2xl shadow-sm flex flex-col gap-2 animate-in fade-in slide-in-from-top-4 relative z-50">
+            <div class="flex items-center gap-4">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="font-bold text-sm tracking-wide">Terdapat beberapa kesalahan saat menambahkan data:</span>
+            </div>
+            <ul class="list-disc list-inside text-xs font-semibold ml-10">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 relative px-2 max-w-2xl mt-4">
         <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-105"></div>
@@ -171,11 +197,14 @@
              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
              class="bg-white rounded-[2rem] shadow-2xl shadow-blue-900/20 w-full max-w-lg relative z-10 flex flex-col overflow-hidden border border-slate-100">
             
-            <!-- Standard form action to # until endpoints are ready, but gracefully handle the UI -->
-            <form action="#" method="POST" @submit.prevent="alert('Aksi belum terhubung ke Controller. Endpoint belum tersedia.')">
+            <!-- Form Connected via Alpine getFormAction() -->
+            <form :action="getFormAction()" method="POST">
                 @csrf
                 <input type="hidden" name="_method" x-bind:value="getFormMethod()">
-                <input type="hidden" name="id_jabatan" x-model="formData.id_jabatan" x-if="modalMode === 'edit' || modalMode === 'delete'">
+                <!-- ID Jabatan dikirim hidden hanya saat edit/delete karena input text nya didisable. Saat add, dikirim dari input text di bawah -->
+                <template x-if="modalMode === 'edit' || modalMode === 'delete'">
+                    <input type="hidden" name="id_jabatan" x-model="formData.id_jabatan">
+                </template>
                 
                 <div class="px-8 py-5 border-b border-slate-100" :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-slate-50'">
                     <div class="flex justify-between items-center">
@@ -201,15 +230,23 @@
                     <template x-if="modalMode === 'delete'">
                         <div class="bg-white border-2 border-rose-200 rounded-2xl p-5 text-center shadow-sm">
                             <h4 class="text-lg font-bold text-slate-800">Menghapus Jabatan?</h4>
-                            <p class="text-sm text-slate-500 font-medium mt-1 mb-3">Tindakan ini akan menghapus (<span class="text-rose-600 font-bold" x-text="formData.nama_jabatan"></span>). Anggota dengan jabatan ini mungkin kehilangan koneksi jabatannya.</p>
+                            <p class="text-sm text-slate-500 font-medium mt-1 mb-3">Tindakan ini akan menghapus (<span class="text-rose-600 font-bold" x-text="formData.nama_jabatan"></span>).</p>
                         </div>
                     </template>
 
                     <template x-if="modalMode !== 'delete'">
-                        <div>
-                            <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Nama Jabatan <span class="text-rose-500">*</span></label>
-                            <input type="text" name="nama_jabatan" x-model="formData.nama_jabatan" required placeholder="Contoh: KANIT, BABINKAMTIBMAS" 
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">ID Jabatan <span class="text-rose-500">*</span></label>
+                                <input type="number" name="id_jabatan" x-model="formData.id_jabatan" required placeholder="Contoh: 1, 2, 3" 
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide"
+                                    :readonly="modalMode === 'edit'" :class="modalMode === 'edit' ? 'cursor-not-allowed opacity-70' : ''">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Nama Jabatan <span class="text-rose-500">*</span></label>
+                                <input type="text" name="nama_jabatan" x-model="formData.nama_jabatan" required placeholder="Contoh: KANIT, BABINKAMTIBMAS" 
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -276,6 +313,14 @@
                 if (this.modalMode === 'edit') return 'Perbarui';
                 if (this.modalMode === 'delete') return 'Konfirmasi';
                 return '';
+            },
+
+            getFormAction() {
+                if (this.modalMode === 'add') return "{{ route('admin.jabatan.store') }}";
+                if (this.modalMode === 'edit' && this.formData.id_jabatan) {
+                    return "{{ url('/admin/data-utama/jabatan') }}/" + this.formData.id_jabatan;
+                }
+                return "#";
             },
             
             getFormMethod() {
