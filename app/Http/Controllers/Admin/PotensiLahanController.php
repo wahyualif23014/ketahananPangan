@@ -119,6 +119,8 @@ class PotensiLahanController extends Controller {
                 'kec_nama'           => $kecNama,
                 'desa_nama'          => $desaNama,
                 'kab_nama'           => $kabNama,
+                'id_wilayah'         => $lahan->id_wilayah,
+                'id_komoditi'        => $lahan->id_komoditi,
                 'wilayah_label'      => 'Desa ' . $desaNama . ' Kecamatan ' . $kecNama . ' Kabupaten ' . $kabNama,
             ];
         });
@@ -193,5 +195,40 @@ class PotensiLahanController extends Controller {
         DB::table('lahan')->insert($data);
 
         return response()->json(['success' => true, 'message' => 'Data berhasil disimpan']);
+    }
+
+    public function update(Request $request, $id) {
+        $data = [
+            'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
+            'id_wilayah'        => $request->id_desa,
+            'id_jenis_lahan'    => $request->id_jenis_lahan,
+            'luas_lahan'        => $request->luas_lahan,
+            'id_anggota'        => $request->id_anggota,
+            'cp_lahan'          => $request->cp_lahan,
+            'no_cp_lahan'       => $request->no_cp_lahan,
+            'cp_polisi'         => $request->cp_polisi,
+            'no_cp_polisi'      => $request->no_cp_polisi,
+            'latitude'          => $request->latitude,
+            'longitude'         => $request->longitude,
+            'alamat_lahan'      => $request->alamat_lahan,
+            'keterangan_lahan'  => $request->ket_pj,
+            'poktan'            => $request->jml_poktan,
+            'jml_petani'        => $request->jml_petani,
+            'id_komoditi'       => $request->id_komoditi,
+            'ket_polisi'        => $request->keterangan_lain,
+            'edit_oleh'         => auth()->user() ? auth()->user()->id : null,
+            'tgl_edit'          => Carbon::now()
+        ];
+
+        if ($request->hasFile('dokumentasi_lahan')) {
+            $file = $request->file('dokumentasi_lahan');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('storage/dokumentasi'), $filename);
+            $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
+        }
+
+        DB::table('lahan')->where('id_lahan', $id)->update($data);
+
+        return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
     }
 }

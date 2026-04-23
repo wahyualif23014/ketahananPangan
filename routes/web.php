@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\PotensiLahanController;
 use App\Http\Controllers\Admin\KelolaLahanController;
 use App\Http\Controllers\Admin\RekapitulasiController;
 use App\Http\Controllers\Admin\KomoditiController;
-use App\Models\User;
+use App\Http\Controllers\Admin\AnggotaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,37 +55,11 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Data Anggota/Personel
-        Route::get('/anggota', function () {
-            $personels = User::all(); 
-            $jabatans = \Illuminate\Support\Facades\DB::table('jabatan')->get();
-            return view('admin.anggota.index', compact('personels', 'jabatans'));
-        })->name('anggota.index');
+        Route::get('/anggota', [AnggotaController::class, 'index'])->name('anggota.index');
+        Route::post('/anggota', [AnggotaController::class, 'store'])->name('anggota.store');
+        Route::put('/anggota/{id}', [AnggotaController::class, 'update'])->name('anggota.update');
+        Route::delete('/anggota/{id}', [AnggotaController::class, 'destroy'])->name('anggota.destroy');
 
-        Route::post('/anggota', function (Illuminate\Http\Request $request) {
-            $request->validate([
-                'id_anggota' => ['required', 'integer', 'unique:anggota,id_anggota'],
-                'id_jabatan' => ['required', 'exists:jabatan,id_jabatan'],
-                'nama_anggota' => ['required', 'string', 'max:100'],
-                'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
-                'no_telp_anggota' => ['nullable', 'string', 'max:15'],
-                'id_tugas' => ['nullable', 'string', 'max:13'],
-                'role' => ['required', 'in:view,admin,operator'],
-                'password' => ['required', 'confirmed'],
-            ]);
-
-            User::create([
-                'id_anggota' => $request->id_anggota,
-                'id_jabatan' => $request->id_jabatan,
-                'id_tugas' => $request->id_tugas ?? '0',
-                'nama_anggota' => $request->nama_anggota,
-                'username' => $request->username,
-                'no_telp_anggota' => $request->no_telp_anggota,
-                'role' => $request->role,
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            ]);
-
-            return redirect()->route('admin.anggota.index')->with('success', 'Akun personel berhasil disimpan!');
-        })->name('anggota.store');
 
         // Kelola Lahan
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
@@ -97,6 +71,9 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
             });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
+            Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
+            Route::post('/panen', [KelolaLahanController::class, 'storePanen'])->name('panen.store');
+            Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
         });
 
         // Rekapitulasi

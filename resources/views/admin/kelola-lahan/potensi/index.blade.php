@@ -40,7 +40,8 @@
 
 <div class="space-y-8 pb-24 potensi-container max-w-7xl mx-auto" x-data="potensiLahanManager()"
     @set-penggerak.window="formData.nama_personel = $event.detail.nama; formData.hp_personel = $event.detail.hp"
-    @set-pj.window="formData.pj_lahan = $event.detail.nama; formData.hp_pj = $event.detail.hp; formData.id_pj_anggota = $event.detail.id">
+    @set-pj.window="formData.pj_lahan = $event.detail.nama; formData.hp_pj = $event.detail.hp; formData.id_pj_anggota = $event.detail.id"
+    @open-edit-modal.window="openModal($event.detail)">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -52,9 +53,22 @@
                 </svg>
                 <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">Potensi Lahan</span>
             </nav>
-            <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
-                POTENSI <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
-            </h2>
+            <div class="flex items-center gap-3">
+                <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
+                    POTENSI <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
+                </h2>
+                @if(request('search'))
+                <div class="flex items-center gap-2 mt-1 sm:mt-0">
+                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5 shadow-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        "{{ request('search') }}"
+                    </span>
+                    <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
+                        BATAL
+                    </a>
+                </div>
+                @endif
+            </div>
             <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Pendataan lokasi dan statistik pemanfaatan lahan untuk ketahanan pangan operasional.</p>
         </div>
 
@@ -414,7 +428,7 @@
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                         Edit
                                     </button>
-                                    <form action="/admin/kelola-lahan/potensi/delete/{{ $item['id_lahan'] }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
+                                    <form action="/admin/kelola-lahan/potensi/destroy/{{ $item['id_lahan'] }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
                                             Hapus
@@ -593,8 +607,8 @@
         document.body.style.overflow = '';
     }
     function openEditModal(item) {
-        var event = new CustomEvent('open-edit-modal', { detail: item });
-        document.dispatchEvent(event);
+        // Dispatch ke window agar Alpine bisa menangkap dengan @open-edit-modal.window
+        window.dispatchEvent(new CustomEvent('open-edit-modal', { detail: item }));
     }
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeViewModal(); } });
     </script>
@@ -1529,14 +1543,61 @@
                 openModal(item = null) {
                     if (item) {
                         this.isEdit = true;
+                        // Reset dulu, lalu isi dari data item
+                        this.resetForm();
+
+                        // Pecah id_tingkat menjadi id_resor dan id_sektor
+                        const idTingkat = item.id_tingkat || '';
+                        const dotCount = (idTingkat.match(/\./g) || []).length;
+                        let idResor = '';
+                        let idSektor = '';
+                        if (dotCount >= 2) {
+                            const parts = idTingkat.split('.');
+                            idResor = parts[0] + '.' + parts[1];
+                            idSektor = idTingkat;
+                        } else {
+                            idResor = idTingkat;
+                            idSektor = '';
+                        }
+
+                        // Pecah id_wilayah mentah menjadi kabupaten, kecamatan, desa
+                        const idWilayah = item.id_wilayah || '';
+                        const idDesa = idWilayah;
+                        let idKab = '', idKec = '';
+                        if (idWilayah) {
+                            const wparts = idWilayah.split('.');
+                            if (wparts.length >= 2) idKab = wparts[0] + '.' + wparts[1];
+                            if (wparts.length >= 3) idKec = wparts[0] + '.' + wparts[1] + '.' + wparts[2];
+                        }
+
                         this.formData = {
                             ...this.formData,
-                            ...item
+                            id: item.id_lahan,
+                            id_resor: idResor,
+                            id_sektor: idSektor,
+                            id_jenis_lahan: String(item.id_jenis_lahan || ''),
+                            id_kabupaten: idKab,
+                            id_kecamatan: idKec,
+                            id_desa: idDesa,
+                            luas: item.luas_lahan || '',
+                            nama_personel: item.cp_polisi || '',
+                            hp_personel: item.no_cp_polisi || '',
+                            pj_lahan: item.cp_lahan || '',
+                            hp_pj: item.no_cp_lahan || '',
+                            ket_pj: item.keterangan_lahan || '',
+                            alamat: item.alamat_lahan || '',
+                            keterangan_lain: item.ket_polisi || '',
+                            jml_poktan: item.poktan || '',
+                            jml_petani: item.jml_petani || '',
+                            komoditi: String(item.id_komoditi || ''),
+                            lat: item.latitude || '',
+                            lng: item.longitude || '',
                         };
                     } else {
                         this.isEdit = false;
                         this.resetForm();
                     }
+                    this.currentStep = 1;
                     this.isOpen = true;
                     this.initMap();
                 },
@@ -1585,8 +1646,8 @@
                 async saveData() {
                     // Validasi: Pastikan SEMUA kolom terisi
                     const requiredFields = [
-                        'id_resor', 'id_sektor', 'id_jenis_lahan',
-                        'nama_personel', 'hp_personel', 'pj_lahan', 'hp_pj', 'ket_pj',
+                        'id_resor', 'id_jenis_lahan',
+                        'nama_personel', 'hp_personel', 'pj_lahan', 'hp_pj',
                         'jml_poktan', 'luas', 'jml_petani', 'komoditi',
                         'alamat', 'id_kabupaten', 'id_kecamatan', 'id_desa', 'lat', 'lng'
                     ];
@@ -1605,8 +1666,10 @@
 
                     this.isLoading = true;
 
-                    const method = this.isEdit ? 'POST' : 'POST';
-                    const urlStore = this.isEdit ? `/admin/kelola-lahan/potensi/update/${this.formData.id}` : `/admin/kelola-lahan/potensi/store`;
+                    const method = 'POST';
+                    const urlStore = this.isEdit
+                        ? `/admin/kelola-lahan/potensi/update/${this.formData.id}`
+                        : `/admin/kelola-lahan/potensi/store`;
 
                     try {
                         const fd = new FormData();

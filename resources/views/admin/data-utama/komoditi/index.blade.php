@@ -22,7 +22,9 @@
     }
 </style>
 
-<div class="space-y-8 pb-24 komoditi-container max-w-7xl mx-auto" x-data="komoditiApp()">
+<div class="space-y-8 pb-24 komoditi-container max-w-7xl mx-auto" 
+    x-data="komoditiApp()"
+    @open-modal-komoditi.window="openModal($event.detail.mode, $event.detail.data)">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-2 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -45,7 +47,18 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <input type="text" x-model="searchQuery" placeholder="CARI KOMODITI..." 
+                <input type="text" 
+                    id="search-komoditi"
+                    placeholder="CARI KOMODITI..." 
+                    value="{{ $search ?? '' }}"
+                    @input.debounce.400ms="
+                        const q = $event.target.value;
+                        const url = new URL(window.location.href);
+                        if (q) url.searchParams.set('search', q);
+                        else url.searchParams.delete('search');
+                        url.searchParams.delete('page');
+                        window.location.href = url.toString();
+                    "
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
             </div>
 
@@ -55,7 +68,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
             </button>
-            <button @click="openModal('add')" 
+            <button type="button"
+                onclick="window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'add', data: null }}))"
                 class="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest border-emerald-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -79,14 +93,14 @@
     @endif
 
     @php
-        // Fetch and group Komoditi logic
-        $allKomoditi = DB::table('komoditi')
-            ->where('deletestatus', '!=', '0')
-            ->get();
-            
+        // $allKomoditi sudah difilter oleh controller berdasarkan ?search=
         $totalItems = $allKomoditi->count();
-            
+
+        // GroupBy untuk accordion (dari hasil filter)
         $groupedKomoditiTotal = $allKomoditi->groupBy('jenis_komoditi');
+
+        // GroupBy untuk datalist di modal (semua data, tidak difilter)
+        $groupedKomoditiForList = $allKomoditiForList->groupBy('jenis_komoditi');
 
         $currentPage = request()->get('page', 1);
         $perPage = 6;
@@ -144,6 +158,15 @@
             <div class="flex items-center gap-4 relative z-10 w-full">
                 <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
                 <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR HIERARKI KOMODITI</h3>
+                @if($search)
+                <span class="text-[10px] font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30 flex items-center gap-1.5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    "{{ $search }}"
+                </span>
+                <a href="{{ route('admin.komoditi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                    ✕ Hapus Filter
+                </a>
+                @endif
             </div>
             <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
                 PENGELOMPOKAN TANAMAN
@@ -154,8 +177,7 @@
         <div class="divide-y divide-slate-100/80">
             @forelse($groupedKomoditi as $jenis => $items)
 
-                <div x-data="{ expandedJenis: false }" 
-                     x-show="searchQuery === '' || '{{ strtolower($jenis) }}'.includes(searchQuery.toLowerCase()) || JSON.stringify({{ json_encode($items) }}).toLowerCase().includes(searchQuery.toLowerCase())"
+                <div x-data="{ expandedJenis: {{ $search ? 'true' : 'false' }} }" 
                      class="group/jenis transition-all duration-300 hover:bg-slate-50/50"
                      :class="expandedJenis ? 'bg-slate-50/50' : ''">
                      
@@ -184,7 +206,9 @@
                         <!-- Right Stats & Actions -->
                         <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
                             
-                            <button @click.stop="openModal('add_tanaman', '{{ addslashes($jenis) }}')" title="Tambah tanaman ke dalam kategori {{ $jenis }}" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl border border-emerald-200 transition-all shadow-sm text-[10px] font-black uppercase tracking-wider group/addbtn active:scale-95 z-20">
+                            <button type="button"
+                                onclick="window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'add_tanaman', data: '{{ addslashes($jenis) }}' }}))"
+                                title="Tambah tanaman ke dalam kategori {{ $jenis }}" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl border border-emerald-200 transition-all shadow-sm text-[10px] font-black uppercase tracking-wider group/addbtn active:scale-95 z-20">
                                 <svg class="w-4 h-4 group-hover/addbtn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                                 <span class="hidden sm:inline">Tambah Tanaman</span>
                                 <span class="sm:hidden">Tambah</span>
@@ -205,8 +229,7 @@
                                     <div class="w-full h-px bg-slate-200 my-4 mb-6"></div>
                                     <div class="space-y-4">
                                         @foreach($items as $item)
-                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/item"
-                                                 x-show="searchQuery === '' || '{{ strtolower($item->nama_komoditi) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($item->id_komoditi) }}'.includes(searchQuery.toLowerCase())">
+                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/item">
                                                 
                                                 <!-- Branch node connector -->
                                                 <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
@@ -234,10 +257,14 @@
                                                         </div>
                                                         
                                                         <div class="flex gap-2">
-                                                            <button @click="openModal('edit', {{ json_encode($item) }})" class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white shadow-sm transition-all active:scale-95">
+                                                            <button type="button"
+                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'edit', data: {{ json_encode($item) }} }}))"
+                                                                class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white shadow-sm transition-all active:scale-95">
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                             </button>
-                                                            <button @click="openModal('delete', {{ json_encode($item) }})" class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white shadow-sm transition-all active:scale-95">
+                                                            <button type="button"
+                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'delete', data: {{ json_encode($item) }} }}))"
+                                                                class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white shadow-sm transition-all active:scale-95">
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                             </button>
                                                         </div>
@@ -267,8 +294,37 @@
         </div>
 
         @if($groupedKomoditi->hasPages())
-        <div class="px-8 py-5 border-t border-slate-200/60 bg-slate-50/50">
-            {{ $groupedKomoditi->links() }}
+        <div class="px-8 py-5 border-t border-slate-200/60 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                Halaman <span class="text-blue-600">{{ $groupedKomoditi->currentPage() }}</span> dari <span class="text-slate-800">{{ $groupedKomoditi->lastPage() }}</span>
+                @if($search) &bull; <span class="text-emerald-600">Filter: "{{ $search }}"</span> @endif
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2">
+                @if ($groupedKomoditi->onFirstPage())
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
+                @else
+                    <a href="{{ $groupedKomoditi->appends(['search' => $search])->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
+                @endif
+                <div class="hidden sm:flex items-center gap-1 mx-2">
+                    @php
+                        $startPage = max($groupedKomoditi->currentPage() - 2, 1);
+                        $endPage   = min($startPage + 4, $groupedKomoditi->lastPage());
+                        if ($endPage - $startPage < 4) $startPage = max($endPage - 4, 1);
+                    @endphp
+                    @for ($pg = $startPage; $pg <= $endPage; $pg++)
+                        @if ($pg == $groupedKomoditi->currentPage())
+                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $pg }}</span>
+                        @else
+                            <a href="{{ $groupedKomoditi->appends(['search' => $search])->url($pg) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $pg }}</a>
+                        @endif
+                    @endfor
+                </div>
+                @if ($groupedKomoditi->hasMorePages())
+                    <a href="{{ $groupedKomoditi->appends(['search' => $search])->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
+                @else
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
+                @endif
+            </div>
         </div>
         @endif
     </div>
@@ -289,10 +345,13 @@
              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
              class="bg-white rounded-[2rem] shadow-2xl shadow-emerald-900/20 w-full max-w-lg relative z-10 flex flex-col overflow-hidden border border-slate-100">
             
-            <form :action="getFormAction()" method="POST">
+            <form id="komoditi-form"
+                x-bind:action="getFormAction()"
+                method="POST"
+                @submit.prevent="submitForm($el)">
                 @csrf
                 <input type="hidden" name="_method" x-bind:value="getFormMethod()">
-                <input type="hidden" name="id_komoditi" x-model="formData.id_komoditi" x-if="modalMode === 'edit' || modalMode === 'delete'">
+                <input type="hidden" name="id_komoditi" x-model="formData.id_komoditi">
                 
                 <!-- Dynamic Header -->
                 <div class="px-8 py-5 border-b border-slate-100" :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-slate-50'">
@@ -337,7 +396,7 @@
                                 :readonly="isJenisLocked">
                             
                             <datalist id="kategori-list">
-                                @foreach($groupedKomoditiTotal->keys() as $jk)
+                                @foreach($groupedKomoditiForList->keys() as $jk)
                                     <option value="{{ $jk }}"></option>
                                 @endforeach
                             </datalist>
@@ -373,7 +432,6 @@
 <script>
     function komoditiApp() {
         return {
-            searchQuery: '',
             modalMode: null, // 'add', 'edit', 'delete'
             isJenisLocked: false,
             formData: {
@@ -428,10 +486,19 @@
             },
             
             getFormMethod() {
-                if (this.modalMode === 'add') return "POST";
-                if (this.modalMode === 'edit') return "PUT";
+                if (this.modalMode === 'add')    return "POST";
+                if (this.modalMode === 'edit')   return "PUT";
                 if (this.modalMode === 'delete') return "DELETE";
                 return "POST";
+            },
+
+            submitForm(form) {
+                form.action = this.getFormAction();
+                const methodInput = form.querySelector('input[name="_method"]');
+                if (methodInput) {
+                    methodInput.value = this.getFormMethod();
+                }
+                form.submit();
             }
         }
     }

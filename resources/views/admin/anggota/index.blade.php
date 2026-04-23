@@ -42,7 +42,9 @@
     $totalKesatuanGlobal = $personels->groupBy('kesatuan')->count();
 @endphp
 
-<div class="space-y-8 pb-24 personel-container max-w-7xl mx-auto" x-data="personelApp()">
+<div class="space-y-8 pb-24 personel-container max-w-7xl mx-auto" 
+    x-data="personelApp()"
+    x-on:open-modal-personel.window="openModal($event.detail.mode, $event.detail.data)">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-2 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -61,13 +63,24 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-            <div class="relative group">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" 
+                        id="search-personel"
+                        placeholder="CARI ANGGOTA..." 
+                        value="{{ $search ?? '' }}"
+                        @input.debounce.400ms="
+                            const q = $event.target.value;
+                            const url = new URL(window.location.href);
+                            if (q) url.searchParams.set('search', q);
+                            else url.searchParams.delete('search');
+                            url.searchParams.delete('page');
+                            window.location.href = url.toString();
+                        "
+                        class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
                 </div>
-                <input type="text" x-model="searchQuery" placeholder="CARI ANGGOTA..." 
-                    class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
-            </div>
 
             <button onclick="window.location.reload()" title="Refresh Data"
                 class="p-3.5 bg-slate-900 text-emerald-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
@@ -75,7 +88,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
             </button>
-            <button @click="openModal('add')" 
+            <button type="button" 
+                onclick="window.dispatchEvent(new CustomEvent('open-modal-personel', { detail: { mode: 'add', data: null }}))"
                 class="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest border border-emerald-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -85,6 +99,20 @@
         </div>
     </div>
 
+
+    @if(session('success'))
+    <div class="px-2 mb-4">
+        <div class="bg-emerald-50/80 backdrop-blur-md border border-emerald-200 text-emerald-700 p-4 rounded-xl shadow-sm flex justify-between animate-in fade-in slide-in-from-top-4" x-data="{ show: true }" x-show="show">
+            <div class="flex items-center gap-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="font-bold text-sm tracking-wide">{{ session('success') }}</p>
+            </div>
+            <button @click="show = false" class="text-emerald-500 hover:text-emerald-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+    @endif
 
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative px-2 mt-10">
@@ -129,6 +157,15 @@
             <div class="flex items-center gap-4 relative z-10 w-full">
                 <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
                 <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR ANGGOTA (PER KESATUAN)</h3>
+                @if($search)
+                <span class="text-[10px] font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30 flex items-center gap-1.5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    "{{ $search }}"
+                </span>
+                <a href="{{ route('admin.anggota.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                    ✕ Hapus Filter
+                </a>
+                @endif
             </div>
             <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
                 PENGELOMPOKAN WILAYAH
@@ -138,8 +175,7 @@
         <div class="divide-y divide-slate-100/80">
             @forelse($groupedPersonels as $unit => $members)
 
-                <div x-data="{ expanded: false }" 
-                     x-show="searchQuery === '' || '{{ strtolower($unit) }}'.includes(searchQuery.toLowerCase()) || JSON.stringify({{ json_encode($members) }}).toLowerCase().includes(searchQuery.toLowerCase())"
+                <div x-data="{ expanded: {{ $search ? 'true' : 'false' }} }" 
                      class="group/unit transition-all duration-300 hover:bg-slate-50/50"
                      :class="expanded ? 'bg-slate-50/50' : ''">
                      
@@ -175,8 +211,7 @@
                                     <div class="w-full h-px bg-slate-200 my-4 mb-6"></div>
                                     <div class="space-y-4">
                                         @foreach($members as $p)
-                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/p"
-                                                 x-show="searchQuery === '' || '{{ strtolower($p->nama_anggota) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($p->username) }}'.includes(searchQuery.toLowerCase())">
+                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/p">
                                                 
                                                 <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
                                                 <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/p:scale-150 transition-transform"></div>
@@ -209,10 +244,38 @@
                                                         </div>
                                                         
                                                         <div class="flex gap-2 opacity-0 group-hover/p:opacity-100 transition-opacity duration-300 delay-100">
-                                                            <button @click="openModal('edit', {{ json_encode($p) }})" class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white shadow-sm transition-all active:scale-95">
+                                                            <button 
+                                                                type="button"
+                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-personel', { detail: {
+                                                                    mode: 'edit',
+                                                                    data: {
+                                                                        id_anggota: '{{ $p->id_anggota }}',
+                                                                        nama_anggota: '{{ addslashes($p->nama_anggota) }}',
+                                                                        username: '{{ addslashes($p->username) }}',
+                                                                        id_jabatan: '{{ $p->id_jabatan }}',
+                                                                        role: '{{ $p->role }}',
+                                                                        id_tugas: '{{ addslashes($p->id_tugas) }}',
+                                                                        no_telp_anggota: '{{ addslashes($p->no_telp_anggota) }}'
+                                                                    }
+                                                                }}))"
+                                                                class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white shadow-sm transition-all active:scale-95">
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                                                             </button>
-                                                            <button @click="openModal('delete', {{ json_encode($p) }})" class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white shadow-sm transition-all active:scale-95">
+                                                            <button 
+                                                                type="button"
+                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-personel', { detail: {
+                                                                    mode: 'delete',
+                                                                    data: {
+                                                                        id_anggota: '{{ $p->id_anggota }}',
+                                                                        nama_anggota: '{{ addslashes($p->nama_anggota) }}',
+                                                                        username: '{{ $p->username }}',
+                                                                        id_jabatan: '{{ $p->id_jabatan }}',
+                                                                        role: '{{ $p->role }}',
+                                                                        id_tugas: '{{ $p->id_tugas }}',
+                                                                        no_telp_anggota: '{{ $p->no_telp_anggota }}'
+                                                                    }
+                                                                }}))"
+                                                                class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white shadow-sm transition-all active:scale-95">
                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                             </button>
                                                         </div>
@@ -245,59 +308,37 @@
         <div class="px-6 py-5 border-t border-slate-200/60 bg-slate-50/80 flex flex-col sm:flex-row justify-between items-center gap-4 rounded-b-[2.5rem]">
             <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest">
                 Data ke <span class="text-blue-600">{{ $paginatedPersonels->firstItem() }}</span> - <span class="text-blue-600">{{ $paginatedPersonels->lastItem() }}</span> dari total <span class="text-slate-800">{{ $paginatedPersonels->total() }}</span>
+                @if($search) &bull; <span class="text-emerald-600">Filter: "{{ $search }}"</span> @endif
             </div>
-            
             <div class="flex items-center gap-1 sm:gap-2">
-                {{-- Previous --}}
                 @if ($paginatedPersonels->onFirstPage())
                     <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
                 @else
-                    <a href="{{ $paginatedPersonels->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
+                    <a href="{{ $paginatedPersonels->appends(['search' => $search])->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
                 @endif
-
-                {{-- Pages --}}
                 <div class="hidden sm:flex items-center gap-1 mx-2">
                     @php
                         $startPage = max($paginatedPersonels->currentPage() - 2, 1);
-                        $endPage = min($startPage + 4, $paginatedPersonels->lastPage());
-                        if ($endPage - $startPage < 4) {
-                            $startPage = max($endPage - 4, 1);
-                        }
+                        $endPage   = min($startPage + 4, $paginatedPersonels->lastPage());
+                        if ($endPage - $startPage < 4) $startPage = max($endPage - 4, 1);
                     @endphp
-
-                    @if($startPage > 1)
-                        <a href="{{ $paginatedPersonels->url(1) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">1</a>
-                        @if($startPage > 2)
-                            <span class="w-9 h-9 flex items-center justify-center text-slate-400 text-xs font-black">...</span>
-                        @endif
-                    @endif
-
-                    @for ($page = $startPage; $page <= $endPage; $page++)
-                        @if ($page == $paginatedPersonels->currentPage())
-                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $page }}</span>
+                    @for ($pg = $startPage; $pg <= $endPage; $pg++)
+                        @if ($pg == $paginatedPersonels->currentPage())
+                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $pg }}</span>
                         @else
-                            <a href="{{ $paginatedPersonels->url($page) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 rounded-xl text-xs font-black transition-all">{{ $page }}</a>
+                            <a href="{{ $paginatedPersonels->appends(['search' => $search])->url($pg) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $pg }}</a>
                         @endif
                     @endfor
-
-                    @if($endPage < $paginatedPersonels->lastPage())
-                        @if($endPage < $paginatedPersonels->lastPage() - 1)
-                            <span class="w-9 h-9 flex items-center justify-center text-slate-400 text-xs font-black">...</span>
-                        @endif
-                        <a href="{{ $paginatedPersonels->url($paginatedPersonels->lastPage()) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $paginatedPersonels->lastPage() }}</a>
-                    @endif
                 </div>
-
-                {{-- Next --}}
                 @if ($paginatedPersonels->hasMorePages())
-                    <a href="{{ $paginatedPersonels->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
+                    <a href="{{ $paginatedPersonels->appends(['search' => $search])->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
                 @else
                     <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
                 @endif
             </div>
         </div>
         @endif
-    </div>
+        </div>
 
     {{-- Universal Modal Component (Desain Baru yang Sederhana) --}}
     <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" aria-modal="true">
@@ -312,10 +353,13 @@
              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
              class="relative z-10 w-full max-w-lg flex flex-col bg-white rounded-xl shadow-lg overflow-hidden max-h-[95vh]">
 
-            <form :action="getFormAction()" method="POST">
+            <form id="personel-form"
+                x-bind:action="getFormAction()"
+                method="POST"
+                @submit.prevent="submitForm($el)">
                 @csrf
                 <input type="hidden" name="_method" x-bind:value="getFormMethod()">
-                <input type="hidden" name="id_anggota" x-model="formData.id_anggota">
+                <input type="hidden" name="id_anggota_hidden" x-model="formData.id_anggota">
 
                 {{-- Header --}}
                 <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
@@ -354,7 +398,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">ID Anggota</label>
-                                    <input type="number" name="id_anggota" x-model="formData.id_anggota" required placeholder="Contoh: 1001" 
+                                    <input type="number" name="id_anggota" x-model="formData.id_anggota"
+                                        :required="modalMode === 'add'"
+                                        :readonly="modalMode === 'edit'"
+                                        :class="modalMode === 'edit' ? 'bg-slate-100 cursor-not-allowed' : ''"
+                                        placeholder="Contoh: 1001" 
                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
                                 </div>
                                 <div>
@@ -419,6 +467,22 @@
                                     </div>
                                 </div>
                             </template>
+
+                            <template x-if="modalMode === 'edit'">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Sandi Baru <span class="text-slate-400 font-normal text-xs">(opsional)</span></label>
+                                        <input type="password" name="password" placeholder="Kosongkan jika tidak diubah" 
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Konfirmasi Sandi</label>
+                                        <input type="password" name="password_confirmation" placeholder="Ulangi sandi baru" 
+                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    </div>
+                                </div>
+                            </template>
+
                         </div>
                     </template>
                 </div>
@@ -443,42 +507,41 @@
 <script>
     function personelApp() {
         return {
-            searchQuery: '',
             isModalOpen: {{ $errors->any() ? 'true' : 'false' }},
-            modalMode: {{ $errors->any() ? "'add'" : 'null' }},
+            modalMode: {!! $errors->any() ? "'add'" : 'null' !!},
             formData: {
-                id_anggota: '{!! old('id_anggota') !!}',
+                id_anggota: '{{ old('id_anggota') }}',
                 nama_anggota: '{!! addslashes(old('nama_anggota')) !!}',
                 username: '{!! addslashes(old('username')) !!}',
-                id_jabatan: '{!! old('id_jabatan') !!}',
-                role: '{!! old('role', 'view') !!}',
+                id_jabatan: '{{ old('id_jabatan') }}',
+                role: '{{ old('role', 'view') }}',
                 id_tugas: '{!! addslashes(old('id_tugas')) !!}',
                 no_telp_anggota: '{!! addslashes(old('no_telp_anggota')) !!}'
             },
-            
+
             openModal(mode, data = null) {
                 this.modalMode = mode;
                 this.isModalOpen = true;
                 if (mode === 'add') {
                     this.formData = { id_anggota: '', nama_anggota: '', username: '', id_jabatan: '', role: 'view', id_tugas: '', no_telp_anggota: '' };
                 } else if (data) {
-                    this.formData = { 
-                        id_anggota: data.id_anggota, 
+                    this.formData = {
+                        id_anggota: data.id_anggota,
                         nama_anggota: data.nama_anggota,
                         username: data.username,
-                        id_jabatan: data.id_jabatan,
+                        id_jabatan: String(data.id_jabatan),
                         role: data.role,
                         id_tugas: data.id_tugas,
                         no_telp_anggota: data.no_telp_anggota
                     };
                 }
             },
-            
+
             closeModal() {
                 this.isModalOpen = false;
                 this.modalMode = null;
             },
-            
+
             getModalTitle() {
                 if (this.modalMode === 'add') return 'Pendaftaran Anggota Baru';
                 if (this.modalMode === 'edit') return 'Edit Data Anggota';
@@ -501,19 +564,39 @@
             },
 
             getFormAction() {
-                if (this.modalMode === 'add') return "{{ route('admin.anggota.store') }}";
-                return "#";
+                if (this.modalMode === 'add')    return '{{ route('admin.anggota.store') }}';
+                if (this.modalMode === 'edit')   return '/admin/anggota/' + this.formData.id_anggota;
+                if (this.modalMode === 'delete') return '/admin/anggota/' + this.formData.id_anggota;
+                return '#';
             },
-            
+
             getFormMethod() {
-                if (this.modalMode === 'add') return "POST";
-                if (this.modalMode === 'edit') return "PUT";
-                if (this.modalMode === 'delete') return "DELETE";
-                return "POST";
+                if (this.modalMode === 'add')    return 'POST';
+                if (this.modalMode === 'edit')   return 'PUT';
+                if (this.modalMode === 'delete') return 'DELETE';
+                return 'POST';
+            },
+
+            submitForm(form) {
+                const targetAction = this.getFormAction();
+                const targetMethod = this.getFormMethod();
+
+                if (targetAction === '#') {
+                    console.error('Form action is invalid');
+                    return;
+                }
+
+                form.action = targetAction;
+
+                const methodInput = form.querySelector('[name="_method"]');
+                if (methodInput) {
+                    methodInput.value = targetMethod;
+                }
+
+                form.submit();
             }
-        }
+        };
     }
 </script>
 
-<script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 @endsection
