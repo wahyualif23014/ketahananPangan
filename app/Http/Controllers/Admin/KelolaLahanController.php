@@ -34,7 +34,7 @@ class KelolaLahanController extends Controller
             'komoditi'  => $request->komoditi,
             'start'     => $request->start_date,
             'end'       => $request->end_date,
-            'kategori'  => $request->kategori ?? 'tanam',
+            'kategori'  => $request->kategori ?? 'semua',
             'search'    => $request->search
         ];
 
@@ -58,18 +58,40 @@ class KelolaLahanController extends Controller
 
         if ($filters['komoditi']) {
             $dataQuery->where('lahan.id_komoditi', $filters['komoditi']);
-        }
+        }        
+        
+        $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+        $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
+        $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
+
+        $dataQuery = DB::table('lahan')
+            ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+            ->leftJoin('wilayah', 'lahan.id_wilayah', '=', 'wilayah.id_wilayah')
+            ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')
+            ->leftJoin('komoditi', 'lahan.id_komoditi', '=', 'komoditi.id_komoditi')
+            ->leftJoin($latestTanam, 'lahan.id_lahan', '=', 't.id_lahan')
+            ->leftJoin($latestPanen, 't.id_tanam', '=', 'p.id_tanam')
+            ->leftJoin($latestDistribusi, 't.id_tanam', '=', 'd.id_tanam');
 
         // Category-Specific Joins & Date Filters
         if ($filters['kategori'] === 'panen') {
-            $dataQuery->join('panen', 'lahan.id_lahan', '=', 'panen.id_lahan');
-            $dateField = 'panen.tgl_panen';
+            $dateField = 'p.tgl_panen';
         } elseif ($filters['kategori'] === 'serapan') {
-            $dataQuery->join('distribusi', 'lahan.id_lahan', '=', 'distribusi.id_lahan');
-            $dateField = 'distribusi.tgl_distribusi';
+            $dateField = 'd.tgl_distribusi';
         } else {
-            $dataQuery->leftJoin('tanam', 'lahan.id_lahan', '=', 'tanam.id_lahan');
-            $dateField = 'tanam.tgl_tanam';
+            $dateField = 't.tgl_tanam';
+        }
+
+        if ($filters['kategori'] !== 'semua') {
+            $targetStage = $filters['kategori'] === 'tanam' ? 0 : ($filters['kategori'] === 'panen' ? 1 : 2);
+            $dataQuery->whereRaw("
+                CASE 
+                    WHEN t.id_tanam IS NULL THEN 0
+                    WHEN p.id_panen IS NULL THEN 1
+                    WHEN d.id_distribusi IS NULL THEN 2
+                    ELSE 0
+                END = ?
+            ", [$targetStage]);
         }
 
         if ($filters['start']) {
@@ -80,9 +102,23 @@ class KelolaLahanController extends Controller
         }
 
         if ($filters['search']) {
-            $dataQuery->where(function($q) use ($filters) {
-                $q->where('wilayah.nama_wilayah', 'LIKE', '%' . $filters['search'] . '%')
-                  ->orWhere('tingkat.nama_tingkat', 'LIKE', '%' . $filters['search'] . '%');
+            $searchStr = $filters['search'];
+            $matchingWilayahIds = DB::table('wilayah')
+                ->where('nama_wilayah', 'LIKE', '%' . $searchStr . '%')
+                ->pluck('id_wilayah')
+                ->toArray();
+
+            $dataQuery->where(function($q) use ($searchStr, $matchingWilayahIds) {
+                $q->where('wilayah.nama_wilayah', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('tingkat.nama_tingkat', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('lahan.alamat_lahan', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('lahan.cp_polisi', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('lahan.cp_lahan', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('lahan.poktan', 'LIKE', '%' . $searchStr . '%');
+
+                foreach ($matchingWilayahIds as $wId) {
+                    $q->orWhere('lahan.id_wilayah', 'LIKE', $wId . '%');
+                }
             });
         }
 
@@ -127,7 +163,10 @@ class KelolaLahanController extends Controller
                     'wilayah.nama_wilayah',
                     'anggota.nama_anggota',
                     'komoditi.nama_komoditi',
-                    'komoditi.jenis_komoditi'
+                    'komoditi.jenis_komoditi',
+                    't.id_tanam', 't.luas_tanam', 't.tgl_tanam', 't.est_awal_panen', 't.est_akhir_panen',
+                    'p.id_panen', 'p.total_panen', 'p.tgl_panen', 'p.status_panen',
+                    'd.id_distribusi', 'd.total_distribusi', 'd.tgl_distribusi', 'd.distribusi_ke', 'd.valid_oleh as serapan_valid_oleh'
                 )
                 ->where(function($q) use ($resorIds) {
                     foreach($resorIds as $id) {
@@ -135,14 +174,6 @@ class KelolaLahanController extends Controller
                     }
                 });
             
-            if ($filters['kategori'] === 'panen') {
-                $allRecordsQuery->addSelect('panen.tgl_panen', 'panen.total_panen', 'panen.luas_panen', 'panen.status_panen');
-            } elseif ($filters['kategori'] === 'serapan') {
-                $allRecordsQuery->addSelect('distribusi.tgl_distribusi', 'distribusi.total_distribusi', 'distribusi.distribusi_ke');
-            } else {
-                $allRecordsQuery->addSelect('tanam.tgl_tanam', 'tanam.luas_tanam', 'tanam.keterangan_tanam');
-            }
-
             $recordsCollection = $allRecordsQuery->get();
 
             // Resolve Kecamatan for each record
@@ -399,6 +430,74 @@ class KelolaLahanController extends Controller
         } catch (\Exception $e) {
             \Log::error('storeSerapan error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updateTanam(Request $request, $id)
+    {
+        try {
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'tgl_tanam' => $request->tgl_tanam,
+                'luas_tanam' => $request->luas_tanam,
+                'nama_bibit' => $request->jenis_bibit,
+                'kebutuhan_bibit' => $request->kebutuhan_bibit,
+                'est_awal_panen' => $request->est_awal_panen,
+                'est_akhir_panen' => $request->est_akhir_panen,
+                'keterangan_tanam' => $request->keterangan_tanam,
+                'edit_oleh' => auth()->user()->username ?? 'admin',
+                'tgl_edit' => now(),
+            ]);
+            return response()->json(['success' => true, 'message' => 'Data Tanam berhasil diperbarui']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updatePanen(Request $request, $id)
+    {
+        try {
+            DB::table('panen')->where('id_panen', $id)->update([
+                'tgl_panen' => $request->tgl_panen,
+                'luas_panen' => $request->luas_panen,
+                'total_panen' => $request->total_panen,
+                'status_panen' => $request->status_panen,
+                'ket_panen' => $request->keterangan_panen,
+                'edit_oleh' => auth()->user()->username ?? 'admin',
+                'tgl_edit' => now(),
+            ]);
+            return response()->json(['success' => true, 'message' => 'Data Panen berhasil diperbarui']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updateSerapan(Request $request, $id)
+    {
+        try {
+            DB::table('distribusi')->where('id_distribusi', $id)->update([
+                'tgl_distribusi' => $request->tgl_distribusi,
+                'total_distribusi' => $request->total_distribusi,
+                'distribusi_ke' => $request->distribusi_ke,
+                'keterangan_distribusi' => $request->keterangan_serapan,
+                'edit_oleh' => auth()->user()->username ?? 'admin',
+                'tgl_edit' => now(),
+            ]);
+            return response()->json(['success' => true, 'message' => 'Data Serapan berhasil diperbarui']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function validasiSerapan(Request $request, $id)
+    {
+        try {
+            DB::table('distribusi')->where('id_distribusi', $id)->update([
+                'valid_oleh' => auth()->user()->username ?? 'admin',
+                'tgl_valid' => now(),
+            ]);
+            return back()->with('success', 'Data Serapan berhasil divalidasi');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
         }
     }
 }

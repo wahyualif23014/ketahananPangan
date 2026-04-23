@@ -1732,6 +1732,17 @@
             }
         }
     </script>
-    @endsection
-
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(request('action') === 'view' && $lahanList->count() === 1)
+                setTimeout(() => {
+                    if (typeof openViewModal === 'function') openViewModal(@json($lahanList->first()));
+                }, 100);
+            @elseif(request('action') === 'edit' && $lahanList->count() === 1)
+                setTimeout(() => {
+                    if (typeof openEditModal === 'function') openEditModal(@json($lahanList->first()));
+                }, 100);
+            @endif
+        });
+    </script>
+@endsection

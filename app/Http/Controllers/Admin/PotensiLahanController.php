@@ -36,13 +36,18 @@ class PotensiLahanController extends Controller {
 
         if ($search) {
             $lahanQuery->where(function($q) use ($search, $wilayahMap) {
-                $q->where('alamat_lahan', 'like', "%{$search}%")
+                $q->where('id_lahan', $search)
+                  ->orWhere('alamat_lahan', 'like', "%{$search}%")
                   ->orWhere('cp_polisi', 'like', "%{$search}%")
                   ->orWhere('cp_lahan', 'like', "%{$search}%")
-                  ->orWhere('id_wilayah', 'like', "%{$search}%")
-                  ->orWhereIn('id_wilayah', $wilayahMap->filter(fn($nama) =>
-                      stripos($nama, $search) !== false
-                  )->keys());
+                  ->orWhere('poktan', 'like', "%{$search}%")
+                  ->orWhere('id_wilayah', 'like', "%{$search}%");
+                  
+                foreach ($wilayahMap as $wId => $wNama) {
+                    if (stripos($wNama, $search) !== false) {
+                        $q->orWhere('id_wilayah', 'like', "{$wId}%");
+                    }
+                }
             });
         }
 

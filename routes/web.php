@@ -29,9 +29,7 @@ Route::middleware(['auth'])->group(function () {
     // 1. Group Khusus Admin
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard Admin
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
 
         // Grouping Data Utama
         Route::prefix('data-utama')->group(function () {
@@ -72,8 +70,12 @@ Route::middleware(['auth'])->group(function () {
             });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
             Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
+            Route::put('/tanam/{id}', [KelolaLahanController::class, 'updateTanam'])->name('tanam.update');
             Route::post('/panen', [KelolaLahanController::class, 'storePanen'])->name('panen.store');
+            Route::put('/panen/{id}', [KelolaLahanController::class, 'updatePanen'])->name('panen.update');
             Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
+            Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
+            Route::put('/serapan/{id}/validasi', [KelolaLahanController::class, 'validasiSerapan'])->name('serapan.validasi');
         });
 
         // Rekapitulasi

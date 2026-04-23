@@ -203,6 +203,7 @@
                     <div class="space-y-2 flex-1 sm:flex-none">
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KATEGORI PRODUKSI</label>
                         <select x-model="kategoriProduksi" @change="submitFilters()" class="w-full sm:w-48 h-12 text-[11px] font-black px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase tracking-widest cursor-pointer shadow-sm">
+                            <option value="semua">SEMUA / POTENSI</option>
                             <option value="tanam">PROSES TANAM</option>
                             <option value="panen">HASIL PANEN</option>
                             <option value="serapan">SERAPAN</option>
@@ -367,13 +368,13 @@
         <div class="overflow-x-auto custom-scrollbar p-6">
             <table class="w-full text-left border-collapse min-w-[900px]">
                 <thead>
-                    <tr class="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">
-                        <th class="px-6 py-5">WILAYAH & LOKASI</th>
-                        <th class="px-6 py-5 text-center">STATUS PRODUKSI</th>
-                        <th class="px-6 py-5 text-center">LUAS / HASIL</th>
-                        <th class="px-6 py-5">PERSONEL & P. JAWAB</th>
-                        <th class="px-6 py-5">ALUR PRODUKSI</th>
-                        <th class="px-6 py-5 text-right">AKSI</th>
+                    <tr class="bg-white border-b border-slate-100/50">
+                        <th class="px-8 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] w-1/4">WILAYAH & LOKASI</th>
+                        <th class="px-4 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] w-1/5">PROSES TANAM</th>
+                        <th class="px-4 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] w-1/5">HASIL PANEN</th>
+                        <th class="px-4 py-5 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] w-1/5">SERAPAN</th>
+                        <th class="px-4 py-5 text-center text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">ALUR</th>
+                        <th class="px-4 py-5 text-right text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] w-24">AKSI</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -441,82 +442,60 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-6 text-center">
-                                        @php
-                                            $status = strtoupper($filters['kategori']);
-                                            $statusColors = [
-                                                'TANAM' => 'bg-emerald-100 text-emerald-800 border-emerald-200 dot-emerald-600',
-                                                'PANEN' => 'bg-amber-100 text-amber-800 border-amber-200 dot-amber-600',
-                                                'SERAPAN' => 'bg-blue-100 text-blue-800 border-blue-200 dot-blue-600'
-                                            ];
-                                            $c = $statusColors[$status] ?? $statusColors['TANAM'];
-                                            list($bg, $tx, $bd, $dt) = explode(' ', $c);
-                                        @endphp
-                                        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black {{ $bg }} {{ $tx }} border {{ $bd }} uppercase tracking-[0.15em] shadow-md transform group-hover:scale-105 transition-transform">
-                                            <span class="w-2 h-2 rounded-full {{ str_replace('dot-', 'bg-', $dt) }} {{ $status === 'TANAM' ? 'animate-pulse' : '' }} shadow-sm"></span>
-                                            {{ $status }}
-                                        </span>
+                                    <td class="px-4 py-6 border-x border-slate-50 align-top">
+                                        @if($row->id_tanam)
+                                            <div class="flex flex-col gap-1.5">
+                                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
+                                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
+                                                <div class="flex flex-wrap items-center gap-1 mt-1">
+                                                    <button @click='editTanam("{{ $row->id_tanam }}", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
+                                        @endif
                                     </td>
-                                    <td class="px-6 py-6 text-center">
-                                        <div class="flex flex-col items-center">
-                                            <span class="text-base font-black text-slate-900 tabular-nums tracking-tight">
-                                                @if($filters['kategori'] === 'panen')
-                                                    {{ number_format($row->total_panen ?? 0, 2) }}
-                                                @elseif($filters['kategori'] === 'serapan')
-                                                    {{ number_format($row->total_distribusi ?? 0, 2) }}
+                                    <td class="px-4 py-6 border-r border-slate-50 align-top">
+                                        @if($row->id_panen)
+                                            <div class="flex flex-col gap-1.5">
+                                                <span class="text-xs font-black text-amber-600 bg-amber-50 w-fit px-2 py-0.5 rounded-lg border border-amber-100">{{ number_format($row->total_panen, 2) }} TON</span>
+                                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tgl: {{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
+                                                @php
+                                                    $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
+                                                @endphp
+                                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
+                                                <div class="flex flex-wrap items-center gap-1 mt-1">
+                                                    <button @click='editPanen("{{ $row->id_panen }}", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-6 border-r border-slate-50 align-top">
+                                        @if($row->id_distribusi)
+                                            <div class="flex flex-col gap-1.5">
+                                                <span class="text-xs font-black text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg border border-blue-100">{{ number_format($row->total_distribusi, 2) }} TON</span>
+                                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tgl: {{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
+                                                @php
+                                                    $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
+                                                @endphp
+                                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
+                                                <div class="flex flex-wrap items-center gap-1 mt-1">
+                                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                                </div>
+                                                @if(!$row->serapan_valid_oleh)
+                                                <form action="/admin/kelola-lahan/serapan/{{ $row->id_distribusi }}/validasi" method="POST" class="mt-1">
+                                                    @csrf @method('PUT')
+                                                    <button class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded text-[9px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                                </form>
                                                 @else
-                                                    {{ number_format($row->luas_tanam ?? $row->luas_lahan, 2) }}
+                                                <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
                                                 @endif
-                                            </span>
-                                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
-                                                {{ $filters['kategori'] === 'serapan' ? 'TON' : 'HEKTAR' }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-6 border-x border-slate-50">
-                                        <div class="flex flex-col gap-4">
-                                            {{-- Polisi Penggerak Section --}}
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-[10px] font-black text-emerald-600 border border-emerald-500/20 shadow-sm">
-                                                    POL
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="text-xs font-black text-slate-800 uppercase tracking-tight group-hover:text-emerald-700 transition-colors">
-                                                        {{ $row->cp_polisi ?? $row->nama_anggota ?? 'Bhabinkamtibmas' }}
-                                                    </span>
-                                                    @if($row->no_cp_polisi)
-                                                    <div class="flex items-center gap-1 mt-0.5">
-                                                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                                        <span class="text-[9px] font-black text-slate-400 tabular-nums">{{ $row->no_cp_polisi }}</span>
-                                                    </div>
-                                                    @endif
-                                                </div>
                                             </div>
-                                            {{-- Penanggung Jawab Section --}}
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-[10px] font-black text-blue-600 border border-blue-500/20 shadow-sm">
-                                                    P.J
-                                                </div>
-                                                <div class="flex flex-col">
-                                                    <span class="text-xs font-black text-slate-800 uppercase tracking-tight group-hover:text-blue-700 transition-colors">
-                                                        {{ $row->cp_lahan ?? 'Pengelola Lahan' }}
-                                                    </span>
-                                                    @if($row->no_cp_lahan)
-                                                    <div class="flex items-center gap-1 mt-0.5">
-                                                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                                                        <span class="text-[9px] font-black text-slate-400 tabular-nums">{{ $row->no_cp_lahan }}</span>
-                                                    </div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            {{-- Date Footer (Original Info) --}}
-                                            <div class="flex items-center gap-1.5 mt-1 opacity-60">
-                                                <svg class="w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                                                    INPUT: {{ \Carbon\Carbon::parse($row->datetransaction)->format('d M Y') }}
-                                                </span>
-                                            </div>
-                                        </div>
+                                        @else
+                                            <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-6">
                                         <div class="flex flex-col gap-3 min-w-[160px]">
@@ -609,13 +588,13 @@
 
                                         </div>
                                     </td>
-                                    <td class="px-6 py-6 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}'" title="View Detail di Potensi Lahan" class="p-3 bg-white border border-slate-200 text-slate-400 hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-2xl transition-all shadow-md active:scale-90 group/btn">
-                                                <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    <td class="px-4 py-6 text-right">
+                                        <div class="flex flex-col items-end gap-1.5">
+                                            <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </button>
-                                            <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}'" title="Edit Data di Potensi Lahan" class="p-3 bg-white border border-slate-200 text-slate-400 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-all shadow-md active:scale-90 group/btn">
-                                                <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=edit'" title="Edit Lahan" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-lg transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                             </button>
                                         </div>
                                     </td>
@@ -684,16 +663,18 @@
             selectedSektor: @json($filters['sektor'] ?? ''),
             selectedJenis: @json($filters['jenis'] ?? ''),
             selectedKomoditi: @json($filters['komoditi'] ?? ''),
-            kategoriProduksi: @json($filters['kategori'] ?? 'tanam'),
+            kategoriProduksi: @json($filters['kategori'] ?? 'semua'),
             polseks: @json($polsekList),
             openResors: [],
 
             // Production Flow State (Real)
             activeLahan: null,
+            isEditMode: false,
+            activeProcessId: null,
             modalTanam: false,
             modalPanen: false,
             modalSerapan: false,
-            lahanStages: @json($lahanStagesMap ?? new stdClass()), // Track real stages (populated from backend)
+            lahanStages: @json($lahanStagesMap ?? new stdClass()),
 
             // Form Data
             formTanam: {
@@ -728,22 +709,69 @@
 
             openStageModal(id_lahan, rowData) {
                 this.activeLahan = rowData;
+                this.isEditMode = false;
                 const stage = this.lahanStages[id_lahan];
                 if (stage === 0) {
                     this.formTanam.luas_tanam = rowData.luas_lahan;
                     this.modalTanam = true;
                 } else if (stage === 1) {
-                    this.formPanen.luas_panen = rowData.luas_lahan;
+                    this.formPanen.luas_panen = rowData.luas_tanam || rowData.luas_lahan;
                     this.modalPanen = true;
                 } else if (stage === 2) {
+                    this.formSerapan.total_distribusi = rowData.total_panen || 0;
                     this.modalSerapan = true;
                 }
             },
 
+            editTanam(id_tanam, rowData) {
+                this.activeLahan = rowData;
+                this.isEditMode = true;
+                this.activeProcessId = id_tanam;
+                this.formTanam = {
+                    tgl_tanam: rowData.tgl_tanam,
+                    luas_tanam: rowData.luas_tanam,
+                    jenis_bibit: rowData.nama_bibit || '',
+                    kebutuhan_bibit: rowData.kebutuhan_bibit || '',
+                    est_awal_panen: rowData.est_awal_panen,
+                    est_akhir_panen: rowData.est_akhir_panen,
+                    keterangan_tanam: rowData.keterangan_tanam || ''
+                };
+                this.modalTanam = true;
+            },
+
+            editPanen(id_panen, rowData) {
+                this.activeLahan = rowData;
+                this.isEditMode = true;
+                this.activeProcessId = id_panen;
+                this.formPanen = {
+                    tgl_panen: rowData.tgl_panen,
+                    luas_panen: rowData.luas_panen,
+                    status_panen: rowData.status_panen || 1,
+                    total_panen: rowData.total_panen || 0,
+                    keterangan_panen: rowData.ket_panen || ''
+                };
+                this.modalPanen = true;
+            },
+
+            editSerapan(id_distribusi, rowData) {
+                this.activeLahan = rowData;
+                this.isEditMode = true;
+                this.activeProcessId = id_distribusi;
+                this.formSerapan = {
+                    tgl_distribusi: rowData.tgl_distribusi,
+                    total_distribusi: rowData.total_distribusi || 0,
+                    distribusi_ke: rowData.distribusi_ke || 1,
+                    keterangan_serapan: rowData.keterangan_distribusi || ''
+                };
+                this.modalSerapan = true;
+            },
+
             async submitTanam() {
                 try {
-                    const response = await fetch("{{ route('admin.kelola-lahan.tanam.store') }}", {
-                        method: 'POST',
+                    const url = this.isEditMode ? `/admin/kelola-lahan/tanam/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.tanam.store') }}";
+                    const method = this.isEditMode ? 'PUT' : 'POST';
+                    const response = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -756,7 +784,7 @@
                     const result = await response.json();
                     if (result.success) {
                         this.modalTanam = false;
-                        this.lahanStages[this.activeLahan.id_lahan] = 1;
+                        if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 1;
                         alert(result.message);
                         window.location.reload();
                     } else {
@@ -769,8 +797,10 @@
 
             async submitPanen() {
                 try {
-                    const response = await fetch("{{ route('admin.kelola-lahan.panen.store') }}", {
-                        method: 'POST',
+                    const url = this.isEditMode ? `/admin/kelola-lahan/panen/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.panen.store') }}";
+                    const method = this.isEditMode ? 'PUT' : 'POST';
+                    const response = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -783,7 +813,7 @@
                     const result = await response.json();
                     if (result.success) {
                         this.modalPanen = false;
-                        this.lahanStages[this.activeLahan.id_lahan] = 2;
+                        if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 2;
                         alert(result.message);
                         window.location.reload();
                     } else {
@@ -796,8 +826,10 @@
 
             async submitSerapan() {
                 try {
-                    const response = await fetch("{{ route('admin.kelola-lahan.serapan.store') }}", {
-                        method: 'POST',
+                    const url = this.isEditMode ? `/admin/kelola-lahan/serapan/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.serapan.store') }}";
+                    const method = this.isEditMode ? 'PUT' : 'POST';
+                    const response = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
@@ -810,7 +842,7 @@
                     const result = await response.json();
                     if (result.success) {
                         this.modalSerapan = false;
-                        this.lahanStages[this.activeLahan.id_lahan] = 0; // Reset to Tanam
+                        if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 0; // Reset to Tanam
                         alert(result.message);
                         window.location.reload();
                     } else {
