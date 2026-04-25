@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboard;
+use App\Http\Controllers\Operator\RekapitulasiController as OperatorRekapitulasi;
 use App\Http\Controllers\Admin\TingkatKesatuanController;
 use App\Http\Controllers\Admin\JabatanController;
 use App\Http\Controllers\Admin\WilayahController;
@@ -73,6 +74,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Rekapitulasi
         Route::get('/rekapitulasi', [RekapitulasiController::class, 'index'])->name('rekapitulasi.index');
+        Route::get('/rekapitulasi/polsek', [RekapitulasiController::class, 'getPolsek'])->name('rekapitulasi.polsek');
+        Route::get('/rekapitulasi/export', [RekapitulasiController::class, 'export'])->name('rekapitulasi.export');
     });
 
     // 2. Group Khusus Operator
@@ -92,9 +95,7 @@ Route::middleware(['auth'])->group(function () {
             })->name('daftar.index');
         });
 
-        Route::get('/rekapitulasi', function () {
-            return view('operator.rekapitulasi.operator_rekap');
-        })->name('rekapitulasi.index');
+        Route::get('/rekapitulasi', [OperatorRekapitulasi::class, 'index'])->name('rekapitulasi.index');
     });
 
     // 3. Group Khusus View
