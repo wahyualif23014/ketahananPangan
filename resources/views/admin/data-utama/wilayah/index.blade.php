@@ -22,7 +22,7 @@
     }
 </style>
 
-<div class="space-y-8 pb-24 wilayah-container max-w-7xl mx-auto" x-data="{ searchQuery: '' }">
+<div class="space-y-8 pb-24 wilayah-container max-w-7xl mx-auto" x-data="{ searchQuery: '{{ request('search') }}' }">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -41,13 +41,14 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
-            <div class="relative group">
+            <form action="{{ route('admin.wilayah.index') }}" method="GET" class="relative group">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <input type="text" x-model="searchQuery" placeholder="CARI WILAYAH..." 
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="CARI WILAYAH..." 
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none uppercase shadow-sm">
-            </div>
+                <!-- Submit happens on Enter -->
+            </form>
             <button onclick="window.location.reload()" title="Refresh Data"
                 class="p-3.5 bg-slate-900 text-blue-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,13 +79,32 @@
             ->count();
 
         // Server-side database pagination for Kabupaten (Root Nodes)
-        $perPage = 20;
-        $kabupatenList = DB::table('wilayah')
+        // If searching, show all matches on one page (limit max to 100). Otherwise, show 1.
+        $search = request('search');
+        $perPage = !empty($search) ? 100 : 1;
+        
+        $kabupatenQuery = DB::table('wilayah')
             ->where('id_wilayah', 'like', '%.%')
-            ->whereNot('id_wilayah', 'like', '%.%.%')
-            ->orderBy('id_wilayah')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->whereNot('id_wilayah', 'like', '%.%.%');
+
+        $matchingWilayahIds = collect([]);
+        if (!empty($search)) {
+            // Find ALL matching records (Kabupaten, Kecamatan, or Desa)
+            $matchingWilayahIds = DB::table('wilayah')
+                                    ->where('nama_wilayah', 'like', '%' . $search . '%')
+                                    ->orWhere('id_wilayah', 'like', '%' . $search . '%')
+                                    ->pluck('id_wilayah');
+                                    
+            // Extract their root Kabupaten IDs
+            $matchingKabupatenIds = $matchingWilayahIds->map(function($id) {
+                $parts = explode('.', $id);
+                return count($parts) >= 2 ? $parts[0] . '.' . $parts[1] : $id;
+            })->unique()->toArray();
+            
+            $kabupatenQuery->whereIn('id_wilayah', $matchingKabupatenIds);
+        }
+
+        $kabupatenList = $kabupatenQuery->orderBy('id_wilayah')->paginate($perPage)->withQueryString();
 
         // To support the tree rendering efficiently in Blade, we fetch ONLY the child nodes
         // (Kecamatan and Desa) that belong strictly to the 5 Kabupaten currently displayed on this page.
@@ -187,14 +207,23 @@
         <div class="divide-y divide-slate-100/80">
             @forelse($kabupatenList as $kab)
                 @php
-                    $kecamatanList = $allWilayah->filter(function ($item) use ($kab) {
-                        $parts = explode('.', $item->id_wilayah);
-                        return count($parts) == 3 && str_starts_with($item->id_wilayah, $kab->id_wilayah . '.');
+                    $kecamatanList = $allWilayah->filter(function ($item) use ($kab, $search, $matchingWilayahIds) {
+                        if (count(explode('.', $item->id_wilayah)) !== 3 || !str_starts_with($item->id_wilayah, $kab->id_wilayah . '.')) {
+                            return false;
+                        }
+                        if (empty($search) || $matchingWilayahIds->isEmpty()) return true;
+                        
+                        if ($matchingWilayahIds->contains($item->id_wilayah)) return true;
+                        if ($matchingWilayahIds->contains($kab->id_wilayah)) return true;
+                        
+                        foreach ($matchingWilayahIds as $mId) {
+                            if (str_starts_with($mId, $item->id_wilayah . '.')) return true;
+                        }
+                        return false;
                     })->sortBy('id_wilayah');
                 @endphp
 
-                <div x-data="{ expandedKab: false }" 
-                     x-show="searchQuery === '' || '{{ strtolower($kab->nama_wilayah) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($kab->id_wilayah) }}'.includes(searchQuery.toLowerCase())"
+                <div x-data="{ expandedKab: true }" 
                      class="group/kab transition-all duration-300 hover:bg-slate-50/50"
                      :class="expandedKab ? 'bg-slate-50/50' : ''">
                      
@@ -242,13 +271,21 @@
                                     <div class="space-y-4">
                                         @foreach($kecamatanList as $kec)
                                             @php
-                                                $desaList = $allWilayah->filter(function ($item) use ($kec) {
-                                                    $parts = explode('.', $item->id_wilayah);
-                                                    return count($parts) == 4 && str_starts_with($item->id_wilayah, $kec->id_wilayah . '.');
+                                                $desaList = $allWilayah->filter(function ($item) use ($kec, $kab, $search, $matchingWilayahIds) {
+                                                    if (count(explode('.', $item->id_wilayah)) !== 4 || !str_starts_with($item->id_wilayah, $kec->id_wilayah . '.')) {
+                                                        return false;
+                                                    }
+                                                    if (empty($search) || $matchingWilayahIds->isEmpty()) return true;
+                                                    
+                                                    if ($matchingWilayahIds->contains($item->id_wilayah)) return true;
+                                                    if ($matchingWilayahIds->contains($kec->id_wilayah)) return true;
+                                                    if ($matchingWilayahIds->contains($kab->id_wilayah)) return true;
+                                                    
+                                                    return false;
                                                 })->sortBy('id_wilayah');
                                             @endphp
 
-                                            <div x-data="{ expandedKec: false }" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/kec">
+                                            <div x-data="{ expandedKec: true }" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/kec">
                                                 
                                                 <!-- Level 2 Connector -->
                                                 <div class="absolute -left-9 top-8 w-5 border-t-[3px] border-blue-200/60 z-0"></div>

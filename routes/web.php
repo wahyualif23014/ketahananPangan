@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\PotensiLahanController;
 use App\Http\Controllers\Admin\KelolaLahanController;
 use App\Http\Controllers\Admin\RekapitulasiController;
 use App\Http\Controllers\Admin\KomoditiController;
-use App\Models\User;
+use App\Http\Controllers\Admin\AnggotaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/tingkat-kesatuan', [TingkatKesatuanController::class, 'index'])->name('tingkat-kesatuan.index');
             // jabatan
             Route::get('/jabatan', [JabatanController::class, 'index'])->name('jabatan.index');
+            Route::post('/jabatan', [JabatanController::class, 'store'])->name('jabatan.store');
             Route::delete('/admin/jabatan/batch-delete', [JabatanController::class, 'batchDelete'])
             ->name('jabatan.batch-delete');
             Route::put('/jabatan/{id}', [JabatanController::class, 'update'])->name('jabatan.update');
@@ -53,21 +54,29 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Data Anggota/Personel
-        Route::get('/anggota', function () {
-        $personels = User::all(); 
-        
-        return view('admin.anggota.index', compact('personels'));
-    })->name('anggota.index');
+        Route::get('/anggota', [AnggotaController::class, 'index'])->name('anggota.index');
+        Route::post('/anggota', [AnggotaController::class, 'store'])->name('anggota.store');
+        Route::put('/anggota/{id}', [AnggotaController::class, 'update'])->name('anggota.update');
+        Route::delete('/anggota/{id}', [AnggotaController::class, 'destroy'])->name('anggota.destroy');
+
 
         // Kelola Lahan
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
                 Route::get('/', [PotensiLahanController::class, 'index'])->name('index');
+                Route::post('/store', [PotensiLahanController::class, 'store'])->name('store');
                 Route::put('/verify/{id}', [PotensiLahanController::class, 'verify'])->name('verify');
                 Route::put('/update/{id}', [PotensiLahanController::class, 'update'])->name('update');
                 Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
             });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
+            Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
+            Route::put('/tanam/{id}', [KelolaLahanController::class, 'updateTanam'])->name('tanam.update');
+            Route::post('/panen', [KelolaLahanController::class, 'storePanen'])->name('panen.store');
+            Route::put('/panen/{id}', [KelolaLahanController::class, 'updatePanen'])->name('panen.update');
+            Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
+            Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
+            Route::put('/serapan/{id}/validasi', [KelolaLahanController::class, 'validasiSerapan'])->name('serapan.validasi');
         });
 
         // Rekapitulasi

@@ -4,12 +4,31 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KomoditiController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.data-utama.komoditi.index');
+        $search = $request->input('search', '');
+
+        $query = DB::table('komoditi')->where('deletestatus', '!=', '0');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_komoditi', 'like', "%{$search}%")
+                  ->orWhere('jenis_komoditi', 'like', "%{$search}%");
+            });
+        }
+
+        $allKomoditi = $query->get();
+
+        // Semua jenis untuk datalist di modal (tidak difilter)
+        $allKomoditiForList = DB::table('komoditi')
+            ->where('deletestatus', '!=', '0')
+            ->get();
+
+        return view('admin.data-utama.komoditi.index', compact('allKomoditi', 'allKomoditiForList', 'search'));
     }
 
     public function store(Request $request)

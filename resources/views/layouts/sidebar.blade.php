@@ -34,15 +34,12 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
         'translate-x-0 w-64': sidebarExpanded,
         '-translate-x-full w-64 md:translate-x-0 md:w-24': !sidebarExpanded
     }"
-    class="fixed inset-y-0 left-0 z-50 flex flex-col h-full bg-[#0B1220] border-r border-[#1F2937] shadow-xl md:relative shrink-0 transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width,transform] overflow-hidden">
-
-    {{-- Header Content --}}
-    <div class="h-[72px] flex items-center px-5 border-b border-[#1F2937] shrink-0 overflow-hidden relative"
-        :class="sidebarExpanded ? 'justify-between' : 'justify-center'">
-
-        <div class="flex items-center" :class="sidebarExpanded ? 'gap-3 w-full' : 'justify-center'">
-            <div class="p-1.5 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-lg flex-shrink-0 shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform"
-                :class="sidebarExpanded ? '' : 'mx-auto'">
+    class="w-72 -translate-x-full md:translate-x-0 fixed inset-y-0 left-0 z-50 flex flex-col h-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-slate-900 text-white border-r border-white/5 shadow-2xl md:relative shrink-0 overflow-hidden">
+    
+    {{-- Sidebar Header --}}
+    <div class="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-slate-900 shrink-0 overflow-hidden">
+        <div class="flex items-center gap-3 overflow-hidden">
+            <div class="p-1.5 bg-emerald-500 rounded-lg flex-shrink-0 shadow-lg shadow-emerald-500/20">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                 </svg>
@@ -113,18 +110,16 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
 
         <div x-show="!sidebarExpanded" class="w-6 mx-auto my-3 h-[1px] bg-[#1F2937]"></div>
 
-        <div x-data="{ open: {{ request()->is('data-utama*') ? 'true' : 'false' }} }">
+        <div x-data="{ open: {{ request()->routeIs('admin.tingkat-kesatuan.*', 'admin.jabatan.*', 'admin.wilayah.*', 'admin.komoditi.*') ? 'true' : 'false' }} }">
             <button @click="open = !open"
                 class="w-full group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200"
                 :class="[
-                        sidebarExpanded ? 'justify-between' : 'justify-center',
-                        open && sidebarExpanded ? 'text-[#E5E7EB]' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5'
-                    ]">
+                    sidebarExpanded ? 'justify-between' : 'justify-center',
+                    open && sidebarExpanded ? 'text-[#E5E7EB]' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5'
+                ]">
                 <div class="flex items-center" :class="sidebarExpanded ? '' : 'justify-center'">
                     <div class="shrink-0 flex items-center justify-center" :class="open && sidebarExpanded ? 'text-emerald-400' : ''">
-                        <svg class="w-[20px] h-[20px] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-                        </svg>
+                        <svg class="w-[20px] h-[20px] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
                     </div>
                     <span x-show="sidebarExpanded" class="ml-3 text-[13px] font-medium tracking-wide">Data Utama</span>
                 </div>

@@ -22,7 +22,7 @@
     }
 </style>
 
-<div class="space-y-8 pb-24 kesatuan-container max-w-7xl mx-auto" x-data="{ searchQuery: '' }">
+<div class="space-y-8 pb-24 kesatuan-container max-w-7xl mx-auto">
 
     {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
@@ -45,7 +45,18 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <input type="text" x-model="searchQuery" placeholder="CARI KESATUAN..." 
+                <input type="text" 
+                    id="search-kesatuan"
+                    placeholder="CARI KESATUAN..." 
+                    value="{{ $search ?? '' }}"
+                    @input.debounce.400ms="
+                        const q = $event.target.value;
+                        const url = new URL(window.location.href);
+                        if (q) url.searchParams.set('search', q);
+                        else url.searchParams.delete('search');
+                        url.searchParams.delete('page');
+                        window.location.href = url.toString();
+                    "
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
             </div>
             <button onclick="window.location.reload()" title="Refresh Data"
@@ -58,36 +69,10 @@
     </div>
 
     @php
-        // Fetch core data
-        $allTingkat = DB::table('tingkat')->get();
-
-        $tingkatWilayah = DB::table('tingkatwilayah')
-            ->join('anggota', 'tingkatwilayah.id_anggota', '=', 'anggota.id_anggota')
-            ->select('tingkatwilayah.id_tingkat', 'anggota.nama_anggota', 'anggota.no_telp_anggota')
-            ->get()
-            ->keyBy('id_tingkat');
-
-        // Stats Counters
-        $totalPolres = $allTingkat->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 2)->count();
-        $totalPolsek = $allTingkat->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 3)->count();
-
-        // Kategori Roots (Polda length 1, Polres length 2)
-        $kategoriListTotal = $allTingkat->filter(function ($item) {
-            $parts = count(explode('.', $item->id_tingkat));
-            return $parts == 1 || $parts == 2;
-        })->sortBy('id_tingkat');
-
-        $currentPage = request()->get('page', 1);
-        $perPage = 6;
-
-        $kategoriList = new \Illuminate\Pagination\LengthAwarePaginator(
-            $kategoriListTotal->forPage($currentPage, $perPage),
-            $kategoriListTotal->count(),
-            $perPage,
-            $currentPage,
-            ['path' => url()->current(), 'query' => request()->query()]
-        );
-    @endphp
+        // Stats Counters (dari data keseluruhan)
+        $totalPolres = $allTingkatFull->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 2)->count();
+        $totalPolsek = $allTingkatFull->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 3)->count();
+    @php
 
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative px-2">
@@ -132,7 +117,16 @@
             <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
             <div class="flex items-center gap-4 relative z-10 w-full">
                 <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
-                <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR KESATUAN (POLDA & POLRES)</h3>
+                <h3 class="text-sm font-black text-white uppercase tracking-widest">DAFTAR KESATUAN (POLDA &amp; POLRES)</h3>
+                @if($search)
+                <span class="text-[10px] font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30 flex items-center gap-1.5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    "{{ $search }}"
+                </span>
+                <a href="{{ route('admin.tingkat-kesatuan.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                    ✕ Hapus Filter
+                </a>
+                @endif
             </div>
             <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30">
                 PENGELOMPOKAN WILAYAH
@@ -148,7 +142,7 @@
                     // Ambil Polsek dibawahnya hanya jika dia Polres (level 2)
                     $polsekList = collect();
                     if (!$isPolda) {
-                        $polsekList = $allTingkat->filter(function ($item) use ($kategori) {
+                        $polsekList = $allTingkatFull->filter(function ($item) use ($kategori) {
                             $parts = explode('.', $item->id_tingkat);
                             return count($parts) == 3 && str_starts_with($item->id_tingkat, $kategori->id_tingkat . '.');
                         })->sortBy('id_tingkat');
@@ -157,8 +151,7 @@
                     $pj = $tingkatWilayah->get($kategori->id_tingkat);
                 @endphp
 
-                <div x-data="{ expanded: false }" 
-                     x-show="searchQuery === '' || '{{ strtolower($kategori->nama_tingkat) }}'.includes(searchQuery.toLowerCase()) || '{{ strtolower($kategori->id_tingkat) }}'.includes(searchQuery.toLowerCase())"
+                <div x-data="{ expanded: {{ $search ? 'true' : 'false' }} }" 
                      class="group/parent transition-all duration-300 hover:bg-slate-50/50"
                      :class="expanded ? 'bg-slate-50/50' : ''">
                      
@@ -277,8 +270,37 @@
         </div>
 
         @if($kategoriList->hasPages())
-        <div class="px-8 py-5 border-t border-slate-200/60 bg-slate-50/50">
-            {{ $kategoriList->links() }}
+        <div class="px-8 py-5 border-t border-slate-200/60 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                Halaman <span class="text-blue-600">{{ $kategoriList->currentPage() }}</span> dari <span class="text-slate-800">{{ $kategoriList->lastPage() }}</span>
+                @if($search) &bull; <span class="text-emerald-600">Filter: "{{ $search }}"</span> @endif
+            </div>
+            <div class="flex items-center gap-1 sm:gap-2">
+                @if ($kategoriList->onFirstPage())
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
+                @else
+                    <a href="{{ $kategoriList->appends(['search' => $search])->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
+                @endif
+                <div class="hidden sm:flex items-center gap-1 mx-2">
+                    @php
+                        $startPage = max($kategoriList->currentPage() - 2, 1);
+                        $endPage   = min($startPage + 4, $kategoriList->lastPage());
+                        if ($endPage - $startPage < 4) $startPage = max($endPage - 4, 1);
+                    @endphp
+                    @for ($pg = $startPage; $pg <= $endPage; $pg++)
+                        @if ($pg == $kategoriList->currentPage())
+                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $pg }}</span>
+                        @else
+                            <a href="{{ $kategoriList->appends(['search' => $search])->url($pg) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $pg }}</a>
+                        @endif
+                    @endfor
+                </div>
+                @if ($kategoriList->hasMorePages())
+                    <a href="{{ $kategoriList->appends(['search' => $search])->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
+                @else
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
+                @endif
+            </div>
         </div>
         @endif
     </div>
