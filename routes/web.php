@@ -30,9 +30,7 @@ Route::middleware(['auth'])->group(function () {
     // 1. Group Khusus Admin
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard Admin
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
 
         // Grouping Data Utama
         Route::prefix('data-utama')->group(function () {
