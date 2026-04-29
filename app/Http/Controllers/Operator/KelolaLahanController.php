@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
 use App\Models\Komoditi;
@@ -319,7 +319,7 @@ class KelolaLahanController extends Controller
             'jenis_lahan_list' => $jenisLahanList
         ];
 
-        return view('admin.kelola-lahan.lahan.index', compact(
+        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', compact(
             'polresList', 
             'polsekList', 
             'komoditiList', 

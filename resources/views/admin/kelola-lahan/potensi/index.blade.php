@@ -412,7 +412,7 @@
                             </td>
                             <td class="px-4 py-4 w-72">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick='openViewModal(@json($item))'
+                                    <button data-item="{{ json_encode($item) }}" onclick='openViewModal(JSON.parse(this.dataset.item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                         Detail
                                     </button>
@@ -424,7 +424,7 @@
                                         </button>
                                     </form>
                                     @endif
-                                    <button onclick='openEditModal(@json($item))'
+                                    <button data-item="{{ json_encode($item) }}" onclick='openEditModal(JSON.parse(this.dataset.item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                         Edit
                                     </button>
@@ -1325,12 +1325,19 @@
 
 </div>{{-- END: x-data="potensiLahanManager()" --}}
 
+    <script id="data-polres" type="application/json"><?php echo json_encode($polresList ?? []); ?></script>
+    <script id="data-polsek" type="application/json"><?php echo json_encode($polsekList ?? []); ?></script>
+    <script id="data-kabupaten" type="application/json"><?php echo json_encode($kabupatenList ?? []); ?></script>
+    <script id="data-kecamatan" type="application/json"><?php echo json_encode($kecamatanList ?? []); ?></script>
+    <script id="data-anggota" type="application/json"><?php echo json_encode($anggotaList ?? []); ?></script>
+    <script id="data-desa" type="application/json"><?php echo json_encode($desaList ?? []); ?></script>
+
     <script>
-        const polresData = @json($polresList ?? []);
-        const polsekData = @json($polsekList ?? []);
-        const kabupatenData = @json($kabupatenList ?? []);
-        const kecamatanData = @json($kecamatanList ?? []);
-        const anggotaData = @json($anggotaList ?? []);
+        const polresData = JSON.parse(document.getElementById('data-polres').textContent);
+        const polsekData = JSON.parse(document.getElementById('data-polsek').textContent);
+        const kabupatenData = JSON.parse(document.getElementById('data-kabupaten').textContent);
+        const kecamatanData = JSON.parse(document.getElementById('data-kecamatan').textContent);
+        const anggotaData = JSON.parse(document.getElementById('data-anggota').textContent);
 
         // Searchable combobox for Polisi Penggerak & Penanggung Jawab
         // type: 'penggerak' | 'pj'
@@ -1368,7 +1375,7 @@
                 }
             };
         }
-        const desaData = @json($desaList ?? []);
+        const desaData = JSON.parse(document.getElementById('data-desa').textContent);
 
         function potensiLahanManager() {
             return {
@@ -1732,17 +1739,25 @@
             }
         }
     </script>
+    <script id="data-single-lahan" type="application/json">
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            @if(request('action') === 'view' && $lahanList->count() === 1)
+            const action = "<?php echo request('action'); ?>";
+            const hasSingleItem = <?php echo $lahanList ->count() === 1 ? 'true' : 'false'; ?>;
+            
+            if (hasSingleItem) {
                 setTimeout(() => {
-                    if (typeof openViewModal === 'function') openViewModal(@json($lahanList->first()));
+                    const data = JSON.parse(document.getElementById('data-single-lahan').textContent);
+                    if (data) {
+                        if (action === 'view' && typeof openViewModal === 'function') {
+                            openViewModal(data);
+                        } else if (action === 'edit' && typeof openEditModal === 'function') {
+                            openEditModal(data);
+                        }
+                    }
                 }, 100);
-            @elseif(request('action') === 'edit' && $lahanList->count() === 1)
-                setTimeout(() => {
-                    if (typeof openEditModal === 'function') openEditModal(@json($lahanList->first()));
-                }, 100);
-            @endif
+            }
         });
     </script>
 @endsection

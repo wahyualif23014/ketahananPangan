@@ -72,7 +72,7 @@
         // Stats Counters (dari data keseluruhan)
         $totalPolres = $allTingkatFull->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 2)->count();
         $totalPolsek = $allTingkatFull->filter(fn($i) => count(explode('.', $i->id_tingkat)) == 3)->count();
-    @php
+    @endphp
 
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative px-2">

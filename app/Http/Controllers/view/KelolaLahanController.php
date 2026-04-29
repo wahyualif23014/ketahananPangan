@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\view;
 
 use App\Http\Controllers\Controller;
 use App\Models\Komoditi;
@@ -319,7 +319,8 @@ class KelolaLahanController extends Controller
             'jenis_lahan_list' => $jenisLahanList
         ];
 
-        return view('admin.kelola-lahan.lahan.index', compact(
+        // Menggunakan view view.kelola-lahan.view_kelola yang sudah dimodifikasi tanpa tombol edit
+        return view('view.kelola-lahan.view_kelola', compact(
             'polresList', 
             'polsekList', 
             'komoditiList', 
@@ -330,175 +331,114 @@ class KelolaLahanController extends Controller
         ));
     }
 
-    public function storeTanam(Request $request)
+    public function potensiIndex(\Illuminate\Http\Request $request)
     {
-        $request->validate([
-            'id_lahan' => 'required',
-            'tgl_tanam' => 'required|date',
-            'luas_tanam' => 'required|numeric',
-        ]);
+        $anggotaMap = DB::table('anggota')->pluck('nama_anggota', 'id_anggota');
+        $wilayahMap = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
+        $search     = $request->input('search', '');
 
-        try {
-            DB::transaction(function () use ($request) {
-                $newId = DB::table('tanam')->max('id_tanam') + 1;
-                $idAnggota = auth()->id();
+        $lahanQuery = DB::table('lahan')
+            ->where('deletestatus', '!=', '0')
+            ->orderBy('id_wilayah');
 
-                DB::table('tanam')->insert([
-                    'id_tanam' => $newId,
-                    'id_lahan' => $request->id_lahan,
-                    'tgl_tanam' => $request->tgl_tanam,
-                    'luas_tanam' => $request->luas_tanam,
-                    'nama_bibit' => $request->jenis_bibit, // mapped from frontend form
-                    'kebutuhan_bibit' => $request->kebutuhan_bibit,
-                    'est_awal_panen' => $request->est_awal_panen,
-                    'est_akhir_panen' => $request->est_akhir_panen,
-                    'keterangan_tanam' => $request->keterangan_tanam,
-                    'datetransaction' => now(),
-                ]);
+        if ($search) {
+            $lahanQuery->where(function($q) use ($search, $wilayahMap) {
+                $q->where('id_lahan', $search)
+                  ->orWhere('alamat_lahan', 'like', "%{$search}%")
+                  ->orWhere('cp_polisi', 'like', "%{$search}%")
+                  ->orWhere('cp_lahan', 'like', "%{$search}%")
+                  ->orWhere('poktan', 'like', "%{$search}%")
+                  ->orWhere('id_wilayah', 'like', "%{$search}%");
+                foreach ($wilayahMap as $wId => $wNama) {
+                    if (stripos($wNama, $search) !== false) {
+                        $q->orWhere('id_wilayah', 'like', "{$wId}%");
+                    }
+                }
             });
-
-            return response()->json(['success' => true, 'message' => 'Data Tanam berhasil disimpan']);
-        } catch (\Exception $e) {
-            \Log::error('storeTanam error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
         }
-    }
 
-    public function storePanen(Request $request)
-    {
-        $request->validate([
-            'id_lahan' => 'required',
-            'tgl_panen' => 'required|date',
-            'luas_panen' => 'required|numeric',
-        ]);
+        $lahanList = $lahanQuery->paginate(25)->appends(request()->query());
 
-        try {
-            DB::transaction(function () use ($request) {
-                $newId = DB::table('panen')->max('id_panen') + 1;
-                $idAnggota = auth()->id();
-                $idTanam = DB::table('tanam')->where('id_lahan', $request->id_lahan)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
+        $tingkatMap  = DB::table('tingkat')->pluck('nama_tingkat', 'id_tingkat');
+        $komoditiMap = DB::table('komoditi')->get()->keyBy('id_komoditi');
 
-                DB::table('panen')->insert([
-                    'id_panen' => $newId,
-                    'id_tanam' => $idTanam,
-                    'id_lahan' => $request->id_lahan,
-                    'id_anggota' => $idAnggota,
-                    'tgl_panen' => $request->tgl_panen,
-                    'luas_panen' => $request->luas_panen,
-                    'total_panen' => $request->total_panen ?? 0,
-                    'status_panen' => $request->status_panen,
-                    'ket_panen' => $request->keterangan_panen, // mapped from frontend form
-                    'datetransaction' => now(),
-                ]);
-            });
+        $lahanList->getCollection()->transform(function ($lahan) use ($wilayahMap, $anggotaMap, $tingkatMap, $komoditiMap) {
+            $parts    = explode('.', $lahan->id_wilayah);
+            $kabId    = count($parts) >= 2 ? $parts[0].'.'.$parts[1] : $lahan->id_wilayah;
+            $kecId    = count($parts) >= 3 ? $parts[0].'.'.$parts[1].'.'.$parts[2] : $kabId.'.000';
+            $desaNama = $wilayahMap[$lahan->id_wilayah] ?? $lahan->id_wilayah;
+            $kecNama  = $wilayahMap[$kecId]  ?? $kecId;
+            $kabNama  = $wilayahMap[$kabId]  ?? $kabId;
 
-            return response()->json(['success' => true, 'message' => 'Data Panen berhasil disimpan']);
-        } catch (\Exception $e) {
-            \Log::error('storePanen error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
-        }
-    }
+            $idTingkat  = $lahan->id_tingkat ?? '';
+            $parts2     = explode('.', $idTingkat);
+            $polresId   = count($parts2) >= 2 ? $parts2[0].'.'.$parts2[1] : $idTingkat;
+            $polsekId   = count($parts2) >= 3 ? $idTingkat : null;
+            $namaPolres = $tingkatMap[$polresId] ?? $polresId;
+            $namaPolsek = $polsekId ? ($tingkatMap[$polsekId] ?? $polsekId) : '-';
 
-    public function storeSerapan(Request $request)
-    {
-        $request->validate([
-            'id_lahan' => 'required',
-            'tgl_distribusi' => 'required|date',
-            'total_distribusi' => 'required|numeric',
-        ]);
+            $km           = $komoditiMap[$lahan->id_komoditi] ?? null;
+            $namaKomoditi = $km ? ($km->jenis_komoditi.' - '.$km->nama_komoditi) : '-';
 
-        try {
-            DB::transaction(function () use ($request) {
-                $newId = DB::table('distribusi')->max('id_distribusi') + 1;
-                $idAnggota = auth()->id();
-                $latestPanen = DB::table('panen')->where('id_lahan', $request->id_lahan)->orderByDesc('id_panen')->first();
+            return [
+                'id_lahan'         => $lahan->id_lahan,
+                'id_tingkat'       => $lahan->id_tingkat,
+                'nama_polres'      => $namaPolres,
+                'nama_polsek'      => $namaPolsek,
+                'cp_lahan'         => $lahan->cp_lahan,
+                'no_cp_lahan'      => $lahan->no_cp_lahan,
+                'cp_polisi'        => $lahan->cp_polisi,
+                'no_cp_polisi'     => $lahan->no_cp_polisi,
+                'ket_polisi'       => $lahan->ket_polisi,
+                'alamat_lahan'     => $lahan->alamat_lahan,
+                'longitude'        => $lahan->longitude,
+                'latitude'         => $lahan->latitude,
+                'luas_lahan'       => $lahan->luas_lahan,
+                'poktan'           => $lahan->poktan,
+                'jml_petani'       => $lahan->jml_petani,
+                'id_jenis_lahan'   => $lahan->id_jenis_lahan,
+                'nama_komoditi'    => $namaKomoditi,
+                'keterangan_lahan' => $lahan->keterangan_lahan,
+                'dokumentasi_lahan'=> $lahan->dokumentasi_lahan,
+                'status_lahan'     => $lahan->status_lahan,
+                'edit_oleh'        => $lahan->edit_oleh  ? ($anggotaMap[$lahan->edit_oleh]  ?? $lahan->edit_oleh)  : null,
+                'tgl_edit'         => $lahan->tgl_edit,
+                'valid_oleh'       => $lahan->valid_oleh ? ($anggotaMap[$lahan->valid_oleh] ?? $lahan->valid_oleh) : null,
+                'tgl_valid'        => $lahan->tgl_valid,
+                'kec_nama'         => $kecNama,
+                'desa_nama'        => $desaNama,
+                'kab_nama'         => $kabNama,
+                'id_wilayah'       => $lahan->id_wilayah,
+                'id_komoditi'      => $lahan->id_komoditi,
+                'wilayah_label'    => 'Desa '.$desaNama.' Kecamatan '.$kecNama.' Kabupaten '.$kabNama,
+            ];
+        });
 
-                DB::table('distribusi')->insert([
-                    'id_distribusi' => $newId,
-                    'id_lahan' => $request->id_lahan,
-                    'id_panen' => $latestPanen ? $latestPanen->id_panen : 0,
-                    'id_tanam' => $latestPanen ? $latestPanen->id_tanam : 0,
-                    'id_anggota' => $idAnggota,
-                    'tgl_distribusi' => $request->tgl_distribusi,
-                    'total_distribusi' => $request->total_distribusi,
-                    'distribusi_ke' => $request->distribusi_ke,
-                    'keterangan_distribusi' => $request->keterangan_serapan, // mapped from frontend form
-                    'datetransaction' => now(),
-                ]);
-            });
+        $tingkatSemua  = DB::table('tingkat')->where('id_tingkat', 'like', '11.%')->get();
+        $polresList    = $tingkatSemua->filter(fn($t) => substr_count($t->id_tingkat, '.') == 1)->values();
+        $polsekList    = $tingkatSemua->filter(fn($t) => substr_count($t->id_tingkat, '.') == 2)->values();
+        $komoditiList  = DB::table('komoditi')->where('deletestatus', '!=', '0')->get();
+        $wilayahSemua  = DB::table('wilayah')->get();
+        $kabupatenList = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 1)->values();
+        $kecamatanList = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 2)->values();
+        $desaList      = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 3)->values();
+        $anggotaList   = DB::table('anggota')->where('deletestatus', '!=', '0')->select('id_anggota', 'nama_anggota', 'no_telp_anggota')->get();
 
-            return response()->json(['success' => true, 'message' => 'Data Serapan berhasil disimpan']);
-        } catch (\Exception $e) {
-            \Log::error('storeSerapan error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
-        }
-    }
+        $summary         = ['total_ha' => '0'];
+        $cats            = [];
+        $kategoriMapping = [
+            1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',   2 => 'HUTAN (PERHUTANAN SOSIAL)',
+            3 => 'LUAS BAKU SAWAH (LBS)',              4 => 'PESANTREN',
+            5 => 'MILIK POLRI',                        6 => 'PRODUKTIF (MASYARAKAT BINAAN POLRI)',
+            7 => 'PRODUKTIF (TUMPANG SARI)',           8 => 'HUTAN (PERHUTANI/INHUTANI)',
+            9 => 'LAHAN LAINNYA',
+        ];
 
-    public function updateTanam(Request $request, $id)
-    {
-        try {
-            DB::table('tanam')->where('id_tanam', $id)->update([
-                'tgl_tanam' => $request->tgl_tanam,
-                'luas_tanam' => $request->luas_tanam,
-                'nama_bibit' => $request->jenis_bibit,
-                'kebutuhan_bibit' => $request->kebutuhan_bibit,
-                'est_awal_panen' => $request->est_awal_panen,
-                'est_akhir_panen' => $request->est_akhir_panen,
-                'keterangan_tanam' => $request->keterangan_tanam,
-                'edit_oleh' => auth()->user()->username ?? 'admin',
-                'tgl_edit' => now(),
-            ]);
-            return response()->json(['success' => true, 'message' => 'Data Tanam berhasil diperbarui']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
-        }
-    }
-
-    public function updatePanen(Request $request, $id)
-    {
-        try {
-            DB::table('panen')->where('id_panen', $id)->update([
-                'tgl_panen' => $request->tgl_panen,
-                'luas_panen' => $request->luas_panen,
-                'total_panen' => $request->total_panen,
-                'status_panen' => $request->status_panen,
-                'ket_panen' => $request->keterangan_panen,
-                'edit_oleh' => auth()->user()->username ?? 'admin',
-                'tgl_edit' => now(),
-            ]);
-            return response()->json(['success' => true, 'message' => 'Data Panen berhasil diperbarui']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
-        }
-    }
-
-    public function updateSerapan(Request $request, $id)
-    {
-        try {
-            DB::table('distribusi')->where('id_distribusi', $id)->update([
-                'tgl_distribusi' => $request->tgl_distribusi,
-                'total_distribusi' => $request->total_distribusi,
-                'distribusi_ke' => $request->distribusi_ke,
-                'keterangan_distribusi' => $request->keterangan_serapan,
-                'edit_oleh' => auth()->user()->username ?? 'admin',
-                'tgl_edit' => now(),
-            ]);
-            return response()->json(['success' => true, 'message' => 'Data Serapan berhasil diperbarui']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
-        }
-    }
-
-    public function validasiSerapan(Request $request, $id)
-    {
-        try {
-            DB::table('distribusi')->where('id_distribusi', $id)->update([
-                'valid_oleh' => auth()->user()->username ?? 'admin',
-                'tgl_valid' => now(),
-            ]);
-            return back()->with('success', 'Data Serapan berhasil divalidasi');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
-        }
+        // Menggunakan view khusus viewer yang read-only
+        return view('view.kelola-lahan.potensi.index', compact(
+            'summary', 'cats', 'lahanList', 'polresList', 'polsekList',
+            'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList',
+            'desaList', 'anggotaList'
+        ));
     }
 }
