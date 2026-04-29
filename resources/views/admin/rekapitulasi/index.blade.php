@@ -3,38 +3,55 @@
 @section('header', 'Laporan Rekapitulasi Produksi')
 
 @section('content')
-<div class="space-y-8 pb-20 antialiased text-slate-900"
-    style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+    
+    .rekapitulasi-container {
+        font-family: 'Outfit', sans-serif;
+    }
+    
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .topo-pattern {
+        background-color: transparent;
+        background-image: radial-gradient(#10b981 1px, transparent 1px);
+        background-size: 20px 20px;
+        opacity: 0.1;
+    }
+</style>
+
+<div class="space-y-8 pb-24 rekapitulasi-container max-w-7xl mx-auto">
 
     {{-- [SEC 1] - HEADER SECTION --}}
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-4 transition-all mb-10 duration-700 animate-in fade-in slide-in-from-top-4">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
         <div>
-            <nav class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
-                <span>Rekapitulasi Data</span>
-                <svg class="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+            <nav class="flex items-center gap-2 font-black tracking-[0.2em] uppercase text-slate-400 mb-2">
+                <span class="text-[10px] border-b-2 border-slate-300 pb-0.5">REKAPITULASI DATA</span>
+                <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
                 </svg>
-                <span class="text-emerald-600 font-semibold">Produksi Lahan</span>
+                <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">Produksi Lahan</span>
             </nav>
-            <h2 class="text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900">
-                Laporan <span class="text-slate-400 font-normal">Rekapitulasi</span>
+            <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
+                LAPORAN <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-indigo-500">REKAPITULASI</span>
             </h2>
+            <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Rekapitulasi total data produksi lahan di berbagai wilayah.</p>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-            <form action="{{ route('admin.rekapitulasi.index') }}" method="GET" id="form-filter">
-                <div class="relative group w-full sm:w-72">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
+        <div class="flex flex-wrap items-center gap-3">
+            <form action="{{ route('admin.rekapitulasi.index') }}" method="GET" id="form-filter" class="flex items-center gap-2">
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                     <input type="text"
                         name="search"
                         id="search-input"
                         value="{{ request('search') }}"
-                        placeholder="Cari data lokasi..."
-                        class="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm shadow-sm transition-all outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/40">
+                        placeholder="CARI LOKASI..."
+                        class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
                 </div>
 
                 @foreach(request()->except('search') as $key => $value)
@@ -42,24 +59,21 @@
                 @endforeach
             </form>
 
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button onclick="window.location.reload()" title="Refresh"
-                    class="p-2.5 text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-emerald-600 transition-all active:scale-95 shadow-sm">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                        </path>
+            <button type="button" onclick="window.location.reload()" title="Refresh Data"
+                class="p-3.5 bg-white text-emerald-600 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 hover:bg-slate-50 transition-all duration-300 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+            <div x-data="{ showExportModal: false }">
+                <button type="button"
+                    @click="showExportModal = true"
+                    class="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700 text-xs font-black uppercase tracking-widest">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
+                    Export
                 </button>
-                <div x-data="{ showExportModal: false }">
-                    <button type="button"
-                        @click="showExportModal = true"
-                        class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-emerald-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Export Excel
-                    </button>
 
                     <div x-show="showExportModal"
                         x-transition:enter="transition ease-out duration-300"
@@ -129,22 +143,22 @@
     </div>
 
     {{-- [SEC 3] - FILTER SECTION --}}
-    <form action="{{ url()->current() }}" method="GET" class="mx-4 bg-white border border-slate-200 rounded-xl shadow-sm" x-data="{ open: true }">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-            <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
-                    </path>
-                </svg>
-                <span class="text-sm font-bold text-slate-700 uppercase tracking-tight">Filter Laporan</span>
+    <form action="{{ url()->current() }}" method="GET" class="mx-2 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 mb-12 relative z-20 bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-70 overflow-hidden" x-data="{ open: true }">
+        <div class="px-8 py-5 border-b border-slate-100/80 flex flex-wrap items-center justify-between bg-gradient-to-r from-slate-50 to-white gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-black text-slate-700 uppercase tracking-widest">Parameter Laporan</span>
             </div>
             <div class="flex items-center gap-3">
-                <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">
-                    Terapkan Filter
+                <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95">
+                    Terapkan
                 </button>
-                <button type="button" @click="open = !open" class="text-xs font-bold text-emerald-600 hover:underline transition-all">
-                    <span x-text="open ? 'Sembunyikan' : 'Tampilkan Filter'"></span>
+                <button type="button" @click="open = !open" class="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-100 transition-all active:scale-95">
+                    <span x-text="open ? 'Sembunyikan' : 'Tampilkan'"></span>
                 </button>
             </div>
         </div>
@@ -646,17 +660,20 @@
     </form>
 
     {{-- [SEC 4] - DATA TABLE --}}
-    <div class="mx-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <h3 class="font-semibold text-slate-800">Rincian Produksi Wilayah</h3>
-                <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full uppercase tracking-wide">
-                    {{ $dataRekap->total() }} baris data
+    <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-2 mt-12 bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-70">
+        <!-- Header Panel -->
+        <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
+            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
+            <div class="flex items-center gap-4 relative z-10 w-full">
+                <div class="w-1.5 h-8 bg-emerald-500 rounded-full"></div>
+                <h3 class="text-sm font-black text-white uppercase tracking-widest">RINCIAN PRODUKSI WILAYAH</h3>
+                <span class="text-[10px] font-black text-emerald-300 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-400/30">
+                    {{ $dataRekap->total() }} BARIS
                 </span>
             </div>
-            <span class="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded uppercase tracking-wider border border-emerald-100">
-                Live Data
-            </span>
+            <div class="hidden md:block relative z-10 text-xs font-black text-emerald-400 bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 whitespace-nowrap">
+                LIVE DATA
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-separate border-spacing-0">
@@ -900,52 +917,57 @@
 
         {{-- Pagination --}}
         @if($dataRekap->hasPages())
-        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Halaman <span class="text-slate-900">{{ $dataRekap->currentPage() }}</span>
-                dari <span class="text-slate-900">{{ $dataRekap->lastPage() }}</span>
-                &nbsp;·&nbsp; Total <span class="text-emerald-600">{{ number_format($dataRekap->total()) }}</span> data
+        <div class="px-6 py-5 border-t border-slate-200/60 bg-slate-50/80 flex flex-col sm:flex-row justify-between items-center gap-4 rounded-b-[2.5rem]">
+            <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                Data ke <span class="text-emerald-600">{{ $dataRekap->firstItem() }}</span> - <span class="text-emerald-600">{{ $dataRekap->lastItem() }}</span> dari total <span class="text-slate-800">{{ $dataRekap->total() }}</span>
             </div>
-            <div class="flex items-center gap-2">
+            
+            <div class="flex items-center gap-1 sm:gap-2">
+                {{-- Previous --}}
                 @if ($dataRekap->onFirstPage())
-                <div class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-300 cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
-                    </svg>
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
+                @else
+                    <a href="{{ $dataRekap->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
+                @endif
+
+                {{-- Pages --}}
+                <div class="hidden sm:flex items-center gap-1 mx-2">
+                    @php
+                        $startPage = max($dataRekap->currentPage() - 2, 1);
+                        $endPage = min($startPage + 4, $dataRekap->lastPage());
+                        if ($endPage - $startPage < 4) {
+                            $startPage = max($endPage - 4, 1);
+                        }
+                    @endphp
+
+                    @if($startPage > 1)
+                        <a href="{{ $dataRekap->url(1) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">1</a>
+                        @if($startPage > 2)
+                            <span class="w-9 h-9 flex items-center justify-center text-slate-400 text-xs font-black">...</span>
+                        @endif
+                    @endif
+
+                    @for ($page = $startPage; $page <= $endPage; $page++)
+                        @if ($page == $dataRekap->currentPage())
+                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $page }}</span>
+                        @else
+                            <a href="{{ $dataRekap->url($page) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 rounded-xl text-xs font-black transition-all">{{ $page }}</a>
+                        @endif
+                    @endfor
+
+                    @if($endPage < $dataRekap->lastPage())
+                        @if($endPage < $dataRekap->lastPage() - 1)
+                            <span class="w-9 h-9 flex items-center justify-center text-slate-400 text-xs font-black">...</span>
+                        @endif
+                        <a href="{{ $dataRekap->url($dataRekap->lastPage()) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $dataRekap->lastPage() }}</a>
+                    @endif
                 </div>
-                @else
-                <a href="{{ $dataRekap->previousPageUrl() }}" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:bg-white hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </a>
-                @endif
 
-                @foreach ($dataRekap->getUrlRange(max(1, $dataRekap->currentPage() - 2), min($dataRekap->lastPage(), $dataRekap->currentPage() + 2)) as $page => $url)
-                @if ($page == $dataRekap->currentPage())
-                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-500 text-white text-xs font-black shadow-lg shadow-amber-200 ring-4 ring-amber-500/10">{{ $page }}</div>
-                @else
-                <a href="{{ $url }}" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm">{{ $page }}</a>
-                @endif
-                @endforeach
-
-                @if($dataRekap->lastPage() > $dataRekap->currentPage() + 2)
-                <span class="text-slate-400 px-1">...</span>
-                <a href="{{ $dataRekap->url($dataRekap->lastPage()) }}" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm">{{ $dataRekap->lastPage() }}</a>
-                @endif
-
+                {{-- Next --}}
                 @if ($dataRekap->hasMorePages())
-                <a href="{{ $dataRekap->nextPageUrl() }}" class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:bg-white hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </a>
+                    <a href="{{ $dataRekap->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
                 @else
-                <div class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-300 cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
                 @endif
             </div>
         </div>

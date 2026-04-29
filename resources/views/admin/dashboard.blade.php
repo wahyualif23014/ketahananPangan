@@ -71,40 +71,39 @@
     </div>
 
     {{-- =====================================================================
-         2. KPI SUMMARY CARDS
+         2. KPI SUMMARY CARDS (4 Kolom Besar)
     ===================================================================== --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
         <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-[1.02]"></div>
 
         {{-- 1. POTENSI LAHAN --}}
-        <div x-data="{ open: false }" class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 flex flex-col overflow-hidden">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-            <div class="relative z-10 flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+        <div x-data="{ open: true }" class="group relative bg-white p-6 md:p-10 rounded-[2rem] border border-emerald-100 shadow-xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden">
+            <div class="absolute -right-8 -top-8 w-40 h-40 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex items-center justify-between mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                 </div>
-                <button @click="open = !open" class="text-[10px] text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg uppercase tracking-widest font-black transition-colors border border-emerald-100">
+                <button @click="open = !open" class="text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-emerald-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
-                    <span x-show="open" x-cloak>Tutup Rincian</span>
+                    <span x-show="open" x-cloak>Tutup</span>
                 </button>
             </div>
-            <div class="relative z-10 flex flex-col justify-center flex-grow">
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL POTENSI LAHAN</p>
-                <div class="flex items-baseline gap-1.5">
-                    <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">{{ number_format($potensiTotal, 2) }}</h3>
-                    <span class="text-xs text-emerald-500 uppercase font-black">Ha</span>
+            <div class="relative z-10">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">TOTAL POTENSI LAHAN</p>
+                <div class="flex items-baseline gap-2">
+                    <h3 class="text-5xl lg:text-6xl font-black text-slate-800 italic leading-none">{{ number_format($potensiTotal, 2) }}</h3>
+                    <span class="text-sm md:text-base text-emerald-500 uppercase font-black">Ha</span>
                 </div>
             </div>
-            
-            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-4 pt-4 border-t border-slate-100">
-                <ul class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-6 pt-5 border-t border-slate-100 flex-grow">
+                <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no1 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
                         @php $det = $potensiDetails[$id] ?? null; @endphp
                         @if($det)
-                        <li class="flex flex-col border-l-2 border-emerald-300 pl-2">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase">{{ $no1++ }}. {{ $nama }}</span>
-                            <span class="text-xs font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-emerald-600">{{ $det->total_lokasi }} lokasi</span></span>
+                        <li class="flex flex-col border-l-4 border-emerald-300 pl-3">
+                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no1++ }}. {{ $nama }}</span>
+                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-emerald-600">{{ $det->total_lokasi }} lokasi</span></span>
                         </li>
                         @endif
                     @endforeach
@@ -112,36 +111,34 @@
             </div>
         </div>
 
-        {{-- 2. TANAM 2026 --}}
-        <div x-data="{ open: false }" class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-blue-100 shadow-xl shadow-blue-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 flex flex-col overflow-hidden">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-            <div class="relative z-10 flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-500/30">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+        {{-- 2. TOTAL LAHAN TANAM --}}
+        <div x-data="{ open: true }" class="group relative bg-white p-6 md:p-10 rounded-[2rem] border border-blue-100 shadow-xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden">
+            <div class="absolute -right-8 -top-8 w-40 h-40 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex items-center justify-between mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-500/30">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
                 </div>
-                <button @click="open = !open" class="text-[10px] text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg uppercase tracking-widest font-black transition-colors border border-blue-100">
+                <button @click="open = !open" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-blue-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
-                    <span x-show="open" x-cloak>Tutup Rincian</span>
+                    <span x-show="open" x-cloak>Tutup</span>
                 </button>
             </div>
-            <div class="relative z-10 flex flex-col justify-center flex-grow">
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL LAHAN TANAM</p>
-                <div class="flex items-baseline gap-1.5">
-                    <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">{{ number_format($tanamTotal, 2) }}</h3>
-                    <span class="text-xs text-blue-500 uppercase font-black">Ha</span>
+            <div class="relative z-10">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">TOTAL LAHAN TANAM</p>
+                <div class="flex items-baseline gap-2">
+                    <h3 class="text-5xl lg:text-6xl font-black text-slate-800 italic leading-none">{{ number_format($tanamTotal, 2) }}</h3>
+                    <span class="text-sm md:text-base text-blue-500 uppercase font-black">Ha</span>
                 </div>
-                <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-1">TAHUN 2026</p>
             </div>
-
-            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-4 pt-4 border-t border-slate-100">
-                <ul class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-6 pt-5 border-t border-slate-100 flex-grow">
+                <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no2 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
                         @php $det = $tanamDetails[$id] ?? null; @endphp
                         @if($det)
-                        <li class="flex flex-col border-l-2 border-blue-300 pl-2">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase">{{ $no2++ }}. {{ $nama }}</span>
-                            <span class="text-xs font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-blue-600">{{ $det->total_lokasi }} lokasi</span></span>
+                        <li class="flex flex-col border-l-4 border-blue-300 pl-3">
+                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no2++ }}. {{ $nama }}</span>
+                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-blue-600">{{ $det->total_lokasi }} lokasi</span></span>
                         </li>
                         @endif
                     @endforeach
@@ -149,36 +146,34 @@
             </div>
         </div>
 
-        {{-- 3. PANEN 2026 --}}
-        <div x-data="{ open: false }" class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-amber-100 shadow-xl shadow-amber-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-900/10 transition-all duration-500 flex flex-col overflow-hidden">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-            <div class="relative z-10 flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-amber-500/30">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+        {{-- 3. TOTAL LAHAN PANEN --}}
+        <div x-data="{ open: true }" class="group relative bg-white p-6 md:p-10 rounded-[2rem] border border-amber-100 shadow-xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden">
+            <div class="absolute -right-8 -top-8 w-40 h-40 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex items-center justify-between mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-amber-500/30">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                 </div>
-                <button @click="open = !open" class="text-[10px] text-amber-600 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg uppercase tracking-widest font-black transition-colors border border-amber-100">
+                <button @click="open = !open" class="text-xs text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-amber-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
-                    <span x-show="open" x-cloak>Tutup Rincian</span>
+                    <span x-show="open" x-cloak>Tutup</span>
                 </button>
             </div>
-            <div class="relative z-10 flex flex-col justify-center flex-grow">
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL LAHAN PANEN</p>
-                <div class="flex items-baseline gap-1.5">
-                    <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">{{ number_format($panenTotal, 2) }}</h3>
-                    <span class="text-xs text-amber-500 uppercase font-black">Ha</span>
+            <div class="relative z-10">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">TOTAL LAHAN PANEN</p>
+                <div class="flex items-baseline gap-2">
+                    <h3 class="text-5xl lg:text-6xl font-black text-slate-800 italic leading-none">{{ number_format($panenTotal, 2) }}</h3>
+                    <span class="text-sm md:text-base text-amber-500 uppercase font-black">Ha</span>
                 </div>
-                <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-1">TAHUN 2026</p>
             </div>
-
-            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-4 pt-4 border-t border-slate-100">
-                <ul class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-6 pt-5 border-t border-slate-100 flex-grow">
+                <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no3 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
                         @php $det = $panenDetails[$id] ?? null; @endphp
                         @if($det)
-                        <li class="flex flex-col border-l-2 border-amber-300 pl-2">
-                            <span class="text-[9px] font-bold text-slate-500 uppercase">{{ $no3++ }}. {{ $nama }}</span>
-                            <span class="text-xs font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-amber-600">{{ $det->total_lokasi }} lokasi</span></span>
+                        <li class="flex flex-col border-l-4 border-amber-300 pl-3">
+                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no3++ }}. {{ $nama }}</span>
+                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-amber-600">{{ $det->total_lokasi }} lokasi</span></span>
                         </li>
                         @endif
                     @endforeach
@@ -186,35 +181,44 @@
             </div>
         </div>
 
-        {{-- 4. TITIK LAHAN --}}
-        <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-rose-100 shadow-xl shadow-rose-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-rose-900/10 transition-all duration-500 flex flex-col overflow-hidden">
-            <div class="absolute -right-8 -top-8 w-32 h-32 bg-rose-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
-            <div class="relative z-10 flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-rose-400 to-red-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-rose-500/30">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        {{-- 4. TOTAL TITIK LAHAN --}}
+        <div x-data="{ open: true }" class="group relative bg-white p-6 md:p-10 rounded-[2rem] border border-rose-100 shadow-xl hover:-translate-y-2 hover:shadow-2xl transition-all duration-500 flex flex-col overflow-hidden">
+            <div class="absolute -right-8 -top-8 w-40 h-40 bg-rose-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
+            <div class="relative z-10 flex items-center justify-between mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-rose-400 to-red-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-rose-500/30">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <button @click="open = !open" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-rose-100 shadow-sm">
+                    <span x-show="!open">Lihat Rincian</span>
+                    <span x-show="open" x-cloak>Tutup</span>
+                </button>
+            </div>
+            <div class="relative z-10">
+                <p class="text-slate-400 text-xs font-black uppercase tracking-[0.3em] mb-2">TOTAL TITIK LAHAN</p>
+                <div class="flex items-baseline gap-2">
+                    <h3 class="text-5xl lg:text-6xl font-black text-slate-800 italic leading-none">{{ number_format($totalTitikLahan) }}</h3>
+                    <span class="text-sm md:text-base text-rose-500 uppercase font-black">Titik</span>
                 </div>
             </div>
-            <div class="relative z-10 flex flex-col justify-center flex-grow">
-                <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mb-1">TOTAL TITIK LAHAN</p>
-                <div class="flex items-baseline gap-1.5">
-                    <h3 class="text-3xl font-black text-slate-800 uppercase italic leading-none">{{ number_format($totalTitikLahan) }}</h3>
-                    <span class="text-xs text-rose-500 uppercase font-black">Titik</span>
-                </div>
-            </div>
-            
-            <div class="relative z-10 mt-4 pt-4 border-t border-slate-100">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">PENGELOLAAN LAHAN POLSEK</p>
-                <div class="flex items-center gap-2">
-                    <span class="text-lg font-black text-slate-800">{{ number_format($totalPolsek) }}</span>
-                    <span class="text-[10px] text-rose-600 font-bold uppercase bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Polsek Aktif</span>
+            <div x-show="open" x-collapse x-cloak class="relative z-10 mt-6 pt-5 border-t border-slate-100 flex-grow">
+                <div class="flex flex-col gap-4">
+                    <div class="bg-rose-50 border border-rose-100 rounded-xl p-5">
+                        <p class="text-xs md:text-sm font-black text-rose-400 uppercase tracking-widest">Polsek Mengelola</p>
+                        <p class="text-xl md:text-2xl font-black text-rose-700 mt-1">{{ number_format($totalPolsek) }} <span class="text-xs md:text-sm font-bold">Polsek Aktif</span></p>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5">
+                        <p class="text-xs md:text-sm font-black text-indigo-400 uppercase tracking-widest">Total Serapan</p>
+                        <p class="text-xl md:text-2xl font-black text-indigo-700 mt-1">{{ number_format($totalSerapan, 2) }} <span class="text-xs md:text-sm font-bold">Ton</span></p>
+                    </div>
                 </div>
             </div>
         </div>
 
     </div>
 
+
     {{-- =====================================================================
-         3. TOTAL HASIL SERAPAN TAHUN 2026
+         4. TOTAL HASIL SERAPAN
     ===================================================================== --}}
     <div class="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-1 mt-6">
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex items-center justify-between relative overflow-hidden">
@@ -256,22 +260,44 @@
     </div>
 
     {{-- =====================================================================
-         4. CHART + STATUS CARDS
+         5. CHART TREN LUASAN LAHAN + STATUS CARDS
     ===================================================================== --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {{-- Line Chart --}}
-        {{-- Line Chart --}}
-        <div class="lg:col-span-2 bg-white/90 backdrop-blur rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 p-6 md:p-8 relative overflow-hidden">
+        {{-- Chart dengan filter tahun & bulan --}}
+        <div class="lg:col-span-2 bg-white/90 backdrop-blur rounded-[2rem] border border-slate-200/60 shadow-xl p-6 md:p-8 relative overflow-hidden">
             <div class="absolute -right-20 -top-20 w-64 h-64 bg-emerald-50 rounded-full opacity-60 -z-10 pointer-events-none"></div>
-            <div class="flex items-start justify-between mb-8 relative z-10">
+            <div class="flex flex-wrap items-start justify-between gap-4 mb-6 relative z-10">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Tren Luasan Lahan</h3>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Perkembangan potensi lahan per tahun</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Perkembangan potensi lahan per periode</p>
                 </div>
-                <div class="flex bg-slate-50 p-1 rounded-xl border border-slate-200 gap-1 shadow-inner" id="chart-toggle-group">
-                    <button id="btn-chart-monthly" class="px-4 py-2 text-[10px] font-black bg-white rounded-lg shadow-sm text-emerald-600 uppercase tracking-widest border border-emerald-100 transition-all">Bulanan</button>
-                    <button id="btn-chart-yearly" class="px-4 py-2 text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all">Tahunan</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    {{-- Filter Tahun Chart --}}
+                    <form method="GET" action="{{ route('admin.dashboard') }}" id="chart-filter-form" class="flex items-center gap-2">
+                        <input type="hidden" name="quarter" value="{{ $quarterFilter }}">
+                        <input type="hidden" name="year" value="{{ $yearFilter }}">
+                        <select name="chart_year" id="chart-year-select"
+                            onchange="document.getElementById('chart-filter-form').submit()"
+                            class="h-9 px-3 text-[10px] font-black tracking-widest text-slate-700 uppercase bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
+                            @foreach($chartYears as $cy)
+                            <option value="{{ $cy }}" {{ (request('chart_year', $yearFilter) == $cy) ? 'selected' : '' }}>{{ $cy }}</option>
+                            @endforeach
+                        </select>
+                        <select name="chart_month" id="chart-month-select"
+                            onchange="document.getElementById('chart-filter-form').submit()"
+                            class="h-9 px-3 text-[10px] font-black tracking-widest text-emerald-700 uppercase bg-emerald-50 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none cursor-pointer">
+                            <option value="all" {{ (request('chart_month','all') == 'all') ? 'selected' : '' }}>Semua Bulan</option>
+                            @foreach(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'] as $mi => $mn)
+                            <option value="{{ $mi+1 }}" {{ (request('chart_month') == $mi+1) ? 'selected' : '' }}>{{ $mn }}</option>
+                            @endforeach
+                        </select>
+                    </form>
+                    {{-- Toggle Bulanan/Tahunan --}}
+                    <div class="flex bg-slate-50 p-1 rounded-xl border border-slate-200 gap-1 shadow-inner" id="chart-toggle-group">
+                        <button id="btn-chart-monthly" class="px-4 py-2 text-[10px] font-black bg-white rounded-lg shadow-sm text-emerald-600 uppercase tracking-widest border border-emerald-100 transition-all">Bulanan</button>
+                        <button id="btn-chart-yearly" class="px-4 py-2 text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all">Tahunan</button>
+                    </div>
                 </div>
             </div>
             <div class="h-56">

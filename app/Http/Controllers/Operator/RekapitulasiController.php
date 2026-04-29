@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RekapitulasiLahan;
 use Illuminate\Support\Facades\DB;
+use App\Exports\RekapitulasiExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RekapitulasiController extends Controller
 {
@@ -45,5 +47,27 @@ class RekapitulasiController extends Controller
             'jenisLahanList',
             'komoditiList'
         ));
+    }
+
+    public function getPolsek(Request $request)
+    {
+        if (!$request->filled('polres')) {
+            return response()->json([]);
+        }
+
+        $polsekList = DB::table('tingkat')
+            ->select('id_tingkat', 'nama_tingkat')
+            ->where('id_tingkat', 'like', $request->polres . '.%')
+            ->orderBy('nama_tingkat')
+            ->get()
+            ->map(fn($item) => ['value' => $item->id_tingkat, 'label' => $item->nama_tingkat]);
+
+        return response()->json($polsekList);
+    }
+
+    public function export(Request $request)
+    {
+        $fileName = 'Rekap_Lahan_' . now()->format('Y-m-d_His') . '.xlsx';
+        return Excel::download(new RekapitulasiExport($request->all()), $fileName);
     }
 }
