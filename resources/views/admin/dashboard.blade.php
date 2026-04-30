@@ -628,28 +628,28 @@
 <script src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script id="chart-tahunan-data" type="application/json">
-    <?php echo json_encode($chartTahunan); ?>
+    <?php echo json_encode($chartTahunan ?? ['labels' => [], 'data' => []]); ?>
 </script>
 <script id="chart-bulanan-data" type="application/json">
-    <?php echo json_encode($chartBulanan); ?>
+    <?php echo json_encode($chartBulanan ?? ['labels' => [], 'data' => []]); ?>
+</script>
+<script id="serapan-data" type="application/json">
+    <?php echo json_encode([$serapanBulog ?? 0, $serapanPabrik ?? 0, $serapanTengkulak ?? 0, $serapanKonsumsi ?? 0]); ?>
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
 
         // Serapan Bar Chart
         const serapanCtx = document.getElementById('serapanChart').getContext('2d');
+        const serapanData = JSON.parse(document.getElementById('serapan-data').textContent);
+        
         new Chart(serapanCtx, {
             type: 'bar',
             data: {
                 labels: ['Bulog', 'Pabrik Pakan', 'Tengkulak', 'Konsumsi Sendiri'],
                 datasets: [{
                     label: 'Total Serapan (Ton)',
-                    data: [
-                        {{ $serapanBulog }},
-                        {{ $serapanPabrik }},
-                        {{ $serapanTengkulak }},
-                        {{ $serapanKonsumsi }}
-                    ],
+                    data: serapanData,
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.8)',   // blue
                         'rgba(99, 102, 241, 0.8)',   // indigo
@@ -710,14 +710,17 @@
         grad.addColorStop(0, 'rgba(16, 185, 129, 0.12)');
         grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
 
+        const chartTahunanRaw = JSON.parse(document.getElementById('chart-tahunan-data').textContent);
+        const chartBulananRaw = JSON.parse(document.getElementById('chart-bulanan-data').textContent);
+
         const dynamicChartData = {
             monthly: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
-                data: {!! json_encode($chartMonthlyData) !!}
+                labels: chartBulananRaw.labels,
+                data: chartBulananRaw.data
             },
             yearly: {
-                labels: {!! json_encode($chartYearlyLabels) !!},
-                data: {!! json_encode($chartYearlyData) !!}
+                labels: chartTahunanRaw.labels,
+                data: chartTahunanRaw.data
             }
         };
 

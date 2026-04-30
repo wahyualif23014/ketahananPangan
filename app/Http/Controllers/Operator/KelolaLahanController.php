@@ -1,16 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
-use App\Models\AktivitasLog;
 use App\Models\Komoditi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class KelolaLahanController extends Controller
 {
-    private function getIndexData(Request $request)
+    public function index(Request $request)
     {
         // 1. Fetch Filters Data (Dropdowns)
         $polresList = DB::table('tingkat')
@@ -75,6 +74,14 @@ class KelolaLahanController extends Controller
             ->leftJoin($latestDistribusi, 't.id_tanam', '=', 'd.id_tanam');
 
         // Category-Specific Joins & Date Filters
+        if ($filters['kategori'] === 'panen') {
+            $dateField = 'p.tgl_panen';
+        } elseif ($filters['kategori'] === 'serapan') {
+            $dateField = 'd.tgl_distribusi';
+        } else {
+            $dateField = 't.tgl_tanam';
+        }
+
         if ($filters['kategori'] !== 'semua') {
             $targetStage = $filters['kategori'] === 'tanam' ? 0 : ($filters['kategori'] === 'panen' ? 1 : 2);
             $dataQuery->whereRaw("
@@ -87,23 +94,11 @@ class KelolaLahanController extends Controller
             ", [$targetStage]);
         }
 
-        if ($filters['start'] || $filters['end']) {
-            // Apply date filter dynamically based on the current active stage's date
-            $dateCondition = "
-                CASE 
-                    WHEN t.id_tanam IS NULL THEN NULL
-                    WHEN p.id_panen IS NULL THEN t.tgl_tanam
-                    WHEN d.id_distribusi IS NULL THEN p.tgl_panen
-                    ELSE d.tgl_distribusi
-                END
-            ";
-            
-            if ($filters['start']) {
-                $dataQuery->whereRaw("$dateCondition >= ?", [$filters['start']]);
-            }
-            if ($filters['end']) {
-                $dataQuery->whereRaw("$dateCondition <= ?", [$filters['end']]);
-            }
+        if ($filters['start']) {
+            $dataQuery->where($dateField, '>=', $filters['start']);
+        }
+        if ($filters['end']) {
+            $dataQuery->where($dateField, '<=', $filters['end']);
         }
 
         if ($filters['search']) {
@@ -191,33 +186,6 @@ class KelolaLahanController extends Controller
                 return $row;
             });
 
-            $lahanIdsForHistory = $recordsCollection->pluck('id_lahan')->unique()->toArray();
-            if (!empty($lahanIdsForHistory)) {
-                $allTanams = DB::table('tanam')->whereIn('id_lahan', $lahanIdsForHistory)->orderBy('tgl_tanam', 'desc')->get();
-                $allTanamIds = $allTanams->pluck('id_tanam')->unique()->toArray();
-                
-                $allPanens = empty($allTanamIds) ? collect() : DB::table('panen')->whereIn('id_tanam', $allTanamIds)->get()->groupBy('id_tanam');
-                $allDistribusis = empty($allTanamIds) ? collect() : DB::table('distribusi')->whereIn('id_tanam', $allTanamIds)->get()->groupBy('id_tanam');
-
-                $allTanams->transform(function($t) use ($allPanens, $allDistribusis) {
-                    $t->panens = $allPanens->get($t->id_tanam, collect());
-                    $t->distribusis = $allDistribusis->get($t->id_tanam, collect());
-                    return $t;
-                });
-
-                $tanamByLahan = $allTanams->groupBy('id_lahan');
-
-                $recordsCollection->transform(function($row) use ($tanamByLahan) {
-                    $row->history_tanam = $tanamByLahan->get($row->id_lahan, collect());
-                    return $row;
-                });
-            } else {
-                $recordsCollection->transform(function($row) {
-                    $row->history_tanam = collect();
-                    return $row;
-                });
-            }
-
             // Build Hierarchy
             $groupedItems = collect($paginator->items())->map(function($resor) use ($allSektors, $recordsCollection) {
                 $resor->sektors = $allSektors->filter(function($s) use ($resor) {
@@ -274,69 +242,58 @@ class KelolaLahanController extends Controller
             }
         }
 
-        // 5. Calculate Stats (Aggregated) based on completely filtered data
-        $filteredLahanIds = (clone $dataQuery)->pluck('lahan.id_lahan')->unique()->toArray();
-
-        if (empty($filteredLahanIds)) {
-            $potensiTotal = 0;
-            $potensiDetails = collect();
-            $tanamTotal = 0;
-            $tanamDetails = collect();
-            $panenTotal = 0;
-            $panenDetails = collect();
-            $serapanTotal = 0;
-            $serapanDetails = collect();
-        } else {
-            // Potensi Stats
-            $statsData = DB::table('lahan')
-                ->whereNotNull('valid_oleh')
-                ->whereIn('id_lahan', $filteredLahanIds);
-                
-            $potensiTotal = (clone $statsData)->sum('luas_lahan');
-            $potensiDetails = (clone $statsData)->selectRaw('id_jenis_lahan, SUM(luas_lahan) as total_luas, COUNT(id_lahan) as total_lokasi')
-                ->whereNotNull('id_jenis_lahan')
-                ->groupBy('id_jenis_lahan')
-                ->get()->keyBy('id_jenis_lahan');
-            
-            // Tanam Stats (Only latest cycle)
-            $tanamQuery = DB::table('tanam')
-                ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-                ->join(DB::raw('(SELECT MAX(id_tanam) as max_id FROM tanam GROUP BY id_lahan) as latest'), 'tanam.id_tanam', '=', 'latest.max_id')
-                ->whereNotNull('tanam.valid_oleh')
-                ->whereIn('tanam.id_lahan', $filteredLahanIds);
-                
-            $tanamTotal = (clone $tanamQuery)->sum('tanam.luas_tanam') ?? 0;
-            $tanamDetails = (clone $tanamQuery)->selectRaw('lahan.id_jenis_lahan, SUM(tanam.luas_tanam) as total_luas, COUNT(tanam.id_lahan) as total_lokasi')
-                ->whereNotNull('lahan.id_jenis_lahan')
-                ->groupBy('lahan.id_jenis_lahan')
-                ->get()->keyBy('id_jenis_lahan');
-
-            // Panen Stats (Only latest cycle)
-            $panenQuery = DB::table('panen')
-                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-                ->join(DB::raw('(SELECT MAX(id_panen) as max_id FROM panen GROUP BY id_lahan) as latest'), 'panen.id_panen', '=', 'latest.max_id')
-                ->whereNotNull('panen.valid_oleh')
-                ->whereIn('panen.id_lahan', $filteredLahanIds);
-                
-            $panenTotal = (clone $panenQuery)->sum('panen.luas_panen') ?? 0;
-            $panenDetails = (clone $panenQuery)->selectRaw('lahan.id_jenis_lahan, SUM(panen.luas_panen) as total_luas, COUNT(panen.id_lahan) as total_lokasi')
-                ->whereNotNull('lahan.id_jenis_lahan')
-                ->groupBy('lahan.id_jenis_lahan')
-                ->get()->keyBy('id_jenis_lahan');
-
-            // Serapan Stats (Only latest cycle)
-            $serapanQuery = DB::table('distribusi')
-                ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
-                ->join(DB::raw('(SELECT MAX(id_distribusi) as max_id FROM distribusi GROUP BY id_lahan) as latest'), 'distribusi.id_distribusi', '=', 'latest.max_id')
-                ->whereNotNull('distribusi.valid_oleh')
-                ->whereIn('distribusi.id_lahan', $filteredLahanIds);
-                
-            $serapanTotal = (clone $serapanQuery)->sum('distribusi.total_distribusi') ?? 0;
-            $serapanDetails = (clone $serapanQuery)->selectRaw('distribusi.distribusi_ke, SUM(distribusi.total_distribusi) as total_luas, COUNT(distribusi.id_distribusi) as total_lokasi')
-                ->whereNotNull('distribusi.distribusi_ke')
-                ->groupBy('distribusi.distribusi_ke')
-                ->get()->keyBy('distribusi_ke');
+        // 5. Calculate Stats (Aggregated)
+        $statsData = DB::table('lahan');
+        if ($filters['sektor']) {
+            $statsData->where('id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $statsData->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
         }
+
+        $potensiTotal = (clone $statsData)->sum('luas_lahan');
+        $potensiDetails = (clone $statsData)->selectRaw('id_jenis_lahan, SUM(luas_lahan) as total_luas, COUNT(id_lahan) as total_lokasi')
+            ->whereNotNull('id_jenis_lahan')
+            ->groupBy('id_jenis_lahan')
+            ->get()->keyBy('id_jenis_lahan');
+        
+        // Tanam Stats
+        $tanamQuery = DB::table('view_tanam');
+        if ($filters['sektor']) {
+            $tanamQuery->where('id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $tanamQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+        }
+        $tanamTotal = (clone $tanamQuery)->sum('luas_tanam') ?? 0;
+        $tanamDetails = (clone $tanamQuery)->selectRaw('id_jenis_lahan, SUM(luas_tanam) as total_luas, COUNT(id_lahan) as total_lokasi')
+            ->whereNotNull('id_jenis_lahan')
+            ->groupBy('id_jenis_lahan')
+            ->get()->keyBy('id_jenis_lahan');
+
+        // Panen Stats
+        $panenQuery = DB::table('view_panen');
+        if ($filters['sektor']) {
+            $panenQuery->where('id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $panenQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+        }
+        $panenTotal = (clone $panenQuery)->sum('luas_panen_ha') ?? 0;
+        $panenDetails = (clone $panenQuery)->selectRaw('id_jenis_lahan, SUM(luas_panen_ha) as total_luas, COUNT(id_lahan) as total_lokasi')
+            ->whereNotNull('id_jenis_lahan')
+            ->groupBy('id_jenis_lahan')
+            ->get()->keyBy('id_jenis_lahan');
+
+        // Serapan Stats
+        $serapanQuery = DB::table('view_serapan');
+        if ($filters['sektor']) {
+            $serapanQuery->where('id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $serapanQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+        }
+        $serapanTotal = (clone $serapanQuery)->sum('total_serapan_ton') ?? 0;
+        $serapanDetails = (clone $serapanQuery)->selectRaw('id_jenis_lahan, SUM(total_serapan_ton) as total_luas, COUNT(id_lahan) as total_lokasi')
+            ->whereNotNull('id_jenis_lahan')
+            ->groupBy('id_jenis_lahan')
+            ->get()->keyBy('id_jenis_lahan');
 
         $jenisLahanList = [
             1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',
@@ -350,13 +307,6 @@ class KelolaLahanController extends Controller
             9 => 'LAHAN LAINNYA'
         ];
 
-        $distribusiList = [
-            1 => 'BULOG',
-            2 => 'PABRIK PAKAN',
-            3 => 'TENGKULAK',
-            4 => 'KONSUMSI SENDIRI'
-        ];
-
         $stats = [
             'potensi' => number_format($potensiTotal, 2),
             'tanam'   => number_format($tanamTotal, 2),
@@ -366,11 +316,10 @@ class KelolaLahanController extends Controller
             'tanam_details' => $tanamDetails,
             'panen_details' => $panenDetails,
             'serapan_details' => $serapanDetails,
-            'jenis_lahan_list' => $jenisLahanList,
-            'distribusi_list' => $distribusiList
+            'jenis_lahan_list' => $jenisLahanList
         ];
 
-        return compact(
+        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', compact(
             'polresList', 
             'polsekList', 
             'komoditiList', 
@@ -378,22 +327,7 @@ class KelolaLahanController extends Controller
             'stats',
             'data',
             'lahanStagesMap'
-        );
-    }
-
-    public function index(Request $request)
-    {
-        return view('admin.kelola-lahan.lahan.index', $this->getIndexData($request));
-    }
-
-    public function indexOperator(Request $request)
-    {
-        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', $this->getIndexData($request));
-    }
-
-    public function indexView(Request $request)
-    {
-        return view('view.kelola-lahan.view_kelola', $this->getIndexData($request));
+        ));
     }
 
     public function storeTanam(Request $request)
@@ -406,18 +340,8 @@ class KelolaLahanController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
-                // Check if total luas_tanam exceeds lahan luas_lahan
-                $lahan = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
-                if ($lahan) {
-                    $totalTanam = DB::table('tanam')->where('id_lahan', $request->id_lahan)->sum('luas_tanam');
-                    if (($totalTanam + $request->luas_tanam) > $lahan->luas_lahan) {
-                        throw new \Exception('Total luas tanam (' . ($totalTanam + $request->luas_tanam) . ' Ha) melebihi potensi lahan (' . $lahan->luas_lahan . ' Ha).');
-                    }
-                }
-
                 $newId = DB::table('tanam')->max('id_tanam') + 1;
                 $idAnggota = auth()->id();
-                $lahanInfo = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
 
                 DB::table('tanam')->insert([
                     'id_tanam' => $newId,
@@ -430,13 +354,6 @@ class KelolaLahanController extends Controller
                     'est_akhir_panen' => $request->est_akhir_panen,
                     'keterangan_tanam' => $request->keterangan_tanam,
                     'datetransaction' => now(),
-                ]);
-
-                AktivitasLog::catat('create', 'tanam', [
-                    'record_id'   => $newId,
-                    'label_modul' => 'Lahan #' . $request->id_lahan . ($lahanInfo ? ' - ' . ($lahanInfo->alamat_lahan ?? '') : ''),
-                    'data_baru'   => $request->only(['id_lahan','tgl_tanam','luas_tanam','jenis_bibit','kebutuhan_bibit','est_awal_panen','est_akhir_panen','keterangan_tanam']),
-                    'keterangan'  => 'Tambah data tanam lahan #' . $request->id_lahan . ', luas ' . $request->luas_tanam . ' Ha, tanggal ' . $request->tgl_tanam,
                 ]);
             });
 
@@ -459,11 +376,7 @@ class KelolaLahanController extends Controller
             DB::transaction(function () use ($request) {
                 $newId = DB::table('panen')->max('id_panen') + 1;
                 $idAnggota = auth()->id();
-                $idTanam = $request->id_tanam ?? DB::table('tanam')->where('id_lahan', $request->id_lahan)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
-
-                // Jika status 2 (Gagal Panen), luas dan hasil diset 0
-                $luasPanen = $request->status_panen == 2 ? 0 : $request->luas_panen;
-                $totalPanen = $request->status_panen == 2 ? 0 : ($request->total_panen ?? 0);
+                $idTanam = DB::table('tanam')->where('id_lahan', $request->id_lahan)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
 
                 DB::table('panen')->insert([
                     'id_panen' => $newId,
@@ -471,18 +384,11 @@ class KelolaLahanController extends Controller
                     'id_lahan' => $request->id_lahan,
                     'id_anggota' => $idAnggota,
                     'tgl_panen' => $request->tgl_panen,
-                    'luas_panen' => $luasPanen,
-                    'total_panen' => $totalPanen,
+                    'luas_panen' => $request->luas_panen,
+                    'total_panen' => $request->total_panen ?? 0,
                     'status_panen' => $request->status_panen,
                     'ket_panen' => $request->keterangan_panen, // mapped from frontend form
                     'datetransaction' => now(),
-                ]);
-
-                AktivitasLog::catat('create', 'panen', [
-                    'record_id'   => $newId,
-                    'label_modul' => 'Lahan #' . $request->id_lahan,
-                    'data_baru'   => ['id_lahan'=>$request->id_lahan,'tgl_panen'=>$request->tgl_panen,'luas_panen'=>$luasPanen,'total_panen'=>$totalPanen,'status_panen'=>$request->status_panen],
-                    'keterangan'  => 'Tambah data panen lahan #' . $request->id_lahan . ', luas ' . $luasPanen . ' Ha, hasil ' . $totalPanen . ' Ton',
                 ]);
             });
 
@@ -505,27 +411,19 @@ class KelolaLahanController extends Controller
             DB::transaction(function () use ($request) {
                 $newId = DB::table('distribusi')->max('id_distribusi') + 1;
                 $idAnggota = auth()->id();
-                $idTanam = $request->id_tanam ?? DB::table('tanam')->where('id_lahan', $request->id_lahan)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
                 $latestPanen = DB::table('panen')->where('id_lahan', $request->id_lahan)->orderByDesc('id_panen')->first();
 
                 DB::table('distribusi')->insert([
                     'id_distribusi' => $newId,
                     'id_lahan' => $request->id_lahan,
                     'id_panen' => $latestPanen ? $latestPanen->id_panen : 0,
-                    'id_tanam' => $idTanam,
+                    'id_tanam' => $latestPanen ? $latestPanen->id_tanam : 0,
                     'id_anggota' => $idAnggota,
                     'tgl_distribusi' => $request->tgl_distribusi,
                     'total_distribusi' => $request->total_distribusi,
                     'distribusi_ke' => $request->distribusi_ke,
                     'keterangan_distribusi' => $request->keterangan_serapan, // mapped from frontend form
                     'datetransaction' => now(),
-                ]);
-
-                AktivitasLog::catat('create', 'serapan', [
-                    'record_id'   => $newId,
-                    'label_modul' => 'Lahan #' . $request->id_lahan,
-                    'data_baru'   => ['id_lahan'=>$request->id_lahan,'tgl_distribusi'=>$request->tgl_distribusi,'total_distribusi'=>$request->total_distribusi,'distribusi_ke'=>$request->distribusi_ke],
-                    'keterangan'  => 'Tambah data serapan lahan #' . $request->id_lahan . ', total ' . $request->total_distribusi . ' Ton, ke distribusi ke-' . $request->distribusi_ke,
                 ]);
             });
 
@@ -539,7 +437,6 @@ class KelolaLahanController extends Controller
     public function updateTanam(Request $request, $id)
     {
         try {
-            $old = DB::table('tanam')->where('id_tanam', $id)->first();
             DB::table('tanam')->where('id_tanam', $id)->update([
                 'tgl_tanam' => $request->tgl_tanam,
                 'luas_tanam' => $request->luas_tanam,
@@ -551,13 +448,6 @@ class KelolaLahanController extends Controller
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
             ]);
-            AktivitasLog::catat('update', 'tanam', [
-                'record_id'   => $id,
-                'label_modul' => 'ID Tanam #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-                'data_lama'   => $old ? (array)$old : null,
-                'data_baru'   => $request->only(['tgl_tanam','luas_tanam','jenis_bibit','kebutuhan_bibit','est_awal_panen','est_akhir_panen','keterangan_tanam']),
-                'keterangan'  => 'Edit data tanam #' . $id . ', luas jadi ' . $request->luas_tanam . ' Ha',
-            ]);
             return response()->json(['success' => true, 'message' => 'Data Tanam berhasil diperbarui']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
@@ -567,7 +457,6 @@ class KelolaLahanController extends Controller
     public function updatePanen(Request $request, $id)
     {
         try {
-            $old = DB::table('panen')->where('id_panen', $id)->first();
             DB::table('panen')->where('id_panen', $id)->update([
                 'tgl_panen' => $request->tgl_panen,
                 'luas_panen' => $request->luas_panen,
@@ -576,13 +465,6 @@ class KelolaLahanController extends Controller
                 'ket_panen' => $request->keterangan_panen,
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
-            ]);
-            AktivitasLog::catat('update', 'panen', [
-                'record_id'   => $id,
-                'label_modul' => 'ID Panen #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-                'data_lama'   => $old ? (array)$old : null,
-                'data_baru'   => $request->only(['tgl_panen','luas_panen','total_panen','status_panen','keterangan_panen']),
-                'keterangan'  => 'Edit data panen #' . $id . ', luas jadi ' . $request->luas_panen . ' Ha',
             ]);
             return response()->json(['success' => true, 'message' => 'Data Panen berhasil diperbarui']);
         } catch (\Exception $e) {
@@ -593,7 +475,6 @@ class KelolaLahanController extends Controller
     public function updateSerapan(Request $request, $id)
     {
         try {
-            $old = DB::table('distribusi')->where('id_distribusi', $id)->first();
             DB::table('distribusi')->where('id_distribusi', $id)->update([
                 'tgl_distribusi' => $request->tgl_distribusi,
                 'total_distribusi' => $request->total_distribusi,
@@ -602,56 +483,10 @@ class KelolaLahanController extends Controller
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
             ]);
-            AktivitasLog::catat('update', 'serapan', [
-                'record_id'   => $id,
-                'label_modul' => 'ID Distribusi #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-                'data_lama'   => $old ? (array)$old : null,
-                'data_baru'   => $request->only(['tgl_distribusi','total_distribusi','distribusi_ke','keterangan_serapan']),
-                'keterangan'  => 'Edit data serapan #' . $id . ', total jadi ' . $request->total_distribusi . ' Ton',
-            ]);
-            return response()->json(['success' => true, 'message' => 'Data serapan berhasil diperbarui']);
+            return response()->json(['success' => true, 'message' => 'Data Serapan berhasil diperbarui']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
         }
-    }
-
-    public function destroyTanam($id)
-    {
-        $old = DB::table('tanam')->where('id_tanam', $id)->first();
-        DB::table('tanam')->where('id_tanam', $id)->delete();
-        AktivitasLog::catat('delete', 'tanam', [
-            'record_id'   => $id,
-            'label_modul' => 'ID Tanam #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-            'data_lama'   => $old ? (array)$old : null,
-            'keterangan'  => 'Hapus data tanam #' . $id . ($old ? ', tgl tanam ' . $old->tgl_tanam : ''),
-        ]);
-        return response()->json(['success' => true, 'message' => 'Data tanam berhasil dihapus']);
-    }
-
-    public function destroyPanen($id)
-    {
-        $old = DB::table('panen')->where('id_panen', $id)->first();
-        DB::table('panen')->where('id_panen', $id)->delete();
-        AktivitasLog::catat('delete', 'panen', [
-            'record_id'   => $id,
-            'label_modul' => 'ID Panen #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-            'data_lama'   => $old ? (array)$old : null,
-            'keterangan'  => 'Hapus data panen #' . $id . ($old ? ', tgl panen ' . $old->tgl_panen : ''),
-        ]);
-        return response()->json(['success' => true, 'message' => 'Data panen berhasil dihapus']);
-    }
-
-    public function destroySerapan($id)
-    {
-        $old = DB::table('distribusi')->where('id_distribusi', $id)->first();
-        DB::table('distribusi')->where('id_distribusi', $id)->delete();
-        AktivitasLog::catat('delete', 'serapan', [
-            'record_id'   => $id,
-            'label_modul' => 'ID Distribusi #' . $id . ($old ? ' - Lahan #' . $old->id_lahan : ''),
-            'data_lama'   => $old ? (array)$old : null,
-            'keterangan'  => 'Hapus data serapan/distribusi #' . $id,
-        ]);
-        return response()->json(['success' => true, 'message' => 'Data serapan berhasil dihapus']);
     }
 
     public function validasiSerapan(Request $request, $id)
@@ -664,45 +499,6 @@ class KelolaLahanController extends Controller
             return back()->with('success', 'Data Serapan berhasil divalidasi');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
-        }
-    }
-
-    public function getValidasiData($id)
-    {
-        $tanam = DB::table('tanam')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
-        $panen = DB::table('panen')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
-        $serapan = DB::table('distribusi')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
-        
-        return response()->json([
-            'tanam' => $tanam,
-            'panen' => $panen,
-            'serapan' => $serapan
-        ]);
-    }
-
-    public function validasiLahan(Request $request, $id)
-    {
-        try {
-            DB::transaction(function () use ($id) {
-                $username = auth()->user()->username ?? 'admin';
-                $now = now();
-
-                DB::table('tanam')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
-                DB::table('panen')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
-                DB::table('distribusi')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
-            });
-            return response()->json(['success' => true, 'message' => 'Semua data lahan berhasil divalidasi']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
         }
     }
 }

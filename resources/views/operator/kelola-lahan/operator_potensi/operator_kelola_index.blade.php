@@ -657,7 +657,10 @@
             document.getElementById('vm_valid_oleh').textContent = 'Menunggu Validasi';
         }
         set('vm_tgl_valid', item.tgl_valid);
+<<<<<<< HEAD
+=======
         
+>>>>>>> cc52390f74c2f4f185c714ac1ee3effe8b5fcaff
         // Tab reset
         switchTab('tab-personel');
         var modal = document.getElementById('viewModal');
@@ -907,7 +910,7 @@
                     <h3 class="text-xl font-black text-slate-800 mb-2 uppercase">Hapus Data?</h3>
                     <p class="text-xs text-slate-500 font-medium mb-8">Data lahan seluas <strong class="text-rose-500" x-text="activeData?.luas_lahan + ' HA'"></strong> milik <strong class="text-slate-700 uppercase" x-text="activeData?.cp_lahan"></strong> akan dihapus sementara dari sistem.</p>
                     
-                    <form :action="`/admin/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
+                    <form :action="`/operator/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
                         @csrf @method('DELETE')
                         <button type="button" @click="isDeleteOpen = false" class="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl transition-all">Batal</button>
                         <button type="submit" class="flex-1 bg-rose-500 text-white hover:bg-rose-600 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95">Ya, Hapus</button>

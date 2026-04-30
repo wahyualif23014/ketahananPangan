@@ -3,7 +3,12 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
 use App\Http\Controllers\Operator\DashboardController as OperatorDashboard;
+use App\Http\Controllers\view\DashboardController as ViewDashboard;
+use App\Http\Controllers\view\RekapitulasiController as ViewRekapitulasi;
+use App\Http\Controllers\view\KelolaLahanController as ViewKelolaLahan;
 use App\Http\Controllers\Operator\RekapitulasiController as OperatorRekapitulasi;
+use App\Http\Controllers\Operator\KelolaLahanController as OperatorKelolaLahan;
+use App\Http\Controllers\Operator\PotensiLahanController as OperatorPotensiLahan;
 use App\Http\Controllers\Admin\TingkatKesatuanController;
 use App\Http\Controllers\Admin\JabatanController;
 use App\Http\Controllers\Admin\WilayahController;
@@ -44,7 +49,7 @@ Route::middleware(['auth'])->group(function () {
 
             Route::get('/wilayah', [WilayahController::class, 'index'])->name('wilayah.index');
             Route::put('/wilayah/update-lokasi', [WilayahController::class, 'updateLokasi'])->name('wilayah.update-lokasi');
-            
+
             Route::prefix('komoditi')->name('komoditi.')->group(function () {
                 Route::get('/', [KomoditiController::class, 'index'])->name('index');
                 Route::post('/store', [KomoditiController::class, 'store'])->name('store');
@@ -151,9 +156,9 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
         });
 
-        Route::get('/rekapitulasi', function () {
-            return view('admin.rekapitulasi.index');
-        })->name('rekapitulasi.index');
+        Route::get('/rekapitulasi', [ViewRekapitulasi::class, 'index'])->name('rekapitulasi.index');
+        Route::get('/rekapitulasi/polsek', [ViewRekapitulasi::class, 'getPolsek'])->name('rekapitulasi.polsek');
+        Route::get('/rekapitulasi/export', [ViewRekapitulasi::class, 'export'])->name('rekapitulasi.export');
     });
 
     // Rute Profil Standar

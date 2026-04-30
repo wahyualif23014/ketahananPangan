@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Operator;
+namespace App\Http\Controllers\view;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -14,7 +14,6 @@ class RekapitulasiController extends Controller
     public function index(Request $request)
     {
         set_time_limit(120);
-        $fileName = 'Rekap_Lahan_' . now()->format('Y-m-d_His') . '.xlsx';
 
         $dataRekap = RekapitulasiLahan::filter($request->all())
             ->paginate(100)
@@ -43,7 +42,8 @@ class RekapitulasiController extends Controller
             ->select('id_komoditi', 'nama_komoditi')
             ->get();
 
-        return view('operator.rekapitulasi.operator_rekap', compact(
+        // Menggunakan view view.rekapitulasi.view_rekapitulasi sesuai peran
+        return view('view.rekapitulasi.view_rekapitulasi', compact(
             'dataRekap',
             'polresList',
             'polsekList',
@@ -68,6 +68,10 @@ class RekapitulasiController extends Controller
         return response()->json($polsekList);
     }
 
+    /**
+     * Method Export Excel
+     * Menangani download file berdasarkan filter aktif
+     */
     public function export(Request $request)
     {
         $fileName = 'Rekap_Lahan_' . now()->format('Y-m-d_His') . '.xlsx';
