@@ -334,6 +334,109 @@
             </div>
         </div>
 
+        <!-- Filter Bar -->
+        <div class="px-8 py-5 bg-white border-b border-slate-100 relative z-10">
+            <div class="flex flex-col gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN RESOR</label>
+                        <div class="relative">
+                            <select x-model="selectedResor" @change="selectedSektor=''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
+                                <option value="">SEMUA POLRES</option>
+                                @foreach($polresList as $polres)
+                                    <option value="{{ $polres->id_tingkat }}">{{ $polres->nama_tingkat }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN SEKTOR</label>
+                        <div class="relative">
+                            <select x-model="selectedSektor" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
+                                <option value="">SEMUA POLSEK</option>
+                                <template x-for="polsek in filteredFilterPolsek" :key="polsek.id_tingkat">
+                                    <option :value="polsek.id_tingkat" x-text="polsek.nama_tingkat" :selected="polsek.id_tingkat === selectedSektor"></option>
+                                </template>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">JENIS LAHAN</label>
+                        <div class="relative">
+                            <select x-model="selectedJenis" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
+                                <option value="">SEMUA JENIS</option>
+                                @foreach($kategoriMapping as $id => $nama)
+                                    <option value="{{ $id }}">{{ $id }}. {{ $nama }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">STATUS VALIDASI</label>
+                        <div class="relative">
+                            <select x-model="selectedValidasi" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
+                                <option value="">SEMUA STATUS</option>
+                                <option value="sudah">SUDAH DIVALIDASI</option>
+                                <option value="belum">BELUM DIVALIDASI</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-slate-100">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PERIODE WAKTU (INPUT)</label>
+                            <div class="flex items-center h-12 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 w-fit">
+                                <button type="button" @click="periodMode = 'semua'; submitFilters()"
+                                    :class="periodMode === 'semua' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
+                                    class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
+                                    SEMUA
+                                </button>
+                                <button type="button" @click="periodMode = 'tanggal'"
+                                    :class="periodMode === 'tanggal' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
+                                    class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
+                                    TANGGAL
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">MULAI</label>
+                                <input type="date" id="start_date" value="{{ $filters['start_date'] ?? '' }}"
+                                    @change="submitFilters()"
+                                    :disabled="periodMode === 'semua'"
+                                    :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
+                                    class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
+                            </div>
+                            <div class="pt-5 hidden sm:block text-slate-300 font-black text-[10px]">SAMPAI</div>
+                            <div class="space-y-2">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">SELESAI</label>
+                                <input type="date" id="end_date" value="{{ $filters['end_date'] ?? '' }}"
+                                    @change="submitFilters()"
+                                    :disabled="periodMode === 'semua'"
+                                    :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
+                                    class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @php
             $jenisInfo = [
                 1 => ['label' => 'POKTAN BINAAN', 'cls' => 'bg-emerald-100 text-emerald-700 border-emerald-200', 'dot' => 'bg-emerald-500'],
@@ -358,7 +461,7 @@
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Lokasi</th>
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Penanggung Jawab</th>
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Detail Lahan</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Validasi</th>
+                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Status Data</th>
                             <th class="px-4 py-3 rounded-tr-xl text-right text-xs font-black text-slate-500 uppercase tracking-widest">Aksi</th>
                         </tr>
                     </thead>
@@ -409,26 +512,41 @@
                                 </span>
                                 <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[120px]" title="{{ $item['valid_oleh'] }}">{{ $item['valid_oleh'] }}</div>
                                 @endif
+
+                                <div class="mt-2 pt-2 border-t border-slate-100">
+                                    <p class="text-[8px] font-black text-slate-400 uppercase mb-0.5">DIPROSES OLEH:</p>
+                                    <p class="text-[9px] font-bold text-slate-700 uppercase truncate max-w-[120px]" title="{{ $item['edit_oleh'] ?? '-' }}">{{ $item['edit_oleh'] ?? '-' }}</p>
+                                    @if($item['tgl_edit'])
+                                    <p class="text-[8px] text-slate-400 font-mono mt-0.5">{{ \Carbon\Carbon::parse($item['tgl_edit'])->format('d M Y H:i') }}</p>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-4 py-4 w-72">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button data-item="{{ json_encode($item) }}" onclick='openViewModal(JSON.parse(this.dataset.item))'
+                                    <button onclick='openViewModal(@json($item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                         Detail
                                     </button>
                                     @if(!$item['valid_oleh'])
-                                    <form action="/operator/kelola-lahan/potensi/validasi/{{ $item['id_lahan'] }}" method="POST" class="inline m-0">
+                                    <form action="{{ route('operator.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="inline m-0">
                                         @csrf @method('PUT')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
                                             Validasi
                                         </button>
                                     </form>
+                                    @else
+                                    <form action="{{ route('operator.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin batalkan validasi data lahan ini?')">
+                                        @csrf @method('PUT')
+                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
+                                            Batal Validasi
+                                        </button>
+                                    </form>
                                     @endif
-                                    <button data-item="{{ json_encode($item) }}" onclick='openEditModal(JSON.parse(this.dataset.item))'
+                                    <button onclick='openEditModal(@json($item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                         Edit
                                     </button>
-                                    <form action="/operator/kelola-lahan/potensi/destroy/{{ $item['id_lahan'] }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
+                                    <form action="{{ route('operator.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
                                             Hapus
@@ -462,70 +580,9 @@
     </div>
 
 
-    {{-- VIEW DETAIL MODAL --}}
-    <div id="viewModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4" aria-modal="true">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeViewModal()"></div>
-        <div class="relative w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="bg-white rounded-[2rem] shadow-2xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-                <div class="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between flex-shrink-0">
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        Detail Potensi Lahan
-                    </h3>
-                    <button onclick="closeViewModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Polisi Penggerak</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_polisi">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_polisi">-</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Penanggung Jawab</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_lahan">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_lahan">-</p>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Alamat Lahan</p>
-                        <p class="text-sm font-bold text-slate-700" id="vm_alamat">-</p>
-                        <p class="text-xs text-slate-400 mt-0.5" id="vm_lokasi">-</p>
-                        <a id="vm_maps_link" href="#" target="_blank" class="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 rounded-lg transition-all shadow hidden">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                            Buka di Google Maps
-                        </a>
-                    </div>
-                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1" id="vm_jenis">-</p>
-                        <h4 class="text-3xl font-black text-emerald-700"><span id="vm_luas">0</span> <span class="text-sm text-emerald-600">HA</span></h4>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-2">Proses Oleh</p>
-                            <p class="text-sm font-bold text-slate-700" id="vm_edit_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_edit">-</p>
-                        </div>
-                        <div class="p-4 rounded-xl border" id="vm_validasi_box">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Validasi Oleh</p>
-                            <p class="text-sm font-bold" id="vm_valid_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_valid">-</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <script>
-    var jenisLabels = {
-        1: 'PRODUKTIF (POKTAN BINAAN POLRI)', 2: 'HUTAN (PERHUTANAN SOSIAL)',
-        3: 'LUAS BAKU SAWAH (LBS)', 4: 'PESANTREN', 5: 'MILIK POLRI',
-        6: 'PRODUKTIF (MASYARAKAT BINAAN POLRI)', 7: 'PRODUKTIF (TUMPANG SARI)',
-        8: 'HUTAN (PERHUTANI/INHUTANI)', 9: 'LAHAN LAINNYA'
-    };
     function openViewModal(item) {
         var labels = {
             1:'PRODUKTIF (POKTAN BINAAN POLRI)',2:'HUTAN (PERHUTANAN SOSIAL)',
@@ -534,24 +591,37 @@
             8:'HUTAN (PERHUTANI/INHUTANI)',9:'LAHAN LAINNYA'
         };
         function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val || '-'; }
-        // Institusi
-        set('vm_id_tingkat', item.id_tingkat);
+        
         set('vm_id_lahan', item.id_lahan);
-        // Personel
-        set('vm_cp_polisi', item.cp_polisi);
-        set('vm_no_cp_polisi', item.no_cp_polisi);
+        set('vm_id_tingkat', item.id_tingkat);
+        
+        // 1 & 2. Resor & Sektor
+        set('vm_polres', item.nama_polres);
+        set('vm_polsek', item.nama_polsek);
+        
+        // 4. Polisi Penggerak (cp_lahan) & 5. Penanggung Jawab (cp_polisi) - AS PER USER REQUEST
         set('vm_cp_lahan', item.cp_lahan);
         set('vm_no_cp_lahan', item.no_cp_lahan);
+        set('vm_cp_polisi', item.cp_polisi);
+        set('vm_no_cp_polisi', item.no_cp_polisi);
+        
+        // 14. Keterangan Lain
         set('vm_ket_polisi', item.ket_polisi);
-        // Teknis
+        
+        // 3. Jenis Lahan
         set('vm_jenis', labels[item.id_jenis_lahan] || 'LAHAN LAINNYA');
+        
+        // 8, 7, 9, 10. Teknis
         set('vm_luas', parseFloat(item.luas_lahan || 0).toFixed(2));
         set('vm_poktan', item.poktan);
         set('vm_jml_petani', item.jml_petani);
-        // Lokasi
-        set('vm_lokasi', [item.kab_nama, item.kec_nama, item.desa_nama].filter(Boolean).join(' → '));
+        set('vm_komoditi', item.nama_komoditi);
+        
+        // 12. Wilayah Lahan & 11. Alamat Lahan & 6. Keterangan
+        set('vm_wilayah', item.id_wilayah ? (item.id_wilayah + ' - ' + [item.kab_nama, item.kec_nama, item.desa_nama].filter(Boolean).join(' → ')) : '-');
         set('vm_alamat', item.alamat_lahan);
         set('vm_keterangan_lahan', item.keterangan_lahan);
+        
         // Koordinat
         set('vm_lat', item.latitude);
         set('vm_lng', item.longitude);
@@ -559,15 +629,21 @@
         if (item.latitude && item.longitude) {
             mapsLink.href = 'https://www.google.com/maps?q=' + item.latitude + ',' + item.longitude;
             mapsLink.classList.remove('hidden');
-        } else { mapsLink.classList.add('hidden'); }
-        // Dokumentasi
+            mapsLink.classList.add('flex');
+        } else { 
+            mapsLink.classList.add('hidden'); 
+            mapsLink.classList.remove('flex');
+        }
+        
+        // 13. Foto Lahan
         var fotoEl = document.getElementById('vm_foto');
         var fotoWrap = document.getElementById('vm_foto_wrap');
         if (item.dokumentasi_lahan) {
             fotoEl.src = '/' + item.dokumentasi_lahan;
             fotoWrap.classList.remove('hidden');
         } else { fotoWrap.classList.add('hidden'); }
-        // Validasi & Edit
+        
+        // 15 & 16. Validasi & Proses Oleh
         set('vm_edit_oleh', item.edit_oleh);
         set('vm_tgl_edit', item.tgl_edit);
         var vBox = document.getElementById('vm_validasi_box');
@@ -581,6 +657,10 @@
             document.getElementById('vm_valid_oleh').textContent = 'Menunggu Validasi';
         }
         set('vm_tgl_valid', item.tgl_valid);
+<<<<<<< HEAD
+=======
+        
+>>>>>>> cc52390f74c2f4f185c714ac1ee3effe8b5fcaff
         // Tab reset
         switchTab('tab-personel');
         var modal = document.getElementById('viewModal');
@@ -607,7 +687,6 @@
         document.body.style.overflow = '';
     }
     function openEditModal(item) {
-        // Dispatch ke window agar Alpine bisa menangkap dengan @open-edit-modal.window
         window.dispatchEvent(new CustomEvent('open-edit-modal', { detail: item }));
     }
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeViewModal(); } });
@@ -642,36 +721,52 @@
             <button id="btn-tab-lokasi" onclick="switchTab('tab-lokasi')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all text-slate-500 hover:text-slate-800">📍 Lokasi</button>
             <button id="btn-tab-validasi" onclick="switchTab('tab-validasi')" class="px-4 py-2 text-[10px] font-black uppercase rounded-t-xl transition-all text-slate-500 hover:text-slate-800">✅ Validasi</button>
         </div>
-        <!-- Tab Content -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
 
             {{-- TAB: PERSONEL --}}
             <div id="tab-personel" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Kepolisian Resor</p>
+                        <p class="text-sm font-bold text-slate-800" id="vm_polres"></p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Kepolisian Sektor</p>
+                        <p class="text-sm font-bold text-slate-800" id="vm_polsek"></p>
+                    </div>
+                </div>
+                
                 <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-2">
                     <p class="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1">🚔 Polisi Penggerak</p>
                     <div class="flex items-center justify-between">
-                        <p class="text-sm font-bold text-slate-800" id="vm_cp_polisi"></p>
-                        <p class="text-xs text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_polisi"></p>
+                        <p class="text-sm font-bold text-slate-800" id="vm_cp_lahan"></p>
+                        <p class="text-xs text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_lahan"></p>
                     </div>
                 </div>
                 <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl space-y-2">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1">👥 Penanggung Jawab Lahan</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1">👥 Penanggung Jawab</p>
                     <div class="flex items-center justify-between">
-                        <p class="text-sm font-bold text-slate-800" id="vm_cp_lahan"></p>
-                        <p class="text-xs text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_lahan"></p>
+                        <p class="text-sm font-bold text-slate-800" id="vm_cp_polisi"></p>
+                        <p class="text-xs text-blue-700 font-bold bg-blue-100 px-2 py-0.5 rounded-lg" id="vm_no_cp_polisi"></p>
                     </div>
                 </div>
                 <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Peran / Catatan</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Lain</p>
                     <p class="text-sm text-slate-700 font-medium" id="vm_ket_polisi"></p>
                 </div>
             </div>
 
             {{-- TAB: TEKNIS --}}
             <div id="tab-teknis" class="hidden p-6 space-y-4">
-                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Jenis Lahan</p>
-                    <p class="text-sm font-black text-slate-800" id="vm_jenis"></p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Jenis Lahan</p>
+                        <p class="text-sm font-black text-slate-800" id="vm_jenis"></p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Komoditi</p>
+                        <p class="text-sm font-black text-slate-800" id="vm_komoditi"></p>
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-3">
                     <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center">
@@ -695,15 +790,15 @@
             {{-- TAB: LOKASI --}}
             <div id="tab-lokasi" class="hidden p-6 space-y-4">
                 <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Wilayah</p>
-                    <p class="text-sm font-bold text-slate-800" id="vm_lokasi"></p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Wilayah Lahan</p>
+                    <p class="text-sm font-bold text-slate-800" id="vm_wilayah"></p>
                 </div>
                 <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Alamat Lengkap</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Alamat Lahan</p>
                     <p class="text-sm text-slate-700 font-medium" id="vm_alamat"></p>
                 </div>
                 <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Tambahan</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Keterangan Lahan</p>
                     <p class="text-sm text-slate-700 font-medium" id="vm_keterangan_lahan"></p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -716,12 +811,12 @@
                         <p class="text-sm font-mono font-bold text-slate-700" id="vm_lng"></p>
                     </div>
                 </div>
-                <a id="vm_maps_link" href="#" target="_blank" class="hidden flex items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-colors">
+                <a id="vm_maps_link" href="#" target="_blank" class="hidden items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                     Buka di Google Maps
                 </a>
                 <div id="vm_foto_wrap" class="hidden">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Dokumentasi Foto Lahan</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Foto Lahan</p>
                     <img id="vm_foto" src="" alt="Dokumentasi Lahan" class="w-full rounded-2xl object-cover max-h-48 border border-slate-200">
                 </div>
             </div>
@@ -729,21 +824,16 @@
             {{-- TAB: VALIDASI --}}
             <div id="tab-validasi" class="hidden p-6 space-y-4">
                 <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Diinput Oleh</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Diproses Oleh</p>
                     <p class="text-sm font-bold text-slate-800" id="vm_edit_oleh"></p>
                     <p class="text-xs text-slate-400 mt-1" id="vm_tgl_edit"></p>
                 </div>
                 <div id="vm_validasi_box" class="p-4 rounded-xl border">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Status Validasi</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Divalidasi Oleh</p>
                     <p class="text-sm font-bold" id="vm_valid_oleh"></p>
                     <p class="text-xs text-slate-400 mt-1" id="vm_tgl_valid"></p>
                 </div>
             </div>
-
-        </div>
-        <!-- Footer -->
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end flex-shrink-0">
-            <button onclick="closeViewModal()" class="px-6 py-2.5 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-all uppercase tracking-widest">Tutup</button>
         </div>
     </div>
 </div>
@@ -931,6 +1021,7 @@
                                         <select x-model="formData.id_sektor"
                                             class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat">
                                             <option value="">PILIH KEPOLISIAN SEKTOR</option>
+                                            <option value="MILIK_POLRES">MILIK POLRES</option>
                                             <template x-for="p in filteredPolsek" :key="p.id_tingkat">
                                                 <option :value="p.id_tingkat" x-text="`${p.id_tingkat} - ${p.nama_tingkat}`"></option>
                                             </template>
@@ -940,7 +1031,9 @@
                                 <div class="space-y-1.5">
                                     <label class="text-xs font-semibold text-slate-600 ml-1">Jenis Lahan</label>
                                     <select x-model="formData.id_jenis_lahan"
-                                        class="w-full h-11 px-4 bg-white border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
+                                        :disabled="formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor"
+                                        :class="(formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor) ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'bg-white focus:border-emerald-600'"
+                                        class="w-full h-11 px-4 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
                                         <option value="">PILIH JENIS LAHAN</option>
                                         @foreach($kategoriMapping as $k => $v)
                                             <option value="{{ $k }}">{{ $v }}</option>
@@ -1325,19 +1418,12 @@
 
 </div>{{-- END: x-data="potensiLahanManager()" --}}
 
-    <script id="data-polres" type="application/json"><?php echo json_encode($polresList ?? []); ?></script>
-    <script id="data-polsek" type="application/json"><?php echo json_encode($polsekList ?? []); ?></script>
-    <script id="data-kabupaten" type="application/json"><?php echo json_encode($kabupatenList ?? []); ?></script>
-    <script id="data-kecamatan" type="application/json"><?php echo json_encode($kecamatanList ?? []); ?></script>
-    <script id="data-anggota" type="application/json"><?php echo json_encode($anggotaList ?? []); ?></script>
-    <script id="data-desa" type="application/json"><?php echo json_encode($desaList ?? []); ?></script>
-
     <script>
-        const polresData = JSON.parse(document.getElementById('data-polres').textContent);
-        const polsekData = JSON.parse(document.getElementById('data-polsek').textContent);
-        const kabupatenData = JSON.parse(document.getElementById('data-kabupaten').textContent);
-        const kecamatanData = JSON.parse(document.getElementById('data-kecamatan').textContent);
-        const anggotaData = JSON.parse(document.getElementById('data-anggota').textContent);
+        const polresData = @json($polresList ?? []);
+        const polsekData = @json($polsekList ?? []);
+        const kabupatenData = @json($kabupatenList ?? []);
+        const kecamatanData = @json($kecamatanList ?? []);
+        const anggotaData = @json($anggotaList ?? []);
 
         // Searchable combobox for Polisi Penggerak & Penanggung Jawab
         // type: 'penggerak' | 'pj'
@@ -1375,7 +1461,7 @@
                 }
             };
         }
-        const desaData = JSON.parse(document.getElementById('data-desa').textContent);
+        const desaData = @json($desaList ?? []);
 
         function potensiLahanManager() {
             return {
@@ -1396,6 +1482,38 @@
                     if (!this.formData.id_kecamatan) return [];
                     return this.desaList.filter(d => d.id_wilayah.startsWith(this.formData.id_kecamatan + '.'));
                 },
+                
+                // Filters
+                selectedResor: '{{ $filters["resor"] ?? "" }}',
+                selectedSektor: '{{ $filters["sektor"] ?? "" }}',
+                selectedJenis: '{{ $filters["jenis"] ?? "" }}',
+                selectedValidasi: '{{ $filters["validasi"] ?? "" }}',
+                periodMode: '{{ ($filters["start_date"] ?? "") || ($filters["end_date"] ?? "") ? "tanggal" : "semua" }}',
+                get filteredFilterPolsek() {
+                    if (!this.selectedResor) return [];
+                    return this.polsekList.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
+                },
+                submitFilters() {
+                    const url = new URL(window.location.href);
+                    if (this.selectedResor) url.searchParams.set('resor', this.selectedResor); else url.searchParams.delete('resor');
+                    if (this.selectedSektor) url.searchParams.set('sektor', this.selectedSektor); else url.searchParams.delete('sektor');
+                    if (this.selectedJenis) url.searchParams.set('jenis', this.selectedJenis); else url.searchParams.delete('jenis');
+                    if (this.selectedValidasi) url.searchParams.set('validasi', this.selectedValidasi); else url.searchParams.delete('validasi');
+                    
+                    if (this.periodMode === 'tanggal') {
+                        const start = document.getElementById('start_date')?.value;
+                        const end = document.getElementById('end_date')?.value;
+                        if (start) url.searchParams.set('start_date', start); else url.searchParams.delete('start_date');
+                        if (end) url.searchParams.set('end_date', end); else url.searchParams.delete('end_date');
+                    } else {
+                        url.searchParams.delete('start_date');
+                        url.searchParams.delete('end_date');
+                    }
+                    
+                    url.searchParams.delete('page');
+                    window.location.href = url.toString();
+                },
+
                 currentStep: 1,
                 totalSteps: 4,
                 isOpen: false,
@@ -1675,15 +1793,15 @@
 
                     const method = 'POST';
                     const urlStore = this.isEdit
-                        ? `/operator/kelola-lahan/potensi/update/${this.formData.id}`
-                        : `/operator/kelola-lahan/potensi/store`;
+                        ? `/admin/kelola-lahan/potensi/update/${this.formData.id}`
+                        : `/admin/kelola-lahan/potensi/store`;
 
                     try {
                         const fd = new FormData();
                         if (this.isEdit) fd.append('_method', 'PUT');
 
                         fd.append('id_resor', this.formData.id_resor);
-                        fd.append('id_sektor', this.formData.id_sektor);
+                        fd.append('id_sektor', this.formData.id_sektor === 'MILIK_POLRES' ? '' : this.formData.id_sektor);
                         fd.append('id_jenis_lahan', this.formData.id_jenis_lahan || 1);
                         fd.append('id_desa', this.formData.id_desa);
                         fd.append('latitude', this.formData.lat);
@@ -1735,29 +1853,33 @@
                         console.log('Menghapus ID:', id);
                         // Tambahkan logic fetch DELETE di sini
                     }
+                },
+                init() {
+                    this.$watch('formData.id_sektor', (val) => {
+                        if (val === 'MILIK_POLRES') {
+                            this.formData.id_jenis_lahan = 5;
+                        }
+                    });
+                    this.$watch('formData.id_resor', (val) => {
+                        if (val && this.formData.id_sektor === 'MILIK_POLRES') {
+                            this.formData.id_jenis_lahan = 5;
+                        }
+                    });
                 }
             }
         }
     </script>
-    <script id="data-single-lahan" type="application/json">
-    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const action = "<?php echo request('action'); ?>";
-            const hasSingleItem = <?php echo $lahanList->count() === 1 ? 'true' : 'false'; ?>;
-            
-            if (hasSingleItem) {
+            @if(request('action') === 'view' && $lahanList->count() === 1)
                 setTimeout(() => {
-                    const data = JSON.parse(document.getElementById('data-single-lahan').textContent);
-                    if (data) {
-                        if (action === 'view' && typeof openViewModal === 'function') {
-                            openViewModal(data);
-                        } else if (action === 'edit' && typeof openEditModal === 'function') {
-                            openEditModal(data);
-                        }
-                    }
+                    if (typeof openViewModal === 'function') openViewModal(@json($lahanList->first()));
                 }, 100);
-            }
+            @elseif(request('action') === 'edit' && $lahanList->count() === 1)
+                setTimeout(() => {
+                    if (typeof openEditModal === 'function') openEditModal(@json($lahanList->first()));
+                }, 100);
+            @endif
         });
     </script>
 @endsection

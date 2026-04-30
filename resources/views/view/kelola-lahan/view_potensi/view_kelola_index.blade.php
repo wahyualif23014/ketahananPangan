@@ -63,7 +63,7 @@
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                         "{{ request('search') }}"
                     </span>
-                    <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
+                    <a href="{{ route('view.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
                         BATAL
                     </a>
                 </div>
@@ -107,109 +107,6 @@
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="mx-4 mb-6 bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
-        <div class="flex flex-col gap-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="space-y-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN RESOR</label>
-                    <div class="relative">
-                        <select x-model="selectedResor" @change="selectedSektor=''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA POLRES</option>
-                            @foreach($polresList as $polres)
-                                <option value="{{ $polres->id_tingkat }}">{{ $polres->nama_tingkat }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN SEKTOR</label>
-                    <div class="relative">
-                        <select x-model="selectedSektor" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA POLSEK</option>
-                            <template x-for="polsek in filteredFilterPolsek" :key="polsek.id_tingkat">
-                                <option :value="polsek.id_tingkat" x-text="polsek.nama_tingkat" :selected="polsek.id_tingkat === selectedSektor"></option>
-                            </template>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">JENIS LAHAN</label>
-                    <div class="relative">
-                        <select x-model="selectedJenis" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA JENIS</option>
-                            @foreach($kategoriMapping as $id => $nama)
-                                <option value="{{ $id }}">{{ $id }}. {{ $nama }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">STATUS VALIDASI</label>
-                    <div class="relative">
-                        <select x-model="selectedValidasi" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA STATUS</option>
-                            <option value="sudah">SUDAH DIVALIDASI</option>
-                            <option value="belum">BELUM DIVALIDASI</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-slate-100">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-6">
-                    <div class="space-y-2">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PERIODE WAKTU (INPUT)</label>
-                        <div class="flex items-center h-12 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 w-fit">
-                            <button type="button" @click="periodMode = 'semua'; submitFilters()"
-                                :class="periodMode === 'semua' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
-                                class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
-                                SEMUA
-                            </button>
-                            <button type="button" @click="periodMode = 'tanggal'"
-                                :class="periodMode === 'tanggal' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
-                                class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
-                                TANGGAL
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <div class="space-y-2">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">MULAI</label>
-                            <input type="date" id="start_date" value="{{ $filters['start_date'] ?? '' }}"
-                                @change="submitFilters()"
-                                :disabled="periodMode === 'semua'"
-                                :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
-                                class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
-                        </div>
-                        <div class="pt-5 hidden sm:block text-slate-300 font-black text-[10px]">SAMPAI</div>
-                        <div class="space-y-2">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">SELESAI</label>
-                            <input type="date" id="end_date" value="{{ $filters['end_date'] ?? '' }}"
-                                @change="submitFilters()"
-                                :disabled="periodMode === 'semua'"
-                                :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
-                                class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     @php
         // Pemetaan Klasifikasi Lahan untuk Modal Form
         $kategoriMapping = [
@@ -249,16 +146,16 @@
                 $tingkatAdaLahan[$parts[0] . '.' . $parts[1]] = true;
             }
 
-            $luas = (float) $lahan->luas_lahan;
-            $totalLuasLahan += $luas;
-            $unikLokasi[$lahan->id_wilayah] = true;
+            if ($lahan->status_lahan == '1') {
+                $luas = (float) $lahan->luas_lahan;
+                $totalLuasLahan += $luas;
+                $unikLokasi[$lahan->id_wilayah] = true;
 
-            if (isset($breakdownByJenis[$lahan->id_jenis_lahan])) {
-                $breakdownByJenis[$lahan->id_jenis_lahan]['luas'] += $luas;
-                $breakdownByJenis[$lahan->id_jenis_lahan]['lokasi'][$lahan->id_wilayah] = true;
-            }
-
-            if (empty($lahan->valid_oleh)) {
+                if (isset($breakdownByJenis[$lahan->id_jenis_lahan])) {
+                    $breakdownByJenis[$lahan->id_jenis_lahan]['luas'] += $luas;
+                    $breakdownByJenis[$lahan->id_jenis_lahan]['lokasi'][$lahan->id_wilayah] = true;
+                }
+            } else {
                 $luasBelumValidasi += (float) $lahan->luas_lahan;
                 $countBelumValidasi++;
             }
@@ -427,7 +324,7 @@
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     "{{ request('search') }}"
                 </span>
-                <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                <a href="{{ route('view.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
                     ✕ Hapus Filter
                 </a>
                 @endif
@@ -436,8 +333,6 @@
                 {{ request('search') ? 'HASIL PENCARIAN' : 'SEMUA WILAYAH' }}
             </div>
         </div>
-
-        <!-- End Filter Bar -->
 
         @php
             $jenisInfo = [
@@ -463,7 +358,7 @@
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Lokasi</th>
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Penanggung Jawab</th>
                             <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Detail Lahan</th>
-                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Status Data</th>
+                            <th class="px-4 py-3 text-xs font-black text-slate-500 uppercase tracking-widest">Validasi</th>
                             <th class="px-4 py-3 rounded-tr-xl text-right text-xs font-black text-slate-500 uppercase tracking-widest">Aksi</th>
                         </tr>
                     </thead>
@@ -514,41 +409,33 @@
                                 </span>
                                 <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase truncate max-w-[120px]" title="{{ $item['valid_oleh'] }}">{{ $item['valid_oleh'] }}</div>
                                 @endif
-
-                                <div class="mt-2 pt-2 border-t border-slate-100">
-                                    <p class="text-[8px] font-black text-slate-400 uppercase mb-0.5">DIPROSES OLEH:</p>
-                                    <p class="text-[9px] font-bold text-slate-700 uppercase truncate max-w-[120px]" title="{{ $item['edit_oleh'] ?? '-' }}">{{ $item['edit_oleh'] ?? '-' }}</p>
-                                    @if($item['tgl_edit'])
-                                    <p class="text-[8px] text-slate-400 font-mono mt-0.5">{{ \Carbon\Carbon::parse($item['tgl_edit'])->format('d M Y H:i') }}</p>
-                                    @endif
-                                </div>
                             </td>
                             <td class="px-4 py-4 w-72">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button data-item="{{ json_encode($item) }}" onclick='openViewModal(JSON.parse(this.dataset.item))'
+                                    <button onclick='openViewModal(@json($item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                         Detail
                                     </button>
                                     @if(!$item['valid_oleh'])
-                                    <form action="{{ route('admin.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="inline m-0">
+                                    <form action="{{ route('view.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="inline m-0">
                                         @csrf @method('PUT')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
                                             Validasi
                                         </button>
                                     </form>
                                     @else
-                                    <form action="{{ route('admin.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin batalkan validasi data lahan ini?')">
+                                    <form action="{{ route('view.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin batalkan validasi data lahan ini?')">
                                         @csrf @method('PUT')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
                                             Batal Validasi
                                         </button>
                                     </form>
                                     @endif
-                                    <button data-item="{{ json_encode($item) }}" onclick='openEditModal(JSON.parse(this.dataset.item))'
+                                    <button onclick='openEditModal(@json($item))'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                         Edit
                                     </button>
-                                    <form action="{{ route('admin.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
+                                    <form action="{{ route('view.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
                                             Hapus
@@ -580,6 +467,7 @@
             @endif
         </div>
     </div>
+
 
 
 
@@ -848,7 +736,7 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
-                    <form :action="`/admin/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
+                    <form :action="`/view/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
                         @csrf @method('PUT')
                         <div class="p-8 space-y-6">
                             
@@ -908,7 +796,7 @@
                     <h3 class="text-xl font-black text-slate-800 mb-2 uppercase">Hapus Data?</h3>
                     <p class="text-xs text-slate-500 font-medium mb-8">Data lahan seluas <strong class="text-rose-500" x-text="activeData?.luas_lahan + ' HA'"></strong> milik <strong class="text-slate-700 uppercase" x-text="activeData?.cp_lahan"></strong> akan dihapus sementara dari sistem.</p>
                     
-                    <form :action="`/admin/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
+                    <form :action="`/view/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
                         @csrf @method('DELETE')
                         <button type="button" @click="isDeleteOpen = false" class="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl transition-all">Batal</button>
                         <button type="submit" class="flex-1 bg-rose-500 text-white hover:bg-rose-600 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95">Ya, Hapus</button>
@@ -1019,7 +907,6 @@
                                         <select x-model="formData.id_sektor"
                                             class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat">
                                             <option value="">PILIH KEPOLISIAN SEKTOR</option>
-                                            <option value="MILIK_POLRES">MILIK POLRES</option>
                                             <template x-for="p in filteredPolsek" :key="p.id_tingkat">
                                                 <option :value="p.id_tingkat" x-text="`${p.id_tingkat} - ${p.nama_tingkat}`"></option>
                                             </template>
@@ -1029,9 +916,7 @@
                                 <div class="space-y-1.5">
                                     <label class="text-xs font-semibold text-slate-600 ml-1">Jenis Lahan</label>
                                     <select x-model="formData.id_jenis_lahan"
-                                        :disabled="formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor"
-                                        :class="(formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor) ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'bg-white focus:border-emerald-600'"
-                                        class="w-full h-11 px-4 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
+                                        class="w-full h-11 px-4 bg-white border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
                                         <option value="">PILIH JENIS LAHAN</option>
                                         @foreach($kategoriMapping as $k => $v)
                                             <option value="{{ $k }}">{{ $v }}</option>
@@ -1416,19 +1301,12 @@
 
 </div>{{-- END: x-data="potensiLahanManager()" --}}
 
-    <script id="data-polres" type="application/json"><?php echo json_encode($polresList ?? []); ?></script>
-    <script id="data-polsek" type="application/json"><?php echo json_encode($polsekList ?? []); ?></script>
-    <script id="data-kabupaten" type="application/json"><?php echo json_encode($kabupatenList ?? []); ?></script>
-    <script id="data-kecamatan" type="application/json"><?php echo json_encode($kecamatanList ?? []); ?></script>
-    <script id="data-anggota" type="application/json"><?php echo json_encode($anggotaList ?? []); ?></script>
-    <script id="data-desa" type="application/json"><?php echo json_encode($desaList ?? []); ?></script>
-
     <script>
-        const polresData = JSON.parse(document.getElementById('data-polres').textContent);
-        const polsekData = JSON.parse(document.getElementById('data-polsek').textContent);
-        const kabupatenData = JSON.parse(document.getElementById('data-kabupaten').textContent);
-        const kecamatanData = JSON.parse(document.getElementById('data-kecamatan').textContent);
-        const anggotaData = JSON.parse(document.getElementById('data-anggota').textContent);
+        const polresData = @json($polresList ?? []);
+        const polsekData = @json($polsekList ?? []);
+        const kabupatenData = @json($kabupatenList ?? []);
+        const kecamatanData = @json($kecamatanList ?? []);
+        const anggotaData = @json($anggotaList ?? []);
 
         // Searchable combobox for Polisi Penggerak & Penanggung Jawab
         // type: 'penggerak' | 'pj'
@@ -1466,7 +1344,7 @@
                 }
             };
         }
-        const desaData = JSON.parse(document.getElementById('data-desa').textContent);
+        const desaData = @json($desaList ?? []);
 
         function potensiLahanManager() {
             return {
@@ -1487,38 +1365,6 @@
                     if (!this.formData.id_kecamatan) return [];
                     return this.desaList.filter(d => d.id_wilayah.startsWith(this.formData.id_kecamatan + '.'));
                 },
-                
-                // Filters
-                selectedResor: '{{ $filters["resor"] ?? "" }}',
-                selectedSektor: '{{ $filters["sektor"] ?? "" }}',
-                selectedJenis: '{{ $filters["jenis"] ?? "" }}',
-                selectedValidasi: '{{ $filters["validasi"] ?? "" }}',
-                periodMode: '{{ ($filters["start_date"] ?? "") || ($filters["end_date"] ?? "") ? "tanggal" : "semua" }}',
-                get filteredFilterPolsek() {
-                    if (!this.selectedResor) return [];
-                    return this.polsekList.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
-                },
-                submitFilters() {
-                    const url = new URL(window.location.href);
-                    if (this.selectedResor) url.searchParams.set('resor', this.selectedResor); else url.searchParams.delete('resor');
-                    if (this.selectedSektor) url.searchParams.set('sektor', this.selectedSektor); else url.searchParams.delete('sektor');
-                    if (this.selectedJenis) url.searchParams.set('jenis', this.selectedJenis); else url.searchParams.delete('jenis');
-                    if (this.selectedValidasi) url.searchParams.set('validasi', this.selectedValidasi); else url.searchParams.delete('validasi');
-                    
-                    if (this.periodMode === 'tanggal') {
-                        const start = document.getElementById('start_date')?.value;
-                        const end = document.getElementById('end_date')?.value;
-                        if (start) url.searchParams.set('start_date', start); else url.searchParams.delete('start_date');
-                        if (end) url.searchParams.set('end_date', end); else url.searchParams.delete('end_date');
-                    } else {
-                        url.searchParams.delete('start_date');
-                        url.searchParams.delete('end_date');
-                    }
-                    
-                    url.searchParams.delete('page');
-                    window.location.href = url.toString();
-                },
-
                 currentStep: 1,
                 totalSteps: 4,
                 isOpen: false,
@@ -1806,7 +1652,7 @@
                         if (this.isEdit) fd.append('_method', 'PUT');
 
                         fd.append('id_resor', this.formData.id_resor);
-                        fd.append('id_sektor', this.formData.id_sektor === 'MILIK_POLRES' ? '' : this.formData.id_sektor);
+                        fd.append('id_sektor', this.formData.id_sektor);
                         fd.append('id_jenis_lahan', this.formData.id_jenis_lahan || 1);
                         fd.append('id_desa', this.formData.id_desa);
                         fd.append('latitude', this.formData.lat);
@@ -1858,41 +1704,21 @@
                         console.log('Menghapus ID:', id);
                         // Tambahkan logic fetch DELETE di sini
                     }
-                },
-                init() {
-                    this.$watch('formData.id_sektor', (val) => {
-                        if (val === 'MILIK_POLRES') {
-                            this.formData.id_jenis_lahan = 5;
-                        }
-                    });
-                    this.$watch('formData.id_resor', (val) => {
-                        if (val && this.formData.id_sektor === 'MILIK_POLRES') {
-                            this.formData.id_jenis_lahan = 5;
-                        }
-                    });
                 }
             }
         }
     </script>
-    <script id="data-single-lahan" type="application/json">
-    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const action = "<?php echo request('action'); ?>";
-            const hasSingleItem = <?php echo $lahanList ->count() === 1 ? 'true' : 'false'; ?>;
-            
-            if (hasSingleItem) {
+            @if(request('action') === 'view' && $lahanList->count() === 1)
                 setTimeout(() => {
-                    const data = JSON.parse(document.getElementById('data-single-lahan').textContent);
-                    if (data) {
-                        if (action === 'view' && typeof openViewModal === 'function') {
-                            openViewModal(data);
-                        } else if (action === 'edit' && typeof openEditModal === 'function') {
-                            openEditModal(data);
-                        }
-                    }
+                    if (typeof openViewModal === 'function') openViewModal(@json($lahanList->first()));
                 }, 100);
-            }
+            @elseif(request('action') === 'edit' && $lahanList->count() === 1)
+                setTimeout(() => {
+                    if (typeof openEditModal === 'function') openEditModal(@json($lahanList->first()));
+                }, 100);
+            @endif
         });
     </script>
 @endsection

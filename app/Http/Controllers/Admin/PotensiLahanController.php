@@ -10,6 +10,21 @@ use Carbon\Carbon;
 
 class PotensiLahanController extends Controller {
     public function index(Request $request) {
+        $data = $this->getIndexData($request);
+        return view('admin.kelola-lahan.potensi.index', $data);
+    }
+
+    public function indexOperator(Request $request) {
+        $data = $this->getIndexData($request);
+        return view('operator.kelola-lahan.operator_potensi.operator_kelola_index', $data);
+    }
+
+    public function indexView(Request $request) {
+        $data = $this->getIndexData($request);
+        return view('view.kelola-lahan.view_potensi.view_kelola_index', $data);
+    }
+
+    private function getIndexData(Request $request) {
         // ===========================
         // DATA STATISTIK (di blade)
         // ===========================
@@ -28,6 +43,12 @@ class PotensiLahanController extends Controller {
         $wilayahMap = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
 
         $search = $request->input('search', '');
+        $resorFilter = $request->input('resor', '');
+        $sektorFilter = $request->input('sektor', '');
+        $jenisFilter = $request->input('jenis', '');
+        $validasiFilter = $request->input('validasi', '');
+        $startDate = $request->input('start_date', '');
+        $endDate = $request->input('end_date', '');
 
         // 2. Ambil semua data lahan (aktif) dipaginasi dengan filter search
         $lahanQuery = DB::table('lahan')
@@ -49,6 +70,27 @@ class PotensiLahanController extends Controller {
                     }
                 }
             });
+        }
+        
+        if ($resorFilter) {
+            $lahanQuery->where('id_tingkat', 'like', $resorFilter . '%');
+        }
+        if ($sektorFilter) {
+            $lahanQuery->where('id_tingkat', $sektorFilter);
+        }
+        if ($jenisFilter) {
+            $lahanQuery->where('id_jenis_lahan', $jenisFilter);
+        }
+        if ($validasiFilter === 'sudah') {
+            $lahanQuery->whereNotNull('valid_oleh');
+        } elseif ($validasiFilter === 'belum') {
+            $lahanQuery->whereNull('valid_oleh');
+        }
+        if ($startDate) {
+            $lahanQuery->whereDate('tgl_edit', '>=', $startDate);
+        }
+        if ($endDate) {
+            $lahanQuery->whereDate('tgl_edit', '<=', $endDate);
         }
 
         $lahanList = $lahanQuery->paginate(25)->withQueryString();
@@ -161,7 +203,17 @@ class PotensiLahanController extends Controller {
             ->select('id_anggota', 'nama_anggota', 'no_telp_anggota')
             ->get();
 
-        return view('admin.kelola-lahan.potensi.index', compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList'));
+        $filters = [
+            'search' => $search,
+            'resor' => $resorFilter,
+            'sektor' => $sektorFilter,
+            'jenis' => $jenisFilter,
+            'validasi' => $validasiFilter,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ];
+
+        return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'filters');
     }
 
     public function store(Request $request) {
@@ -183,7 +235,7 @@ class PotensiLahanController extends Controller {
             'jml_petani'        => $request->jml_petani,
             'id_komoditi'       => $request->id_komoditi,
             'ket_polisi'        => $request->keterangan_lain,
-            'edit_oleh'         => auth()->user() ? auth()->user()->id : null,
+            'edit_oleh'         => auth()->user() ? auth()->user()->id_anggota : null,
             'tgl_edit'          => Carbon::now()
         ];
 
@@ -221,7 +273,7 @@ class PotensiLahanController extends Controller {
             'jml_petani'        => $request->jml_petani,
             'id_komoditi'       => $request->id_komoditi,
             'ket_polisi'        => $request->keterangan_lain,
-            'edit_oleh'         => auth()->user() ? auth()->user()->id : null,
+            'edit_oleh'         => auth()->user() ? auth()->user()->id_anggota : null,
             'tgl_edit'          => Carbon::now()
         ];
 
@@ -235,5 +287,33 @@ class PotensiLahanController extends Controller {
         DB::table('lahan')->where('id_lahan', $id)->update($data);
 
         return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
+    }
+
+    public function validasi(Request $request, $id) {
+        DB::table('lahan')->where('id_lahan', $id)->update([
+            'valid_oleh' => auth()->user() ? auth()->user()->username : 'system',
+            'tgl_valid'  => Carbon::now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Data lahan berhasil divalidasi.');
+    }
+
+    public function unvalidasi(Request $request, $id) {
+        DB::table('lahan')->where('id_lahan', $id)->update([
+            'valid_oleh' => null,
+            'tgl_valid'  => null,
+        ]);
+
+        return redirect()->back()->with('success', 'Validasi lahan berhasil dibatalkan.');
+    }
+
+    public function destroy(Request $request, $id) {
+        DB::table('lahan')->where('id_lahan', $id)->update([
+            'deletestatus' => '0',
+            'edit_oleh'    => auth()->user() ? auth()->user()->id : null,
+            'tgl_edit'     => Carbon::now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Data lahan berhasil dihapus.');
     }
 }

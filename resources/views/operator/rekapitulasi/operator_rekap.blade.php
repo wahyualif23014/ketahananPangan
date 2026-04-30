@@ -580,6 +580,13 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Next --}}
+                @if ($dataRekap->hasMorePages())
+                    <a href="{{ $dataRekap->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
+                @else
+                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
+                @endif
             </div>
         </div>
     </form>

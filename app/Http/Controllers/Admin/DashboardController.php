@@ -10,6 +10,24 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        $data = $this->getIndexData($request);
+        return view('admin.dashboard', $data);
+    }
+
+    public function indexOperator(Request $request)
+    {
+        $data = $this->getIndexData($request);
+        return view('operator.dashboard', $data);
+    }
+
+    public function indexView(Request $request)
+    {
+        $data = $this->getIndexData($request);
+        return view('view.dashboard', $data);
+    }
+
+    private function getIndexData(Request $request)
+    {
         $quarterFilter = $request->input('quarter', 'all');
         $yearFilter = $request->input('year', date('Y'));
 
@@ -72,8 +90,8 @@ class DashboardController extends Controller
             ->pluck('val', 'distribusi_ke');
 
         $serapanBulog = $serapanRaw['1'] ?? 0;
-        $serapanTengkulak = $serapanRaw['2'] ?? 0;
-        $serapanPabrik = $serapanRaw['3'] ?? 0;
+        $serapanTengkulak = $serapanRaw['3'] ?? 0;
+        $serapanPabrik = $serapanRaw['2'] ?? 0;
         $serapanKonsumsi = $serapanRaw['4'] ?? 0;
         $totalSerapan = $serapanBulog + $serapanTengkulak + $serapanPabrik + $serapanKonsumsi;
 
@@ -95,14 +113,15 @@ class DashboardController extends Controller
             'tebasan' => $harvestCardsData['4'] ?? 0,
         ];
 
-        // Planting & Harvesting Analytics
+        // Planting & Harvesting Analytics (with lokasi)
         $plantingAnalytics = [];
         $totalT = $tanamTotal > 0 ? $tanamTotal : 1;
         foreach ($tanamDetails as $id => $det) {
             $name = $jenisLahanList[$id] ?? 'Lain-lain';
             $plantingAnalytics[$name] = [
-                'val' => number_format($det->total_luas, 2),
-                'pct' => round(($det->total_luas / $totalT) * 100)
+                'val'    => number_format($det->total_luas, 2),
+                'lokasi' => $det->total_lokasi,
+                'pct'    => round(($det->total_luas / $totalT) * 100)
             ];
         }
         arsort($plantingAnalytics);
@@ -112,13 +131,26 @@ class DashboardController extends Controller
         foreach ($panenDetails as $id => $det) {
             $name = $jenisLahanList[$id] ?? 'Lain-lain';
             $harvestingAnalytics[$name] = [
-                'val' => number_format($det->total_luas, 2),
-                'pct' => round(($det->total_luas / $totalP) * 100)
+                'val'    => number_format($det->total_luas, 2),
+                'lokasi' => $det->total_lokasi,
+                'pct'    => round(($det->total_luas / $totalP) * 100)
             ];
         }
         arsort($harvestingAnalytics);
 
-        // Kwartal Data
+        // Kwartal Data - semua 9 jenis lahan
+        $allJenisLahan = [
+            1 => ['label' => 'Produktif (Poktan Binaan Polri)', 'accent' => 'emerald'],
+            2 => ['label' => 'Hutan (Perhutanan Sosial)',       'accent' => 'teal'],
+            3 => ['label' => 'Luas Baku Sawah (LBS)',           'accent' => 'blue'],
+            4 => ['label' => 'Pesantren',                        'accent' => 'violet'],
+            5 => ['label' => 'Milik Polri',                      'accent' => 'indigo'],
+            6 => ['label' => 'Produktif (Masy. Binaan Polri)',   'accent' => 'sky'],
+            7 => ['label' => 'Produktif (Tumpang Sari)',         'accent' => 'amber'],
+            8 => ['label' => 'Hutan (Perhutani/Inhutani)',       'accent' => 'rose'],
+            9 => ['label' => 'Lahan Lainnya',                    'accent' => 'slate'],
+        ];
+
         $kwartalRaw = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(
@@ -133,31 +165,53 @@ class DashboardController extends Controller
             ->groupBy('q', 'lahan.id_jenis_lahan')
             ->get();
 
-        $milikPolriQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
-        $poktanBinaanQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+        // Build per-jenis Q arrays
+        $jenisQData = [];
         $totalQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+
+        foreach ($allJenisLahan as $jId => $jInfo) {
+            $jenisQData[$jId] = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+        }
 
         foreach ($kwartalRaw as $item) {
             $qIndex = $item->q - 1;
             if ($qIndex >= 0 && $qIndex <= 3) {
-                if ($item->id_jenis_lahan == 5) {
-                    $milikPolriQ[$qIndex]['luas'] += $item->total_ha;
-                    $milikPolriQ[$qIndex]['hasil'] += $item->total_ton;
+                $jId = $item->id_jenis_lahan;
+                if (isset($jenisQData[$jId])) {
+                    $jenisQData[$jId][$qIndex]['luas']  += $item->total_ha;
+                    $jenisQData[$jId][$qIndex]['hasil'] += $item->total_ton;
                 }
-                if ($item->id_jenis_lahan == 1) { // assuming 1 is Poktan Binaan
-                    $poktanBinaanQ[$qIndex]['luas'] += $item->total_ha;
-                    $poktanBinaanQ[$qIndex]['hasil'] += $item->total_ton;
-                }
-                $totalQ[$qIndex]['luas'] += $item->total_ha;
+                $totalQ[$qIndex]['luas']  += $item->total_ha;
                 $totalQ[$qIndex]['hasil'] += $item->total_ton;
             }
         }
 
-        $kwartalData = [
-            ['category' => 'Milik Polri', 'accent' => 'blue', 'q' => $milikPolriQ],
-            ['category' => 'Produktif (Poktan Binaan)', 'accent' => 'emerald', 'q' => $poktanBinaanQ],
-            ['category' => 'Total Keseluruhan', 'accent' => 'amber', 'q' => $totalQ],
-        ];
+        $kwartalData = [];
+        foreach ($allJenisLahan as $jId => $jInfo) {
+            $kwartalData[] = [
+                'category' => $jId . '. ' . $jInfo['label'],
+                'accent'   => $jInfo['accent'],
+                'q'        => $jenisQData[$jId],
+            ];
+        }
+        $kwartalData[] = ['category' => 'Total Keseluruhan', 'accent' => 'amber', 'q' => $totalQ];
+
+        // Available years for chart filter
+        $chartYears = DB::table('lahan')
+            ->select(DB::raw('YEAR(tgl_edit) as yr'))
+            ->whereNotNull('tgl_edit')
+            ->groupBy('yr')
+            ->orderBy('yr')
+            ->pluck('yr')
+            ->filter()
+            ->merge(
+                DB::table('panen')->select(DB::raw('YEAR(tgl_panen) as yr'))
+                    ->whereNotNull('tgl_panen')->groupBy('yr')->pluck('yr')
+            )
+            ->unique()->sort()->values()->toArray();
+        if (empty($chartYears)) {
+            $chartYears = range(2024, (int)date('Y') + 1);
+        }
 
         // Map Data
         $mapData = DB::table('lahan')
@@ -213,14 +267,20 @@ class DashboardController extends Controller
         $chartYearlyLabels = $chartTahunan['labels'];
         $chartYearlyData = $chartTahunan['data'];
 
-        $monthlyPanenData = DB::table('panen')
+        $chartYear  = $request->input('chart_year', $yearFilter);
+        $chartMonth = $request->input('chart_month', 'all');
+
+        $monthlyPanenQuery = DB::table('panen')
             ->select(DB::raw('MONTH(tgl_panen) as month'), DB::raw('SUM(luas_panen) as total'))
             ->where('deletestatus', '1')
             ->whereNotNull('tgl_panen')
-            ->whereYear('tgl_panen', $yearFilter)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
-            ->pluck('total', 'month');
+            ->whereYear('tgl_panen', $chartYear);
+
+        if ($chartMonth !== 'all') {
+            $monthlyPanenQuery->whereMonth('tgl_panen', (int)$chartMonth);
+        }
+
+        $monthlyPanenData = $monthlyPanenQuery->groupBy('month')->orderBy('month')->pluck('total', 'month');
 
         $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
         $chartBulanan = ['labels' => $monthNames, 'data' => []];
@@ -231,7 +291,7 @@ class DashboardController extends Controller
             $chartMonthlyData[] = $val;
         }
 
-        return view('admin.dashboard', compact(
+        return compact(
             'quarterFilter',
             'yearFilter',
             'potensiTotal',
@@ -260,7 +320,8 @@ class DashboardController extends Controller
             'chartYearlyData',
             'chartTahunan',
             'chartBulanan',
-            'polsekAktif'
-        ));
+            'polsekAktif',
+            'chartYears'
+        );
     }
 }

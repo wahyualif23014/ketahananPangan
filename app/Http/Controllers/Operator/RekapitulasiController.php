@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RekapitulasiLahan;
 use Illuminate\Support\Facades\DB;
-// Tambahkan import ini
 use App\Exports\RekapitulasiExport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -69,14 +68,9 @@ class RekapitulasiController extends Controller
         return response()->json($polsekList);
     }
 
-    /**
-     * Method Export Excel
-     * Menangani download file berdasarkan filter aktif
-     */
     public function export(Request $request)
     {
         $fileName = 'Rekap_Lahan_' . now()->format('Y-m-d_His') . '.xlsx';
-
         return Excel::download(new RekapitulasiExport($request->all()), $fileName);
     }
 }
