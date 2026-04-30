@@ -1448,7 +1448,7 @@
                     this.filtered = this.allAnggota
                         .filter(a => {
                             const nameMatch = a.nama_anggota && a.nama_anggota.toLowerCase().includes(q);
-                            const tingkatMatch = currentIdTingkat ? (a.id_tugas && a.id_tugas.startsWith(currentIdTingkat)) : true;
+                            const tingkatMatch = currentIdTingkat ? (a.id_tugas && a.id_tugas === currentIdTingkat) : true;
                             return nameMatch && tingkatMatch;
                         })
                         .slice(0, 20); // max 20 results
