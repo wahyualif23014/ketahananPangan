@@ -346,12 +346,14 @@
              class="bg-white rounded-[2rem] shadow-2xl shadow-emerald-900/20 w-full max-w-lg relative z-10 flex flex-col overflow-hidden border border-slate-100">
             
             <form id="komoditi-form"
-                x-bind:action="getFormAction()"
                 method="POST"
-                @submit.prevent="submitForm($el)">
+                action="#"
+                @submit.prevent>
                 @csrf
-                <input type="hidden" name="_method" x-bind:value="getFormMethod()">
-                <input type="hidden" name="id_komoditi" x-model="formData.id_komoditi">
+                <input type="hidden" name="_method" value="POST">
+                <input type="hidden" name="id_komoditi" value="">
+                <input type="hidden" name="jenis_komoditi" value="">
+                <input type="hidden" name="nama_komoditi" value="">
                 
                 <!-- Dynamic Header -->
                 <div class="px-8 py-5 border-b border-slate-100" :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-slate-50'">
@@ -390,7 +392,7 @@
                                 Jenis Komoditi <span class="text-rose-500">*</span>
                                 <span x-show="isJenisLocked" class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded ml-2 border border-emerald-200">TERKUNCI</span>
                             </label>
-                            <input type="text" name="jenis_komoditi" list="kategori-list" x-model="formData.jenis_komoditi" required placeholder="Pilih kategori dari daftar atau ketik kategori baru..." 
+                            <input type="text" list="kategori-list" x-model="formData.jenis_komoditi" required placeholder="Pilih kategori dari daftar atau ketik kategori baru..." 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide"
                                 :class="isJenisLocked ? 'cursor-not-allowed opacity-80' : ''"
                                 :readonly="isJenisLocked">
@@ -406,7 +408,7 @@
                     <template x-if="modalMode !== 'delete'">
                         <div>
                             <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Nama Spesifik Komoditi <span class="text-rose-500">*</span></label>
-                            <input type="text" name="nama_komoditi" x-model="formData.nama_komoditi" required placeholder="Contoh: Padi Ketan Putih" 
+                            <input type="text" x-model="formData.nama_komoditi" required placeholder="Contoh: Padi Ketan Putih" 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:font-normal uppercase tracking-wide">
                         </div>
                     </template>
@@ -418,7 +420,7 @@
                     <button type="button" @click="closeModal()" class="flex-1 bg-white hover:bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl transition-colors border border-slate-200 uppercase tracking-widest text-xs">
                         Batal
                     </button>
-                    <button type="submit" 
+                    <button type="button" @click="submitForm()"
                         class="flex-1 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors uppercase tracking-widest text-xs"
                         :class="modalMode === 'delete' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30' : (modalMode === 'edit' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')"
                         x-text="getSubmitText()">
@@ -492,12 +494,16 @@
                 return "POST";
             },
 
-            submitForm(form) {
-                form.action = this.getFormAction();
-                const methodInput = form.querySelector('input[name="_method"]');
-                if (methodInput) {
-                    methodInput.value = this.getFormMethod();
-                }
+            submitForm() {
+                const form = document.getElementById('komoditi-form');
+
+                // Sync Alpine model → hidden inputs (guarantees correct POST body)
+                form.action  = this.getFormAction();
+                form.querySelector('input[name="_method"]').value      = this.getFormMethod();
+                form.querySelector('input[name="id_komoditi"]').value  = this.formData.id_komoditi || '';
+                form.querySelector('input[name="jenis_komoditi"]').value = this.formData.jenis_komoditi || '';
+                form.querySelector('input[name="nama_komoditi"]').value  = this.formData.nama_komoditi  || '';
+
                 form.submit();
             }
         }

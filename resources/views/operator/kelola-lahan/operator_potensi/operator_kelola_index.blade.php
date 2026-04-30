@@ -1433,8 +1433,21 @@
                 onInput() {
                     const q = this.query.toLowerCase().trim();
                     if (q.length < 1) { this.filtered = []; return; }
+
+                    // Ambil wilayah terpilih dari parent form
+                    let currentIdTingkat = '';
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            currentIdTingkat = d.formData.id_sektor || d.formData.id_resor || '';
+                        }
+                    });
+
                     this.filtered = this.allAnggota
-                        .filter(a => a.nama_anggota && a.nama_anggota.toLowerCase().includes(q))
+                        .filter(a => {
+                            const nameMatch = a.nama_anggota && a.nama_anggota.toLowerCase().includes(q);
+                            const tingkatMatch = currentIdTingkat ? (a.id_tugas && a.id_tugas.startsWith(currentIdTingkat)) : true;
+                            return nameMatch && tingkatMatch;
+                        })
                         .slice(0, 20); // max 20 results
                     this.showDropdown = true;
                 },
@@ -1442,7 +1455,6 @@
                     this.query = anggota.nama_anggota;
                     this.showDropdown = false;
                     // Get parent Alpine scope via $dispatch or direct parent access
-                    const parentEl = this.$el.closest('[x-data*="potensiLahanManager"]');
                     if (type === 'penggerak') {
                         this.$root._x_dataStack?.forEach(d => {
                             if (d.formData) {
@@ -1453,6 +1465,13 @@
                         // Dispatch to parent
                         this.$dispatch('set-penggerak', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '' });
                     } else {
+                        this.$root._x_dataStack?.forEach(d => {
+                            if (d.formData) {
+                                d.formData.pj_lahan = anggota.nama_anggota;
+                                d.formData.id_pj_anggota = anggota.id_anggota;
+                                d.formData.hp_pj = anggota.no_telp_anggota || '';
+                            }
+                        });
                         this.$dispatch('set-pj', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '', id: anggota.id_anggota });
                     }
                 }

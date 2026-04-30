@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\KelolaLahanController;
 use App\Http\Controllers\Admin\RekapitulasiController;
 use App\Http\Controllers\Admin\KomoditiController;
 use App\Http\Controllers\Admin\AnggotaController;
+use App\Http\Controllers\Admin\AktivitasController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,9 +39,8 @@ Route::middleware(['auth'])->group(function () {
             // jabatan
             Route::get('/jabatan', [JabatanController::class, 'index'])->name('jabatan.index');
             Route::post('/jabatan', [JabatanController::class, 'store'])->name('jabatan.store');
-            Route::delete('/admin/jabatan/batch-delete', [JabatanController::class, 'batchDelete'])
-            ->name('jabatan.batch-delete');
             Route::put('/jabatan/{id}', [JabatanController::class, 'update'])->name('jabatan.update');
+            Route::delete('/jabatan/{id}', [JabatanController::class, 'destroy'])->name('jabatan.destroy');
 
             Route::get('/wilayah', [WilayahController::class, 'index'])->name('wilayah.index');
             Route::put('/wilayah/update-lokasi', [WilayahController::class, 'updateLokasi'])->name('wilayah.update-lokasi');
@@ -90,6 +90,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rekapitulasi', [RekapitulasiController::class, 'index'])->name('rekapitulasi.index');
         Route::get('/rekapitulasi/polsek', [RekapitulasiController::class, 'getPolsek'])->name('rekapitulasi.polsek');
         Route::get('/rekapitulasi/export', [RekapitulasiController::class, 'export'])->name('rekapitulasi.export');
+
+        // Aktivitas Log
+        Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas.index');
+        Route::get('/aktivitas/{id}', [AktivitasController::class, 'show'])->name('aktivitas.show');
     });
 
     // 2. Group Khusus Operator

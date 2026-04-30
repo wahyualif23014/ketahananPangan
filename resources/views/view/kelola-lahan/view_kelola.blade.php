@@ -447,9 +447,6 @@
                                             <div class="flex flex-col gap-1.5">
                                                 <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
                                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
-                                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                                    <button @click='editTanam("{{ $row->id_tanam }}", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                                </div>
                                             </div>
                                         @else
                                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
@@ -464,14 +461,12 @@
                                                     $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
                                                 @endphp
                                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
-                                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                                    <button @click='editPanen("{{ $row->id_panen }}", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                                </div>
                                             </div>
                                         @else
                                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
                                         @endif
                                     </td>
+
                                     <td class="px-4 py-6 border-r border-slate-50 align-top">
                                         @if($row->id_distribusi)
                                             <div class="flex flex-col gap-1.5">
@@ -481,9 +476,6 @@
                                                     $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
                                                 @endphp
                                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
-                                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                                </div>
                                                 @if(!$row->serapan_valid_oleh)
                                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight mt-1">Belum Validasi</span>
                                                 @else
@@ -496,8 +488,7 @@
                                     </td>
                                     <td class="px-6 py-6">
                                         <div class="flex flex-col gap-3 min-w-[160px]">
-
-                                            {{-- === PIPELINE VISUAL === --}}
+                                            {{-- === PRODUCTION PIPELINE (VIEW ONLY) === --}}
                                             <div class="flex items-center gap-1">
 
                                                 {{-- STEP 1: TANAM --}}
@@ -511,7 +502,7 @@
                                                         </svg>
                                                     </div>
                                                     <span class="text-[7px] font-black uppercase tracking-wider"
-                                                        :class="lahanStages['{{ $row->id_lahan }}'] >= 1 ? 'text-emerald-600' : (lahanStages['{{ $row->id_lahan }}'] === 0 ? 'text-emerald-500' : 'text-slate-400')">
+                                                        :class="lahenStages['{{ $row->id_lahan }}'] >= 1 ? 'text-emerald-600' : (lahanStages['{{ $row->id_lahan }}'] === 0 ? 'text-emerald-500' : 'text-slate-400')">
                                                         Tanam
                                                     </span>
                                                 </div>
@@ -559,29 +550,10 @@
                                                 </div>
 
                                             </div>
-
-                                            {{-- === ACTION BUTTON === --}}
-                                            <template x-if="lahanStages['{{ $row->id_lahan }}'] === 0">
-                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json($row))'
-                                                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-95 transition-all shadow-md shadow-emerald-500/20">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                                                    Input Tanam
-                                                </button>
-                                            </template>
-                                            <template x-if="lahanStages['{{ $row->id_lahan }}'] === 1">
-                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json($row))'
-                                                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/20">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                                                    Input Panen
-                                                </button>
-                                            </template>
-                                            <template x-if="lahanStages['{{ $row->id_lahan }}'] === 2">
-                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json($row))'
-                                                    class="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 active:scale-95 transition-all shadow-md shadow-blue-500/20">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                                                    Input Serapan
-                                                </button>
-                                            </template>
+                                            {{-- VIEW ONLY BADGE --}}
+                                            <div class="mt-3 flex justify-center">
+                                                <span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest border border-slate-200">👁 Hanya Lihat</span>
+                                            </div>
 
                                         </div>
                                     </td>
@@ -590,6 +562,111 @@
                                             <button onclick="window.location.href='{{ route('view.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </button>
+                                            <button @click="toggleHistory('{{ $row->id_lahan }}')" title="Riwayat Siklus Produksi" class="p-2 mt-2 rounded-lg transition-all shadow-sm flex items-center justify-center" :class="activeHistory === '{{ $row->id_lahan }}' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                                                <svg class="w-4 h-4 transition-transform duration-300" :class="activeHistory === '{{ $row->id_lahan }}' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {{-- EXPANDABLE READ-ONLY HISTORY ROW --}}
+                                <tr x-show="isResorOpen('{{ $resorId }}') && activeHistory === '{{ $row->id_lahan }}'" x-transition x-cloak class="bg-slate-50 border-b-4 border-slate-200/60">
+                                    <td colspan="6" class="p-6">
+                                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                            <div class="flex items-center gap-3 mb-6">
+                                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                </div>
+                                                <h4 class="text-sm font-black text-slate-800 uppercase tracking-widest">Riwayat Siklus Produksi</h4>
+                                                <span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest border border-slate-200 ml-auto">👁 Hanya Lihat</span>
+                                            </div>
+
+                                            @if($row->history_tanam->isEmpty())
+                                                <div class="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Belum ada riwayat produksi</p>
+                                                </div>
+                                            @else
+                                                <div class="space-y-6">
+                                                    @foreach($row->history_tanam as $tanam)
+                                                        <div class="relative pl-6 border-l-2 border-emerald-200 pb-2">
+                                                            <div class="absolute w-4 h-4 bg-emerald-500 rounded-full -left-[9px] top-0 border-4 border-white shadow-sm"></div>
+                                                            <div class="bg-slate-50/50 rounded-xl border border-slate-100 p-5">
+
+                                                                {{-- TANAM HEADER --}}
+                                                                <div class="flex justify-between items-start mb-4 pb-4 border-b border-slate-100">
+                                                                    <div>
+                                                                        <div class="flex items-center gap-2 mb-1">
+                                                                            <span class="text-[9px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded uppercase tracking-wider">Tanam</span>
+                                                                            <span class="text-xs font-bold text-slate-500">{{ \Carbon\Carbon::parse($tanam->tgl_tanam)->format('d M Y') }}</span>
+                                                                        </div>
+                                                                        <p class="text-sm font-black text-slate-800">{{ number_format($tanam->luas_tanam, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Est Panen: {{ \Carbon\Carbon::parse($tanam->est_awal_panen)->format('M Y') }}</span></p>
+                                                                        @if($tanam->nama_bibit)
+                                                                        <p class="text-[10px] font-bold text-slate-400 mt-1">Bibit: {{ $tanam->nama_bibit }} &bull; Kebutuhan: {{ $tanam->kebutuhan_bibit }} Kg</p>
+                                                                        @endif
+                                                                        @if($tanam->keterangan_tanam)
+                                                                        <p class="text-[10px] font-bold text-slate-400 mt-0.5">Ket: {{ $tanam->keterangan_tanam }}</p>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                                                                    {{-- PANEN READ-ONLY --}}
+                                                                    <div>
+                                                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Riwayat Panen
+                                                                        </h5>
+                                                                        @if($tanam->panens->isEmpty())
+                                                                            <div class="p-3 bg-white rounded-lg border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 italic">Belum ada panen</div>
+                                                                        @else
+                                                                            <div class="space-y-2.5">
+                                                                                @foreach($tanam->panens as $panen)
+                                                                                <div class="bg-white rounded-lg border border-amber-100 p-3 shadow-sm">
+                                                                                    <div class="flex items-center gap-1.5 mb-1">
+                                                                                        <span class="text-[10px] font-bold text-slate-500">{{ \Carbon\Carbon::parse($panen->tgl_panen)->format('d M Y') }}</span>
+                                                                                        <span class="text-[8px] font-black text-white bg-amber-500 px-1.5 py-0.5 rounded">{{ $panen->status_panen == 1 ? 'NORMAL' : ($panen->status_panen == 2 ? 'GAGAL' : ($panen->status_panen == 3 ? 'DINI' : 'TEBASAN')) }}</span>
+                                                                                    </div>
+                                                                                    <p class="text-xs font-black text-slate-800">{{ number_format($panen->total_panen, 2) }} TON <span class="text-[9px] font-bold text-slate-400 ml-1">dari {{ number_format($panen->luas_panen, 2) }} HA</span></p>
+                                                                                    @if($panen->ket_panen)
+                                                                                    <p class="text-[9px] text-slate-400 mt-1">Ket: {{ $panen->ket_panen }}</p>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @endforeach
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
+
+                                                                    {{-- SERAPAN READ-ONLY --}}
+                                                                    <div>
+                                                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Riwayat Serapan
+                                                                        </h5>
+                                                                        @if($tanam->distribusis->isEmpty())
+                                                                            <div class="p-3 bg-white rounded-lg border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 italic">Belum ada serapan</div>
+                                                                        @else
+                                                                            <div class="space-y-2.5">
+                                                                                @foreach($tanam->distribusis as $distribusi)
+                                                                                <div class="bg-white rounded-lg border border-blue-100 p-3 shadow-sm">
+                                                                                    <div class="flex items-center gap-1.5 mb-1">
+                                                                                        <span class="text-[10px] font-bold text-slate-500">{{ \Carbon\Carbon::parse($distribusi->tgl_distribusi)->format('d M Y') }}</span>
+                                                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{{ $distribusi->distribusi_ke == 1 ? 'BULOG' : ($distribusi->distribusi_ke == 2 ? 'PABRIK' : ($distribusi->distribusi_ke == 3 ? 'TENGKULAK' : 'KONSUMSI')) }}</span>
+                                                                                    </div>
+                                                                                    <p class="text-xs font-black text-slate-800">{{ number_format($distribusi->total_distribusi, 2) }} TON</p>
+                                                                                    @if($distribusi->keterangan_distribusi)
+                                                                                    <p class="text-[9px] text-slate-400 mt-1">Ket: {{ $distribusi->keterangan_distribusi }}</p>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @endforeach
+                                                                            </div>
+                                                                        @endif
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -660,144 +737,60 @@
             kategoriProduksi: @json($filters['kategori'] ?? 'semua'),
             polseks: @json($polsekList),
             openResors: [],
-
-            // Production Flow State (Real)
-            activeLahan: null,
-            isEditMode: false,
-            activeProcessId: null,
-            modalTanam: false,
-            modalPanen: false,
-            modalSerapan: false,
+            activeHistory: null,
             lahanStages: @json($lahanStagesMap ?? new stdClass()),
 
-            // Form Data
-            formTanam: {
-                tgl_tanam: '{{ date('Y-m-d') }}',
-                luas_tanam: 0,
-                jenis_bibit: '',
-                kebutuhan_bibit: '',
-                est_awal_panen: '{{ date('Y-m-d') }}',
-                est_akhir_panen: '{{ date('Y-m-d') }}',
-                keterangan_tanam: ''
-            },
-            formPanen: {
-                tgl_panen: '{{ date('Y-m-d') }}',
-                luas_panen: 0,
-                status_panen: 1, // 1: normal, 2: gagal, 3: dini, 4: tebasan
-                total_panen: 0,
-                keterangan_panen: ''
-            },
-            formSerapan: {
-                tgl_distribusi: '{{ date('Y-m-d') }}',
-                total_distribusi: 0,
-                distribusi_ke: 1, // 1: bulog, 2: pabrik, 3: tengkulak, 4: konsumsi sendiri
-                keterangan_serapan: ''
+            toggleHistory(id) {
+                this.activeHistory = this.activeHistory === id ? null : id;
             },
 
             init() {
-                // Initialize all resors as open by default
                 @foreach($data as $resor)
                     this.openResors.push('{{ str_replace('.', '_', $resor->id_tingkat) }}');
                 @endforeach
             },
 
-            openStageModal(id_lahan, rowData) {
-                this.activeLahan = rowData;
-                this.isEditMode = false;
-                const stage = this.lahanStages[id_lahan];
-                if (stage === 0) {
-                    this.formTanam.luas_tanam = rowData.luas_lahan;
-                    this.modalTanam = true;
-                } else if (stage === 1) {
-                    this.formPanen.luas_panen = rowData.luas_tanam || rowData.luas_lahan;
-                    this.modalPanen = true;
-                } else if (stage === 2) {
-                    this.formSerapan.total_distribusi = rowData.total_panen || 0;
-                    this.modalSerapan = true;
+            toggleResor(id) {
+                if (this.openResors.includes(id)) {
+                    this.openResors = this.openResors.filter(i => i !== id);
+                } else {
+                    this.openResors.push(id);
                 }
             },
 
-            editTanam(id_tanam, rowData) {
-                this.activeLahan = rowData;
-                this.isEditMode = true;
-                this.activeProcessId = id_tanam;
-                this.formTanam = {
-                    tgl_tanam: rowData.tgl_tanam,
-                    luas_tanam: rowData.luas_tanam,
-                    jenis_bibit: rowData.nama_bibit || '',
-                    kebutuhan_bibit: rowData.kebutuhan_bibit || '',
-                    est_awal_panen: rowData.est_awal_panen,
-                    est_akhir_panen: rowData.est_akhir_panen,
-                    keterangan_tanam: rowData.keterangan_tanam || ''
+            isResorOpen(id) {
+                return this.openResors.includes(id);
+            },
+
+            get filteredPolseks() {
+                if (!this.selectedResor) return [];
+                return this.polseks.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
+            },
+
+            submitFilters() {
+                const url = new URL(window.location.href);
+                const params = {
+                    resor: this.selectedResor,
+                    sektor: this.selectedSektor,
+                    jenis: this.selectedJenis,
+                    komoditi: this.selectedKomoditi,
+                    kategori: this.kategoriProduksi,
+                    start_date: document.getElementById('start_date').value,
+                    end_date: document.getElementById('end_date').value,
+                    search: this.searchQuery
                 };
-                this.modalTanam = true;
-            },
 
-            editPanen(id_panen, rowData) {
-                this.activeLahan = rowData;
-                this.isEditMode = true;
-                this.activeProcessId = id_panen;
-                this.formPanen = {
-                    tgl_panen: rowData.tgl_panen,
-                    luas_panen: rowData.luas_panen,
-                    status_panen: rowData.status_panen || 1,
-                    total_panen: rowData.total_panen || 0,
-                    keterangan_panen: rowData.ket_panen || ''
-                };
-                this.modalPanen = true;
-            },
+                Object.keys(params).forEach(key => {
+                    if (params[key]) url.searchParams.set(key, params[key]);
+                    else url.searchParams.delete(key);
+                });
 
-            editSerapan(id_distribusi, rowData) {
-                this.activeLahan = rowData;
-                this.isEditMode = true;
-                this.activeProcessId = id_distribusi;
-                this.formSerapan = {
-                    tgl_distribusi: rowData.tgl_distribusi,
-                    total_distribusi: rowData.total_distribusi || 0,
-                    distribusi_ke: rowData.distribusi_ke || 1,
-                    keterangan_serapan: rowData.keterangan_distribusi || ''
-                };
-                this.modalSerapan = true;
-            },
-
-            async submitTanam() {
-                try {
-                    const url = this.isEditMode ? `/view/kelola-lahan/tanam/${this.activeProcessId}` : "{{ route('view.kelola-lahan.tanam.store') }}";
-                    const method = this.isEditMode ? 'PUT' : 'POST';
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            id_lahan: this.activeLahan.id_lahan,
-                            ...this.formTanam
-                        })
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        this.modalTanam = false;
-                        if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 1;
-                        alert(result.message);
-                        window.location.reload();
-                    } else {
-                        alert('Gagal: ' + (result.message || 'Terjadi kesalahan server.'));
-                    }
-                } catch (error) {
-                    alert('Terjadi kesalahan koneksi: ' + error.message);
-                }
-            },
-
-            async submitPanen() {
-                try {
-                    const url = this.isEditMode ? `/view/kelola-lahan/panen/${this.activeProcessId}` : "{{ route('view.kelola-lahan.panen.store') }}";
-                    const method = this.isEditMode ? 'PUT' : 'POST';
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            }
+        };
+    }
+</script>
                         },
                         body: JSON.stringify({
                             id_lahan: this.activeLahan.id_lahan,
@@ -888,228 +881,6 @@
         };
     }
 </script>
-{{-- ========================================== --}}
-{{-- MODALS SECTION - PRODUCTION FLOW --}}
-{{-- ========================================== --}}
-
-<!-- MODAL PROSES TANAM -->
-<div x-show="modalTanam" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalTanam = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        <div class="px-8 py-6 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest leading-none">INPUT PROSES TANAM</h3>
-                    <p class="text-[10px] text-emerald-100 font-bold mt-1 uppercase opacity-80" x-text="'LOKASI: ' + activeLahan?.nama_wilayah"></p>
-                </div>
-            </div>
-            <button @click="modalTanam = false" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-2xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Tanam</label>
-                    <input type="date" x-model="formTanam.tgl_tanam" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Luas Tanam (Ha)</label>
-                    <input type="number" step="0.01" x-model="formTanam.luas_tanam" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Jenis Bibit</label>
-                    <input type="text" placeholder="Contoh: IR-64, Ciherang" x-model="formTanam.jenis_bibit" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all uppercase">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Kebutuhan Bibit (Kg)</label>
-                    <input type="number" placeholder="0" x-model="formTanam.kebutuhan_bibit" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all">
-                </div>
-            </div>
-            <div class="p-5 bg-emerald-50 rounded-3xl border border-emerald-100/50">
-                <label class="block text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-4">Estimasi Panen</label>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tgl. Awal</span>
-                        <input type="date" x-model="formTanam.est_awal_panen" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
-                    </div>
-                    <div>
-                        <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tgl. Akhir</span>
-                        <input type="date" x-model="formTanam.est_akhir_panen" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Keterangan Lain</label>
-                <textarea rows="3" placeholder="Tambahkan catatan khusus jika ada..." x-model="formTanam.keterangan_tanam" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none"></textarea>
-            </div>
-        </div>
-        <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button @click="modalTanam = false" class="flex-1 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest shadow-sm">Batal</button>
-            <button @click="submitTanam()" class="flex-[2] px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.98] transition-all shadow-lg">Simpan Data Tanam</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL PROSES PANEN -->
-<div x-show="modalPanen" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalPanen = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        <div class="px-8 py-6 bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest leading-none">INPUT PROSES PANEN</h3>
-                    <p class="text-[10px] text-orange-100 font-bold mt-1 uppercase opacity-80" x-text="'LOKASI: ' + activeLahan?.nama_wilayah"></p>
-                </div>
-            </div>
-            <button @click="modalPanen = false" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-2xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Jenis Panen</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 transition-colors group">
-                        <input type="radio" name="jenis_panen" value="1" x-model.number="formPanen.status_panen" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-amber-500 peer-checked:border-amber-500 peer-checked:bg-amber-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">1-Panen Normal</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-rose-50 transition-colors group">
-                        <input type="radio" name="jenis_panen" value="2" x-model.number="formPanen.status_panen" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-rose-500 peer-checked:border-rose-500 peer-checked:bg-rose-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">2-Gagal Panen</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 transition-colors group">
-                        <input type="radio" name="jenis_panen" value="3" x-model.number="formPanen.status_panen" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-amber-500 peer-checked:border-amber-500 peer-checked:bg-amber-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">3-Panen Dini</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-amber-50 transition-colors group">
-                        <input type="radio" name="jenis_panen" value="4" x-model.number="formPanen.status_panen" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-amber-500 peer-checked:border-amber-500 peer-checked:bg-amber-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">4-Panen Tebasan</span>
-                    </label>
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-4">
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Panen</label>
-                    <input type="date" x-model="formPanen.tgl_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Luas Panen (Ha)</label>
-                    <input type="number" step="0.01" x-model="formPanen.luas_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Hasil (Ton)</label>
-                    <input type="number" step="0.01" x-model="formPanen.total_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Keterangan Lain</label>
-                <textarea rows="3" placeholder="Tambahkan catatan khusus hasil panen..." x-model="formPanen.keterangan_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all resize-none"></textarea>
-            </div>
-        </div>
-        <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button @click="modalPanen = false" class="flex-1 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest shadow-sm">Batal</button>
-            <button @click="submitPanen()" class="flex-[2] px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-amber-500/20 active:scale-[0.98] transition-all shadow-lg">Simpan Hasil Panen</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL SERAPAN DATA -->
-<div x-show="modalSerapan" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalSerapan = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        <div class="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest leading-none">INPUT SERAPAN HASIL</h3>
-                    <p class="text-[10px] text-blue-100 font-bold mt-1 uppercase opacity-80" x-text="'LOKASI: ' + activeLahan?.nama_wilayah"></p>
-                </div>
-            </div>
-            <button @click="modalSerapan = false" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-2xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Serapan</label>
-                    <input type="date" x-model="formSerapan.tgl_distribusi" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
-                </div>
-                <div class="col-span-1">
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Total Serapan (Ton)</label>
-                    <input type="number" step="0.01" placeholder="0.00" x-model="formSerapan.total_distribusi" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Tujuan Serapan</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors group">
-                        <input type="radio" name="tujuan_serapan" value="1" x-model.number="formSerapan.distribusi_ke" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">1-Bulog</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors group">
-                        <input type="radio" name="tujuan_serapan" value="2" x-model.number="formSerapan.distribusi_ke" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">2-Pabrik Pakan</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors group">
-                        <input type="radio" name="tujuan_serapan" value="3" x-model.number="formSerapan.distribusi_ke" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">3-Tengkulak</span>
-                    </label>
-                    <label class="relative flex items-center p-4 border border-slate-200 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors group">
-                        <input type="radio" name="tujuan_serapan" value="4" x-model.number="formSerapan.distribusi_ke" class="peer hidden">
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 group-hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500">
-                            <div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                        </div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-wider peer-checked:text-black">4-Konsumsi Sendiri</span>
-                    </label>
-                </div>
-            </div>
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Keterangan Lain</label>
-                <textarea rows="3" placeholder="Tambahkan catatan khusus serapan..." x-model="formSerapan.keterangan_serapan" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none"></textarea>
-            </div>
-        </div>
-        <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-            <button @click="modalSerapan = false" class="flex-1 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest shadow-sm">Batal</button>
-            <button @click="submitSerapan()" class="flex-[2] px-6 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98] transition-all shadow-lg">Simpan Data Serapan</button>
-        </div>
-    </div>
-</div>
 </div>
 
 @endsection

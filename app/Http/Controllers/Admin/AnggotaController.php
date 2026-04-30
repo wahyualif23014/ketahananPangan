@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Anggota;
+use App\Models\AktivitasLog;
 use App\Models\Jabatan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -61,6 +62,13 @@ class AnggotaController extends Controller
             'datetransaction' => Carbon::now(),
         ]);
 
+        AktivitasLog::catat('create', 'anggota', [
+            'record_id'   => $request->id_anggota,
+            'label_modul' => 'Personel: ' . $request->nama_anggota,
+            'data_baru'   => $request->only(['id_anggota','nama_anggota','username','role','id_jabatan','no_telp_anggota']),
+            'keterangan'  => 'Tambah data personel baru: ' . $request->nama_anggota . ' (' . $request->role . ')',
+        ]);
+
         return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil ditambahkan.');
     }
 
@@ -94,12 +102,25 @@ class AnggotaController extends Controller
 
         $anggota->update($dataUpdate);
 
+        AktivitasLog::catat('update', 'anggota', [
+            'record_id'   => $id_anggota,
+            'label_modul' => 'Personel: ' . $request->nama_anggota,
+            'data_baru'   => $request->only(['nama_anggota','username','role','id_jabatan','no_telp_anggota']),
+            'keterangan'  => 'Edit data personel: ' . $request->nama_anggota . ' (ID #' . $id_anggota . ')',
+        ]);
+
         return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil diperbarui.');
     }
 
     public function destroy($id_anggota)
     {
         $anggota = Anggota::findOrFail($id_anggota);
+        AktivitasLog::catat('delete', 'anggota', [
+            'record_id'   => $id_anggota,
+            'label_modul' => 'Personel: ' . $anggota->nama_anggota,
+            'data_lama'   => ['id_anggota'=>$anggota->id_anggota,'nama_anggota'=>$anggota->nama_anggota,'username'=>$anggota->username,'role'=>$anggota->role],
+            'keterangan'  => 'Hapus data personel: ' . $anggota->nama_anggota . ' (ID #' . $id_anggota . ')',
+        ]);
         $anggota->delete();
 
         return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil dihapus.');

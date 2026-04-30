@@ -231,6 +231,24 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
             @endif
         </a>
 
+        {{-- Aktivitas Log (Admin Only) --}}
+        @if($userRole === 'admin')
+        <a href="{{ route('admin.aktivitas.index') }}"
+            class="group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 mt-1
+           {{ request()->routeIs('admin.aktivitas.*') ? 'bg-violet-500/10 text-violet-400' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}"
+            :class="sidebarExpanded ? 'justify-start' : 'justify-center'">
+            <div class="relative shrink-0 flex items-center justify-center">
+                <svg class="w-[20px] h-[20px] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+            </div>
+            <span x-show="sidebarExpanded" x-transition.opacity class="ml-3 text-[13px] font-medium tracking-wide">Log Aktivitas</span>
+            @if(request()->routeIs('admin.aktivitas.*'))
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-violet-400"></div>
+            @endif
+        </a>
+        @endif
+
     </nav>
 
     {{-- Footer --}}
