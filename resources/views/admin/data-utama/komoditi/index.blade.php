@@ -204,7 +204,7 @@
                         </div>
 
                         <!-- Right Stats & Actions -->
-                        <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
+                        <div class="flex items-center md:justify-end gap-2 md:gap-4 md:pl-0 pl-16">
                             
                             <button type="button"
                                 onclick="window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'add_tanaman', data: '{{ addslashes($jenis) }}' }}))"
@@ -212,6 +212,13 @@
                                 <svg class="w-4 h-4 group-hover/addbtn:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                                 <span class="hidden sm:inline">Tambah Tanaman</span>
                                 <span class="sm:hidden">Tambah</span>
+                            </button>
+
+                            <button type="button"
+                                onclick="event.stopPropagation(); window.dispatchEvent(new CustomEvent('open-modal-komoditi', { detail: { mode: 'delete_kategori', data: '{{ addslashes($jenis) }}' }}))"
+                                title="Hapus seluruh kategori {{ $jenis }}" class="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl border border-rose-200 transition-all shadow-sm text-[10px] font-black uppercase tracking-wider group/delbtn active:scale-95 z-20">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span class="hidden sm:inline">Hapus Kategori</span>
                             </button>
 
                             <div class="flex flex-col items-center justify-center px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
@@ -356,14 +363,14 @@
                 <input type="hidden" name="nama_komoditi" value="">
                 
                 <!-- Dynamic Header -->
-                <div class="px-8 py-5 border-b border-slate-100" :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-slate-50'">
+                <div class="px-8 py-5 border-b border-slate-100" :class="(modalMode === 'delete' || modalMode === 'delete_kategori') ? 'bg-rose-50' : 'bg-slate-50'">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-inner"
-                                 :class="modalMode === 'delete' ? 'bg-rose-500' : (modalMode === 'edit' ? 'bg-blue-500' : 'bg-emerald-500')">
+                                 :class="(modalMode === 'delete' || modalMode === 'delete_kategori') ? 'bg-rose-500' : (modalMode === 'edit' ? 'bg-blue-500' : 'bg-emerald-500')">
                                 <template x-if="modalMode === 'add'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg></template>
                                 <template x-if="modalMode === 'edit'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></template>
-                                <template x-if="modalMode === 'delete'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></template>
+                                <template x-if="modalMode === 'delete' || modalMode === 'delete_kategori'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></template>
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold tracking-widest uppercase text-slate-400">Pusat Aksi</p>
@@ -386,7 +393,14 @@
                         </div>
                     </template>
 
-                    <template x-if="modalMode !== 'delete'">
+                    <template x-if="modalMode === 'delete_kategori'">
+                        <div class="bg-white border-2 border-rose-200 rounded-2xl p-5 text-center shadow-sm">
+                            <h4 class="text-lg font-bold text-slate-800">Menghapus Kategori Komoditi?</h4>
+                            <p class="text-sm text-slate-500 font-medium mt-1 mb-3">Tindakan ini akan menghapus kategori (<span class="text-rose-600 font-bold" x-text="formData.jenis_komoditi"></span>) beserta <span class="font-bold text-slate-800">SELURUH</span> jenis tanaman di dalamnya. Apakah Anda yakin?</p>
+                        </div>
+                    </template>
+
+                    <template x-if="modalMode !== 'delete' && modalMode !== 'delete_kategori'">
                         <div>
                             <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">
                                 Jenis Komoditi <span class="text-rose-500">*</span>
@@ -405,7 +419,7 @@
                         </div>
                     </template>
                     
-                    <template x-if="modalMode !== 'delete'">
+                    <template x-if="modalMode !== 'delete' && modalMode !== 'delete_kategori'">
                         <div>
                             <label class="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Nama Spesifik Komoditi <span class="text-rose-500">*</span></label>
                             <input type="text" x-model="formData.nama_komoditi" required placeholder="Contoh: Padi Ketan Putih" 
@@ -422,7 +436,7 @@
                     </button>
                     <button type="button" @click="submitForm()"
                         class="flex-1 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors uppercase tracking-widest text-xs"
-                        :class="modalMode === 'delete' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30' : (modalMode === 'edit' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')"
+                        :class="(modalMode === 'delete' || modalMode === 'delete_kategori') ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30' : (modalMode === 'edit' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30')"
                         x-text="getSubmitText()">
                     </button>
                 </div>
@@ -451,6 +465,10 @@
                     this.modalMode = 'add'; // Re-use the Add form route and title
                     this.isJenisLocked = true;
                     this.formData = { id_komoditi: '', jenis_komoditi: data, nama_komoditi: '' };
+                } else if (mode === 'delete_kategori') {
+                    this.modalMode = mode;
+                    this.isJenisLocked = true;
+                    this.formData = { id_komoditi: '', jenis_komoditi: data, nama_komoditi: '' };
                 } else if (data) {
                     this.modalMode = mode;
                     this.isJenisLocked = false;
@@ -470,27 +488,28 @@
                 if (this.modalMode === 'add') return 'Tambah Komoditi';
                 if (this.modalMode === 'edit') return 'Edit Komoditi';
                 if (this.modalMode === 'delete') return 'Hapus Komoditi';
+                if (this.modalMode === 'delete_kategori') return 'Hapus Kategori';
                 return '';
             },
 
             getSubmitText() {
                 if (this.modalMode === 'add') return 'Simpan Baru';
                 if (this.modalMode === 'edit') return 'Simpan Perubahan';
-                if (this.modalMode === 'delete') return 'Konfirmasi Hapus';
+                if (this.modalMode === 'delete' || this.modalMode === 'delete_kategori') return 'Konfirmasi Hapus';
                 return '';
             },
             
             getFormAction() {
                 if (this.modalMode === 'add') return "{{ route('admin.komoditi.store') }}";
                 if (this.modalMode === 'edit') return "{{ route('admin.komoditi.update') }}";
-                if (this.modalMode === 'delete') return "{{ route('admin.komoditi.destroy') }}";
+                if (this.modalMode === 'delete' || this.modalMode === 'delete_kategori') return "{{ route('admin.komoditi.destroy') }}";
                 return "#";
             },
             
             getFormMethod() {
                 if (this.modalMode === 'add')    return "POST";
                 if (this.modalMode === 'edit')   return "PUT";
-                if (this.modalMode === 'delete') return "DELETE";
+                if (this.modalMode === 'delete' || this.modalMode === 'delete_kategori') return "DELETE";
                 return "POST";
             },
 

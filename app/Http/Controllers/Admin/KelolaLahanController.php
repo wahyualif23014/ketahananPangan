@@ -116,6 +116,7 @@ class KelolaLahanController extends Controller
             $dataQuery->where(function($q) use ($searchStr, $matchingWilayahIds) {
                 $q->where('wilayah.nama_wilayah', 'LIKE', '%' . $searchStr . '%')
                   ->orWhere('tingkat.nama_tingkat', 'LIKE', '%' . $searchStr . '%')
+                  ->orWhere('lahan.id_lahan', $searchStr)
                   ->orWhere('lahan.alamat_lahan', 'LIKE', '%' . $searchStr . '%')
                   ->orWhere('lahan.cp_polisi', 'LIKE', '%' . $searchStr . '%')
                   ->orWhere('lahan.cp_lahan', 'LIKE', '%' . $searchStr . '%')

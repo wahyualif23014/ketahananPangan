@@ -43,7 +43,7 @@ class KomoditiController extends Controller
             'jenis_komoditi' => $request->jenis_komoditi,
             'nama_komoditi'  => $request->nama_komoditi,
             'datetransaction' => now(),
-            'deletestatus'   => '1',
+            'deletestatus'   => '2',
         ]);
 
         $newId = DB::table('komoditi')->latest('id_komoditi')->value('id_komoditi');
@@ -89,23 +89,46 @@ class KomoditiController extends Controller
     public function destroy(Request $request)
     {
         $request->validate([
-            'id_komoditi' => 'required'
+            'id_komoditi' => 'nullable',
+            'jenis_komoditi' => 'nullable|string'
         ]);
 
-        // Soft delete assuming deletestatus 0 = deleted
-        $old = DB::table('komoditi')->where('id_komoditi', $request->id_komoditi)->first();
+        if ($request->filled('id_komoditi')) {
+            // Soft delete specific komoditi
+            $old = DB::table('komoditi')->where('id_komoditi', $request->id_komoditi)->first();
 
-        \Illuminate\Support\Facades\DB::table('komoditi')
-            ->where('id_komoditi', $request->id_komoditi)
-            ->update(['deletestatus' => '0', 'datetransaction' => now()]);
+            \Illuminate\Support\Facades\DB::table('komoditi')
+                ->where('id_komoditi', $request->id_komoditi)
+                ->delete();
 
-        AktivitasLog::catat('delete', 'komoditi', [
-            'record_id'   => $request->id_komoditi,
-            'label_modul' => $old ? $old->jenis_komoditi . ' - ' . $old->nama_komoditi : 'ID #' . $request->id_komoditi,
-            'data_lama'   => $old ? ['jenis_komoditi' => $old->jenis_komoditi, 'nama_komoditi' => $old->nama_komoditi] : null,
-            'keterangan'  => 'Hapus komoditi: ' . ($old ? $old->nama_komoditi : '#' . $request->id_komoditi),
-        ]);
+            AktivitasLog::catat('delete', 'komoditi', [
+                'record_id'   => $request->id_komoditi,
+                'label_modul' => $old ? $old->jenis_komoditi . ' - ' . $old->nama_komoditi : 'ID #' . $request->id_komoditi,
+                'data_lama'   => $old ? ['jenis_komoditi' => $old->jenis_komoditi, 'nama_komoditi' => $old->nama_komoditi] : null,
+                'keterangan'  => 'Hapus komoditi: ' . ($old ? $old->nama_komoditi : '#' . $request->id_komoditi),
+            ]);
 
-        return redirect()->route('admin.komoditi.index')->with('success', 'Data Komoditi berhasil dihapus!');
+            return redirect()->route('admin.komoditi.index')->with('success', 'Data Komoditi berhasil dihapus!');
+        } elseif ($request->filled('jenis_komoditi')) {
+            // Soft delete entire jenis komoditi
+            $items = DB::table('komoditi')->where('jenis_komoditi', $request->jenis_komoditi)->where('deletestatus', '!=', '0')->get();
+            
+            if ($items->count() > 0) {
+                \Illuminate\Support\Facades\DB::table('komoditi')
+                    ->where('jenis_komoditi', $request->jenis_komoditi)
+                    ->delete();
+                    
+                AktivitasLog::catat('delete', 'komoditi', [
+                    'record_id'   => $items->first()->id_komoditi,
+                    'label_modul' => $request->jenis_komoditi,
+                    'data_lama'   => ['count' => $items->count(), 'items' => $items->pluck('nama_komoditi')->toArray()],
+                    'keterangan'  => 'Hapus kategori komoditi beserta ' . $items->count() . ' item di dalamnya: ' . $request->jenis_komoditi,
+                ]);
+            }
+
+            return redirect()->route('admin.komoditi.index')->with('success', 'Kategori Komoditi beserta isinya berhasil dihapus!');
+        }
+
+        return redirect()->back()->with('error', 'Gagal menghapus data: ID atau Jenis Komoditi tidak valid.');
     }
 }

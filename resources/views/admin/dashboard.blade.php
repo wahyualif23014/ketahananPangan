@@ -580,38 +580,138 @@
                 Kirim Notifikasi Massal
             </button>
         </div>
-        <div class="p-6">
-            @if($pendingValidation->count() > 0)
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-                @forelse($pendingValidation as $polres)
-                <div class="flex items-center gap-3 p-4 bg-white/[0.04] border border-white/[0.06] rounded-lg hover:border-emerald-500/30 hover:bg-white/[0.06] transition-all group cursor-pointer">
-                    <div class="relative flex h-2.5 w-2.5 flex-shrink-0">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-20"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500/80"></span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-200 group-hover:text-emerald-400 transition-colors truncate">{{ $polres->satwil }}</p>
-                        <p class="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wide"><span class="text-amber-400 font-bold">{{ $polres->pending_count }} Lahan</span> Menunggu validasi</p>
-                    </div>
-                    <svg class="w-4 h-4 text-slate-600 group-hover:text-emerald-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+
+        <div class="px-8 py-4 border-b border-slate-800 bg-slate-900/50 relative z-10" id="pending-section">
+            <form method="GET" action="#pending-section" class="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="year" value="{{ request('year', date('Y')) }}">
+                <input type="hidden" name="quarter" value="{{ request('quarter', 'all') }}">
+
+                <div class="relative flex-1 min-w-[200px]">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input type="text" name="pending_search" value="{{ request('pending_search') }}" placeholder="Cari wilayah atau alamat..." class="w-full bg-slate-800/50 border border-slate-700 text-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none placeholder-slate-500 transition-all">
                 </div>
-                @empty
-                <div class="col-span-2 text-center py-6 text-slate-400 text-sm">Tidak ada data pending validasi</div>
-                @endforelse
-            </div>
-            @else
-            <div class="py-8 text-center border border-white/[0.06] rounded-lg bg-white/[0.02]">
-                <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                
+                <select name="pending_jenis" class="bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all cursor-pointer min-w-[140px]">
+                    <option value="">Semua Jenis Lahan</option>
+                    @foreach($jenisLahanList as $id => $nama)
+                    <option value="{{ $id }}" {{ request('pending_jenis') == $id ? 'selected' : '' }}>{{ $nama }}</option>
+                    @endforeach
+                </select>
+                
+                <select name="pending_year" class="bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all cursor-pointer w-24">
+                    <option value="">Tahun</option>
+                    @for($y = date('Y'); $y >= 2020; $y--)
+                    <option value="{{ $y }}" {{ request('pending_year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+
+                <select name="pending_month" class="bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all cursor-pointer w-28">
+                    <option value="">Bulan</option>
+                    @foreach(['01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei','06'=>'Jun','07'=>'Jul','08'=>'Agt','09'=>'Sep','10'=>'Okt','11'=>'Nov','12'=>'Des'] as $m => $mName)
+                    <option value="{{ $m }}" {{ request('pending_month') == $m ? 'selected' : '' }}>{{ $mName }}</option>
+                    @endforeach
+                </select>
+
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-sm">
+                        Cari
+                    </button>
+                    <a href="?year={{ request('year', date('Y')) }}&quarter={{ request('quarter', 'all') }}#pending-section" class="p-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-xl transition-all group" title="Refresh">
+                        <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </a>
                 </div>
-                <p class="text-sm font-medium text-slate-300">Semua Data Telah Divalidasi</p>
-                <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">Tidak ada satuan wilayah yang tertunda</p>
+            </form>
+        </div>
+        <div class="p-6" x-data="{ activeTab: 'potensi' }">
+            <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
+                <button @click="activeTab = 'potensi'" :class="activeTab === 'potensi' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Data Potensi ({{ count($pendingPotensi) }})</button>
+                <button @click="activeTab = 'kelola'" :class="activeTab === 'kelola' ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Kelola Lahan ({{ count($pendingKelola) }})</button>
             </div>
-            @endif
-            <div class="flex items-center justify-between pt-4 border-t border-slate-800">
-                <p class="text-xs text-slate-500">Total <span class="text-slate-300 font-medium">{{ $totalPendingSatwil }} satwil</span> memerlukan tindakan segera</p>
+
+            <!-- Tab Data Potensi -->
+            <div x-show="activeTab === 'potensi'" x-transition.opacity.duration.300ms>
+                @if(count($pendingPotensi) > 0)
+                <div class="max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+                            <tr class="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                <th class="pb-3 pl-2">Satwil</th>
+                                <th class="pb-3">Alamat Lahan</th>
+                                <th class="pb-3 pr-2 text-right">Luas (Ha)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            @foreach($pendingPotensi as $item)
+                            <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index', ['search' => $item->id_lahan]) }}'">
+                                <td class="py-3 pl-2 w-1/4">
+                                    <p class="text-xs font-medium text-slate-200 group-hover:text-emerald-400 transition-colors">{{ $item->satwil }}</p>
+                                </td>
+                                <td class="py-3 w-2/4">
+                                    <p class="text-[10px] text-slate-400">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 60) }}</p>
+                                </td>
+                                <td class="py-3 pr-2 text-right w-1/4">
+                                    <p class="text-xs font-bold text-emerald-400">{{ number_format($item->luas_lahan, 2) }}</p>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <div class="py-8 text-center border border-white/[0.06] rounded-lg bg-white/[0.02]">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <p class="text-sm font-medium text-slate-300">Semua Data Potensi Telah Divalidasi</p>
+                </div>
+                @endif
+            </div>
+
+            <!-- Tab Kelola Lahan -->
+            <div x-show="activeTab === 'kelola'" x-transition.opacity.duration.300ms style="display: none;">
+                @if(count($pendingKelola) > 0)
+                <div class="max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+                            <tr class="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                <th class="pb-3 pl-2">Satwil</th>
+                                <th class="pb-3">Jenis & Tanggal</th>
+                                <th class="pb-3 pr-2 text-right">Luas (Ha)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            @foreach($pendingKelola as $item)
+                            <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('admin.kelola-lahan.daftar.index', ['search' => $item->id_lahan]) }}'">
+                                <td class="py-3 pl-2 w-1/3">
+                                    <p class="text-xs font-medium text-slate-200 group-hover:text-amber-400 transition-colors">{{ $item->satwil }}</p>
+                                    <p class="text-[10px] text-slate-500 mt-0.5">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 40) }}</p>
+                                </td>
+                                <td class="py-3 w-1/3">
+                                    <span class="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest {{ $item->jenis == 'Tanam' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30' }}">
+                                        {{ $item->jenis }}
+                                    </span>
+                                    <p class="text-[10px] text-slate-400 mt-1">{{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}</p>
+                                </td>
+                                <td class="py-3 pr-2 text-right w-1/3">
+                                    <p class="text-xs font-bold text-amber-400">{{ number_format($item->luas, 2) }}</p>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <div class="py-8 text-center border border-white/[0.06] rounded-lg bg-white/[0.02]">
+                    <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <p class="text-sm font-medium text-slate-300">Semua Data Kelola Telah Divalidasi</p>
+                </div>
+                @endif
+            </div>
+            
+            <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-800">
+                <p class="text-xs text-slate-500">Total <span class="text-slate-300 font-medium">{{ count($pendingPotensi) + count($pendingKelola) }} data</span> memerlukan tindakan segera</p>
                 <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
                     Kirim Notifikasi
                 </button>
