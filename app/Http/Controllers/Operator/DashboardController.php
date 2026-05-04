@@ -13,22 +13,45 @@ class DashboardController extends Controller
         $quarterFilter = $request->input('quarter', 'all');
         $yearFilter = $request->input('year', date('Y'));
 
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+
+        $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
+            if ($scope && $scope != '0') {
+                return $query->where($column, 'LIKE', $scope . '%');
+            }
+            return $query;
+        };
+
         // 1. KPI Summary
-        $potensiTotal = DB::table('lahan')->where('deletestatus', '1')->sum('luas_lahan');
+        $potensiTotalQuery = DB::table('lahan')->where('deletestatus', '1');
+        $potensiTotal = $applyScope($potensiTotalQuery, 'id_tingkat')->sum('luas_lahan');
         
-        $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereYear('tgl_tanam', $yearFilter);
-        $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereYear('tgl_panen', $yearFilter);
+        $tanamQuery = DB::table('tanam')
+            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+            ->where('tanam.deletestatus', '1')
+            ->whereYear('tanam.tgl_tanam', $yearFilter);
+        $tanamQuery = $applyScope($tanamQuery, 'lahan.id_tingkat');
+
+        $panenQuery = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->where('panen.deletestatus', '1')
+            ->whereYear('panen.tgl_panen', $yearFilter);
+        $panenQuery = $applyScope($panenQuery, 'lahan.id_tingkat');
         
         if ($quarterFilter != 'all') {
-            $tanamQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
-            $panenQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            $tanamQuery->whereRaw('QUARTER(tanam.tgl_tanam) = ?', [$quarterFilter]);
+            $panenQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
         }
 
-        $tanamTotal = $tanamQuery->sum('luas_tanam');
-        $panenTotal = $panenQuery->sum('luas_panen');
+        $tanamTotal = $tanamQuery->sum('tanam.luas_tanam');
+        $panenTotal = $panenQuery->sum('panen.luas_panen');
         
-        $totalTitikLahan = DB::table('lahan')->where('deletestatus', '1')->count();
-        $totalPolsek = DB::table('lahan')->where('deletestatus', '1')->distinct('id_tingkat')->count('id_tingkat');
+        $totalTitikLahanQuery = DB::table('lahan')->where('deletestatus', '1');
+        $totalTitikLahan = $applyScope($totalTitikLahanQuery, 'id_tingkat')->count();
+
+        $totalPolsekQuery = DB::table('lahan')->where('deletestatus', '1');
+        $totalPolsek = $applyScope($totalPolsekQuery, 'id_tingkat')->distinct('id_tingkat')->count('id_tingkat');
         $polsekAktif = $totalPolsek; // For doughnut chart
 
         // Master Jenis Lahan mapping
@@ -36,11 +59,11 @@ class DashboardController extends Controller
             ->pluck('nama_jenis_lahan', 'id_jenis_lahan');
 
         // Details
-        $potensiDetails = DB::table('lahan')
+        $potensiDetailsQuery = DB::table('lahan')
             ->select('id_jenis_lahan', DB::raw('SUM(luas_lahan) as total_luas'), DB::raw('COUNT(id_lahan) as total_lokasi'))
             ->where('deletestatus', '1')
-            ->groupBy('id_jenis_lahan')
-            ->get()->keyBy('id_jenis_lahan');
+            ->groupBy('id_jenis_lahan');
+        $potensiDetails = $applyScope($potensiDetailsQuery, 'id_tingkat')->get()->keyBy('id_jenis_lahan');
 
         $tanamDetailsQuery = DB::table('tanam')
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
@@ -51,7 +74,7 @@ class DashboardController extends Controller
         if ($quarterFilter != 'all') {
             $tanamDetailsQuery->whereRaw('QUARTER(tanam.tgl_tanam) = ?', [$quarterFilter]);
         }
-        $tanamDetails = $tanamDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
+        $tanamDetails = $applyScope($tanamDetailsQuery, 'lahan.id_tingkat')->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
 
         $panenDetailsQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
@@ -62,14 +85,15 @@ class DashboardController extends Controller
         if ($quarterFilter != 'all') {
             $panenDetailsQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
         }
-        $panenDetails = $panenDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
+        $panenDetails = $applyScope($panenDetailsQuery, 'lahan.id_tingkat')->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
 
         // Serapan Hasil
-        $serapanRaw = DB::table('distribusi')
-            ->select('distribusi_ke', DB::raw('SUM(total_distribusi) as val'))
-            ->where('deletestatus', '1')
-            ->groupBy('distribusi_ke')
-            ->pluck('val', 'distribusi_ke');
+        $serapanRawQuery = DB::table('distribusi')
+            ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
+            ->select('distribusi.distribusi_ke', DB::raw('SUM(distribusi.total_distribusi) as val'))
+            ->where('distribusi.deletestatus', '1')
+            ->groupBy('distribusi.distribusi_ke');
+        $serapanRaw = $applyScope($serapanRawQuery, 'lahan.id_tingkat')->pluck('val', 'distribusi_ke');
 
         $serapanBulog = $serapanRaw['1'] ?? 0;
         $serapanTengkulak = $serapanRaw['2'] ?? 0;
@@ -78,15 +102,16 @@ class DashboardController extends Controller
         $totalSerapan = $serapanBulog + $serapanTengkulak + $serapanPabrik + $serapanKonsumsi;
 
         // Harvest Status Cards
-        $harvestCardsData = DB::table('panen')
-            ->select('status_panen', DB::raw('SUM(luas_panen) as val'))
-            ->where('deletestatus', '1')
-            ->whereYear('tgl_panen', $yearFilter);
+        $harvestCardsDataQuery = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->select('panen.status_panen', DB::raw('SUM(panen.luas_panen) as val'))
+            ->where('panen.deletestatus', '1')
+            ->whereYear('panen.tgl_panen', $yearFilter);
             
         if ($quarterFilter != 'all') {
-            $harvestCardsData->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            $harvestCardsDataQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
         }
-        $harvestCardsData = $harvestCardsData->groupBy('status_panen')->pluck('val', 'status_panen');
+        $harvestCardsData = $applyScope($harvestCardsDataQuery, 'lahan.id_tingkat')->groupBy('panen.status_panen')->pluck('val', 'status_panen');
 
         $harvestStats = [
             'normal' => $harvestCardsData['1'] ?? 0,
@@ -119,7 +144,7 @@ class DashboardController extends Controller
         arsort($harvestingAnalytics);
 
         // Kwartal Data
-        $kwartalRaw = DB::table('panen')
+        $kwartalRawQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(
                 DB::raw('QUARTER(panen.tgl_panen) as q'),
@@ -130,8 +155,9 @@ class DashboardController extends Controller
             ->where('panen.deletestatus', '1')
             ->whereNotNull('panen.tgl_panen')
             ->whereYear('panen.tgl_panen', $yearFilter)
-            ->groupBy('q', 'lahan.id_jenis_lahan')
-            ->get();
+            ->groupBy('q', 'lahan.id_jenis_lahan');
+            
+        $kwartalRaw = $applyScope($kwartalRawQuery, 'lahan.id_tingkat')->get();
 
         $milikPolriQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
         $poktanBinaanQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
@@ -160,7 +186,7 @@ class DashboardController extends Controller
         ];
 
         // Map Data
-        $mapData = DB::table('lahan')
+        $mapDataQuery = DB::table('lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng', 'lahan.status_lahan as status')
             ->where('lahan.deletestatus', '1')
@@ -169,7 +195,9 @@ class DashboardController extends Controller
             ->where('lahan.latitude', '!=', '')
             ->where('lahan.longitude', '!=', '')
             ->inRandomOrder()
-            ->limit(200)
+            ->limit(200);
+            
+        $mapData = $applyScope($mapDataQuery, 'lahan.id_tingkat')
             ->get()
             ->map(function ($item) {
                 $statusMap = ['1' => 'Produktif', '2' => 'Tanam', '3' => 'Panen'];
@@ -200,6 +228,7 @@ class DashboardController extends Controller
         if ($pendingMonth) $qPotensi->whereMonth('lahan.datetransaction', $pendingMonth);
         if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
 
+        $qPotensi = $applyScope($qPotensi, 'lahan.id_tingkat');
         $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
 
         // Pending Validation Kelola
@@ -220,6 +249,8 @@ class DashboardController extends Controller
         if ($pendingYear) $qTanam->whereYear('tanam.tgl_tanam', $pendingYear);
         if ($pendingMonth) $qTanam->whereMonth('tanam.tgl_tanam', $pendingMonth);
         if ($pendingJenis) $qTanam->where('lahan.id_jenis_lahan', $pendingJenis);
+        
+        $qTanam = $applyScope($qTanam, 'lahan.id_tingkat');
 
         $qPanen = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
@@ -238,6 +269,8 @@ class DashboardController extends Controller
         if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);
         if ($pendingMonth) $qPanen->whereMonth('panen.tgl_panen', $pendingMonth);
         if ($pendingJenis) $qPanen->where('lahan.id_jenis_lahan', $pendingJenis);
+        
+        $qPanen = $applyScope($qPanen, 'lahan.id_tingkat');
 
         $pendingKelola = $qTanam->union($qPanen)
             ->orderBy('tanggal', 'desc')
@@ -245,13 +278,15 @@ class DashboardController extends Controller
             ->get();
 
         // Line Chart Data
-        $yearlyPanenData = DB::table('panen')
-            ->select(DB::raw('YEAR(tgl_panen) as year'), DB::raw('SUM(luas_panen) as total'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('tgl_panen')
+        $yearlyPanenDataQuery = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->select(DB::raw('YEAR(panen.tgl_panen) as year'), DB::raw('SUM(panen.luas_panen) as total'))
+            ->where('panen.deletestatus', '1')
+            ->whereNotNull('panen.tgl_panen')
             ->groupBy('year')
-            ->orderBy('year', 'asc')
-            ->get();
+            ->orderBy('year', 'asc');
+            
+        $yearlyPanenData = $applyScope($yearlyPanenDataQuery, 'lahan.id_tingkat')->get();
 
         $chartTahunan = [
             'labels' => $yearlyPanenData->pluck('year')->toArray(),
@@ -260,14 +295,23 @@ class DashboardController extends Controller
         $chartYearlyLabels = $chartTahunan['labels'];
         $chartYearlyData = $chartTahunan['data'];
 
-        $monthlyPanenData = DB::table('panen')
-            ->select(DB::raw('MONTH(tgl_panen) as month'), DB::raw('SUM(luas_panen) as total'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('tgl_panen')
-            ->whereYear('tgl_panen', $yearFilter)
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
-            ->pluck('total', 'month');
+        $chartYear  = $request->input('chart_year', $yearFilter);
+        $chartMonth = $request->input('chart_month', 'all');
+
+        $monthlyPanenDataQuery = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->select(DB::raw('MONTH(panen.tgl_panen) as month'), DB::raw('SUM(panen.luas_panen) as total'))
+            ->where('panen.deletestatus', '1')
+            ->whereNotNull('panen.tgl_panen')
+            ->whereYear('panen.tgl_panen', $chartYear);
+
+        if ($chartMonth !== 'all') {
+            $monthlyPanenDataQuery->whereMonth('panen.tgl_panen', (int)$chartMonth);
+        }
+
+        $monthlyPanenDataQuery->groupBy('month')->orderBy('month', 'asc');
+            
+        $monthlyPanenData = $applyScope($monthlyPanenDataQuery, 'lahan.id_tingkat')->pluck('total', 'month');
 
         $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
         $chartBulanan = ['labels' => $monthNames, 'data' => []];
@@ -276,6 +320,31 @@ class DashboardController extends Controller
             $val = $monthlyPanenData[$i] ?? 0;
             $chartBulanan['data'][] = $val;
             $chartMonthlyData[] = $val;
+        }
+
+        // Available years for chart filter
+        $chartYearsQueryLahan = DB::table('lahan')
+            ->select(DB::raw('YEAR(datetransaction) as yr'))
+            ->whereNotNull('datetransaction')
+            ->groupBy('yr')
+            ->orderBy('yr');
+        $chartYearsQueryLahan = $applyScope($chartYearsQueryLahan, 'id_tingkat');
+
+        $chartYearsQueryPanen = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->select(DB::raw('YEAR(panen.tgl_panen) as yr'))
+            ->whereNotNull('panen.tgl_panen')
+            ->groupBy('yr');
+        $chartYearsQueryPanen = $applyScope($chartYearsQueryPanen, 'lahan.id_tingkat');
+
+        $chartYears = $chartYearsQueryLahan
+            ->pluck('yr')
+            ->filter()
+            ->merge($chartYearsQueryPanen->pluck('yr'))
+            ->unique()->sort()->values()->toArray();
+
+        if (empty($chartYears)) {
+            $chartYears = range(2024, (int)date('Y') + 1);
         }
 
         return view('operator.dashboard', compact(
@@ -307,7 +376,9 @@ class DashboardController extends Controller
             'chartYearlyData',
             'chartTahunan',
             'chartBulanan',
-            'polsekAktif'
+            'polsekAktif',
+            'chartYears'
         ));
     }
 }
+

@@ -836,28 +836,23 @@
 
                 // Form Data
                 formTanam: {
-                    tgl_tanam: '{{ date('
-                    Y - m - d ') }}',
+                    tgl_tanam: '{{ date("Y-m-d") }}',
                     luas_tanam: 0,
                     jenis_bibit: '',
                     kebutuhan_bibit: '',
-                    est_awal_panen: '{{ date('
-                    Y - m - d ') }}',
-                    est_akhir_panen: '{{ date('
-                    Y - m - d ') }}',
+                    est_awal_panen: '{{ date("Y-m-d") }}',
+                    est_akhir_panen: '{{ date("Y-m-d") }}',
                     keterangan_tanam: ''
                 },
                 formPanen: {
-                    tgl_panen: '{{ date('
-                    Y - m - d ') }}',
+                    tgl_panen: '{{ date("Y-m-d") }}',
                     luas_panen: 0,
                     status_panen: 1, // 1: normal, 2: gagal, 3: dini, 4: tebasan
                     total_panen: 0,
                     keterangan_panen: ''
                 },
                 formSerapan: {
-                    tgl_distribusi: '{{ date('
-                    Y - m - d ') }}',
+                    tgl_distribusi: '{{ date("Y-m-d") }}',
                     total_distribusi: 0,
                     distribusi_ke: 1, // 1: bulog, 2: pabrik, 3: tengkulak, 4: konsumsi sendiri
                     keterangan_serapan: ''

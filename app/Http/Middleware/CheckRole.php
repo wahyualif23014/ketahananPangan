@@ -14,7 +14,8 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        if (in_array($request->user()->role, $roles)) {
+        // Allow admin to bypass role check or if their role is in the allowed list
+        if ($request->user()->role === 'admin' || in_array($request->user()->role, $roles)) {
             return $next($request);
         }
 
@@ -23,14 +24,7 @@ class CheckRole
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
 
-        // For web requests: redirect to own dashboard (prevents route enumeration)
-        $home = match ($request->user()->role) {
-            'admin'    => route('admin.dashboard'),
-            'operator' => route('operator.dashboard'),
-            'view'     => route('view.dashboard'),
-            default    => route('login'),
-        };
-
-        return redirect($home)->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+        // For web requests: Throw 403 Forbidden instead of redirecting
+        abort(403, 'Anda tidak memiliki akses ke halaman tersebut.');
     }
 }

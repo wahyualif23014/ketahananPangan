@@ -15,10 +15,16 @@ class RekapitulasiExport implements WithMultipleSheets
     use Exportable;
 
     protected $filters;
+    protected $scope;
 
-    public function __construct(array $filters)
+    /**
+     * @param array         $filters  User-selected filter params
+     * @param \Closure|null $scope    Optional jurisdictional scope closure (operator only)
+     */
+    public function __construct(array $filters, ?\Closure $scope = null)
     {
         $this->filters = $filters;
+        $this->scope   = $scope;
         set_time_limit(300);
         ini_set('memory_limit', '512M');
     }
@@ -26,8 +32,8 @@ class RekapitulasiExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            new RekapitulasiSheet($this->filters, 'polres'),
-            new RekapitulasiSheet($this->filters, 'desa')
+            new RekapitulasiSheet($this->filters, 'polres', $this->scope),
+            new RekapitulasiSheet($this->filters, 'desa',   $this->scope)
         ];
     }
 }
@@ -36,11 +42,13 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
 {
     protected $filters;
     protected $type;
+    protected $scope;
 
-    public function __construct(array $filters, string $type)
+    public function __construct(array $filters, string $type, ?\Closure $scope = null)
     {
         $this->filters = $filters;
-        $this->type = $type;
+        $this->type    = $type;
+        $this->scope   = $scope;
     }
 
     public function title(): string
@@ -52,8 +60,14 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
     {
         $lines = new Collection();
 
+        // Apply jurisdictional scope first (null-safe: if no scope, no restriction)
+        $baseQuery = RekapitulasiLahan::query();
+        if ($this->scope) {
+            ($this->scope)($baseQuery);
+        }
+
         if ($this->type === 'polres') {
-            $data = RekapitulasiLahan::filter($this->filters)
+            $data = (clone $baseQuery)->filter($this->filters)
                 ->select(
                     'nama_polres',
                     DB::raw('SUM(total_titik_lahan) as total_titik_lahan'),
@@ -101,7 +115,7 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                 ]);
             }
         } else {
-            $data = RekapitulasiLahan::filter($this->filters)
+            $data = (clone $baseQuery)->filter($this->filters)
                 ->orderBy('nama_polres')
                 ->orderBy('nama_polsek')
                 ->orderBy('nama_desa')

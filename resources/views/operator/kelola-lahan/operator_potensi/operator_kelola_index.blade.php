@@ -107,104 +107,9 @@
         </div>
     </div>
 
-    @php
-        // Pemetaan Klasifikasi Lahan untuk Modal Form
-        $kategoriMapping = [
-            1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',
-            2 => 'HUTAN (PERHUTANAN SOSIAL)',
-            3 => 'LUAS BAKU SAWAH (LBS)',
-            4 => 'PESANTREN',
-            5 => 'MILIK POLRI',
-            6 => 'PRODUKTIF (MASYARAKAT BINAAN POLRI)',
-            7 => 'PRODUKTIF (TUMPANG SARI)',
-            8 => 'HUTAN (PERHUTANI/INHUTANI)',
-            9 => 'LAHAN LAINNYA'
-        ];
-
-        // LOGIKA PENYIAPAN DATA STATISTIK
-        $allLahanData = DB::table('lahan')->where('deletestatus', '!=', '0')->get();
-
-        $totalLuasLahan = 0;
-        $totalLokasiLahan = 0;
-        $unikLokasi = [];
-        $breakdownByJenis = [];
-
-        $luasBelumValidasi = 0;
-        $countBelumValidasi = 0;
-        $totalCount = count($allLahanData);
-
-        foreach ($kategoriMapping as $k => $v) {
-            $breakdownByJenis[$k] = ['nama' => $v, 'luas' => 0, 'lokasi' => []];
-        }
-
-        $tingkatAdaLahan = [];
-
-        foreach ($allLahanData as $lahan) {
-            // Track Polres (asumsi 2 segmen pertama dari id_tingkat merepresentasikan Polres)
-            $parts = explode('.', $lahan->id_tingkat);
-            if (count($parts) >= 2) {
-                $tingkatAdaLahan[$parts[0] . '.' . $parts[1]] = true;
-            }
-
-            if ($lahan->status_lahan == '1') {
-                $luas = (float) $lahan->luas_lahan;
-                $totalLuasLahan += $luas;
-                $unikLokasi[$lahan->id_wilayah] = true;
-
-                if (isset($breakdownByJenis[$lahan->id_jenis_lahan])) {
-                    $breakdownByJenis[$lahan->id_jenis_lahan]['luas'] += $luas;
-                    $breakdownByJenis[$lahan->id_jenis_lahan]['lokasi'][$lahan->id_wilayah] = true;
-                }
-            } else {
-                $luasBelumValidasi += (float) $lahan->luas_lahan;
-                $countBelumValidasi++;
-            }
-        }
-
-        $totalLokasiLahan = count($unikLokasi);
-        $persenBelumValidasi = $totalCount > 0 ? round(($countBelumValidasi / $totalCount) * 100, 2) : 0;
-
-        // Hitung Sumber Data (Perhitungan Unik/Distinct)
-        $distinctPolsek = [];
-        $distinctKabKota = [];
-        $distinctKecamatan = [];
-        $distinctDesa = [];
-
-        foreach ($allLahanData as $lahan) {
-            // Polsek Unik = id_tingkat dengan 2 titik atau lebih
-            $idT = (string)$lahan->id_tingkat;
-            if (mb_substr_count($idT, '.') >= 2) {
-                $distinctPolsek[$idT] = true;
-            }
-
-            // Wilayah Unik = pecah id_wilayah untuk mendeteksi parent-nya
-            $idW = (string)$lahan->id_wilayah;
-            $parts = explode('.', $idW);
-            $dotsW = count($parts) - 1;
-
-            // Jika punya minimal 1 titik (misal 35.01), catat sebagai partisipasi Kab/Kota
-            if ($dotsW >= 1) {
-                $kabId = $parts[0] . '.' . $parts[1];
-                $distinctKabKota[$kabId] = true;
-            }
-            // Jika punya minimal 2 titik (misal 35.01.01), catat sebagai partisipasi Kecamatan
-            if ($dotsW >= 2) {
-                $kecId = $parts[0] . '.' . $parts[1] . '.' . $parts[2];
-                $distinctKecamatan[$kecId] = true;
-            }
-            // Jika punya minimal 3 titik (misal 35.01.01.2001), catat sebagai partisipasi Desa
-            if ($dotsW >= 3) {
-                $distinctDesa[$idW] = true;
-            }
-        }
-
-        $submissionByKategori = [
-            'POLSEK' => count($distinctPolsek),
-            'KAB_KOTA' => count($distinctKabKota),
-            'KECAMATAN' => count($distinctKecamatan),
-            'DESA' => count($distinctDesa)
-        ];
-    @endphp
+    {{-- Stats variables (totalLuasLahan, totalLokasiLahan, breakdownByJenis, submissionByKategori,
+         persenBelumValidasi, luasBelumValidasi) are now passed from PotensiLahanController
+         scoped to the authenticated operator's id_tingkat jurisdiction. --}}
 
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 relative px-2">
@@ -657,10 +562,6 @@
             document.getElementById('vm_valid_oleh').textContent = 'Menunggu Validasi';
         }
         set('vm_tgl_valid', item.tgl_valid);
-<<<<<<< HEAD
-=======
-        
->>>>>>> cc52390f74c2f4f185c714ac1ee3effe8b5fcaff
         // Tab reset
         switchTab('tab-personel');
         var modal = document.getElementById('viewModal');
@@ -668,6 +569,7 @@
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
     }
+
     function switchTab(tabId) {
         ['tab-personel','tab-teknis','tab-lokasi','tab-validasi'].forEach(function(t) {
             document.getElementById(t).classList.add('hidden');
@@ -1503,11 +1405,11 @@
                 },
                 
                 // Filters
-                selectedResor: '{{ $filters["resor"] ?? "" }}',
-                selectedSektor: '{{ $filters["sektor"] ?? "" }}',
-                selectedJenis: '{{ $filters["jenis"] ?? "" }}',
-                selectedValidasi: '{{ $filters["validasi"] ?? "" }}',
-                periodMode: '{{ ($filters["start_date"] ?? "") || ($filters["end_date"] ?? "") ? "tanggal" : "semua" }}',
+                selectedResor: @json($filters['resor'] ?? ''),
+                selectedSektor: @json($filters['sektor'] ?? ''),
+                selectedJenis: @json($filters['jenis'] ?? ''),
+                selectedValidasi: @json($filters['validasi'] ?? ''),
+                periodMode: @json(($filters['start_date'] ?? '') || ($filters['end_date'] ?? '') ? 'tanggal' : 'semua'),
                 get filteredFilterPolsek() {
                     if (!this.selectedResor) return [];
                     return this.polsekList.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
@@ -1812,8 +1714,8 @@
 
                     const method = 'POST';
                     const urlStore = this.isEdit
-                        ? `/admin/kelola-lahan/potensi/update/${this.formData.id}`
-                        : `/admin/kelola-lahan/potensi/store`;
+                        ? `/operator/kelola-lahan/potensi/update/${this.formData.id}`
+                        : `/operator/kelola-lahan/potensi/store`;
 
                     try {
                         const fd = new FormData();
