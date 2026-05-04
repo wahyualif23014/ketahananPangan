@@ -358,6 +358,13 @@
                 </div>
             </div>
             <div class="flex items-center gap-3 relative z-10">
+                <button onclick="window.location.reload()" title="Refresh Data"
+                    class="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-white/10 hover:border-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95 shadow-sm group">
+                    <svg class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Refresh
+                </button>
                 <span class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-xl text-[10px] font-black uppercase tracking-widest">
                     <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
                     SYNC ACTIVE
@@ -1071,7 +1078,7 @@
 
             isResorOpen(id) {
                 return this.openResors.includes(id);
-            },
+},
 
             get filteredPolseks() {
                 if (!this.selectedResor) return [];
@@ -1086,15 +1093,26 @@
                     jenis: this.selectedJenis,
                     komoditi: this.selectedKomoditi,
                     kategori: this.kategoriProduksi,
-                    start_date: document.getElementById('start_date').value,
-                    end_date: document.getElementById('end_date').value,
                     search: this.searchQuery
                 };
+                
+                if (this.periodMode === 'tanggal') {
+                    params.start_date = document.getElementById('start_date').value;
+                    params.end_date = document.getElementById('end_date').value;
+                }
 
                 Object.keys(params).forEach(key => {
-                    if (params[key]) url.searchParams.set(key, params[key]);
-                    else url.searchParams.delete(key);
+                    if (params[key]) {
+                        url.searchParams.set(key, params[key]);
+                    } else {
+                        url.searchParams.delete(key);
+                    }
                 });
+                
+                if (this.periodMode === 'semua') {
+                    url.searchParams.delete('start_date');
+                    url.searchParams.delete('end_date');
+                }
 
                 url.searchParams.delete('page');
                 window.location.href = url.toString();

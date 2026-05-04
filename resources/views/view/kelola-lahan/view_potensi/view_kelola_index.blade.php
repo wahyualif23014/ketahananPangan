@@ -416,31 +416,7 @@
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                         Detail
                                     </button>
-                                    @if(!$item['valid_oleh'])
-                                    <form action="{{ route('view.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="inline m-0">
-                                        @csrf @method('PUT')
-                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
-                                            Validasi
-                                        </button>
-                                    </form>
-                                    @else
-                                    <form action="{{ route('view.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin batalkan validasi data lahan ini?')">
-                                        @csrf @method('PUT')
-                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
-                                            Batal Validasi
-                                        </button>
-                                    </form>
-                                    @endif
-                                    <button onclick='openEditModal(@json($item))'
-                                        class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
-                                        Edit
-                                    </button>
-                                    <form action="{{ route('view.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return confirm('Yakin hapus data lahan ini?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                    {{-- Role VIEW: tidak menampilkan tombol validasi/edit/hapus --}}
                                 </div>
                             </td>
                         </tr>
@@ -1319,8 +1295,21 @@
                 onInput() {
                     const q = this.query.toLowerCase().trim();
                     if (q.length < 1) { this.filtered = []; return; }
+
+                    // Ambil wilayah terpilih dari parent form
+                    let currentIdTingkat = '';
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            currentIdTingkat = d.formData.id_sektor || d.formData.id_resor || '';
+                        }
+                    });
+
                     this.filtered = this.allAnggota
-                        .filter(a => a.nama_anggota && a.nama_anggota.toLowerCase().includes(q))
+                        .filter(a => {
+                            const nameMatch = a.nama_anggota && a.nama_anggota.toLowerCase().includes(q);
+                            const tingkatMatch = currentIdTingkat ? (a.id_tugas && a.id_tugas === currentIdTingkat) : true;
+                            return nameMatch && tingkatMatch;
+                        })
                         .slice(0, 20); // max 20 results
                     this.showDropdown = true;
                 },
@@ -1328,7 +1317,6 @@
                     this.query = anggota.nama_anggota;
                     this.showDropdown = false;
                     // Get parent Alpine scope via $dispatch or direct parent access
-                    const parentEl = this.$el.closest('[x-data*="potensiLahanManager"]');
                     if (type === 'penggerak') {
                         this.$root._x_dataStack?.forEach(d => {
                             if (d.formData) {
@@ -1339,6 +1327,13 @@
                         // Dispatch to parent
                         this.$dispatch('set-penggerak', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '' });
                     } else {
+                        this.$root._x_dataStack?.forEach(d => {
+                            if (d.formData) {
+                                d.formData.pj_lahan = anggota.nama_anggota;
+                                d.formData.id_pj_anggota = anggota.id_anggota;
+                                d.formData.hp_pj = anggota.no_telp_anggota || '';
+                            }
+                        });
                         this.$dispatch('set-pj', { nama: anggota.nama_anggota, hp: anggota.no_telp_anggota || '', id: anggota.id_anggota });
                     }
                 }

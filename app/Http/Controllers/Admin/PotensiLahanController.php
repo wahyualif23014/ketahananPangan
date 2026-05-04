@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AktivitasLog;
 use App\Models\PotensiLahan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -93,6 +95,7 @@ class PotensiLahanController extends Controller {
             $lahanQuery->whereDate('tgl_edit', '<=', $endDate);
         }
 
+        $allLahanData = (clone $lahanQuery)->get();
         $lahanList = $lahanQuery->paginate(25)->withQueryString();
 
         // Lookup nama tingkat dan komoditi
@@ -172,9 +175,15 @@ class PotensiLahanController extends Controller {
             ];
         });
 
-        $tingkatSemua = DB::table('tingkat')->where('id_tingkat', 'like', '11.%')->get();
-        $polresList = $tingkatSemua->filter(function($t) { return substr_count($t->id_tingkat, '.') == 1; })->values();
-        $polsekList = $tingkatSemua->filter(function($t) { return substr_count($t->id_tingkat, '.') == 2; })->values();
+        $polresList = DB::table('tingkat')
+            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
+            ->orderBy('id_tingkat')
+            ->get();
+
+        $polsekList = DB::table('tingkat')
+            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
+            ->orderBy('id_tingkat')
+            ->get();
 
         $kategoriMapping = [
             1 => 'PRODUKTIF (POKTAN BINAAN POLRI)',
@@ -200,7 +209,7 @@ class PotensiLahanController extends Controller {
 
         $anggotaList = DB::table('anggota')
             ->where('deletestatus', '!=', '0')
-            ->select('id_anggota', 'nama_anggota', 'no_telp_anggota')
+            ->select('id_anggota', 'nama_anggota', 'no_telp_anggota', 'id_tugas')
             ->get();
 
         $filters = [
@@ -213,7 +222,7 @@ class PotensiLahanController extends Controller {
             'end_date' => $endDate,
         ];
 
-        return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'filters');
+        return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'filters', 'allLahanData');
     }
 
     public function store(Request $request) {
@@ -251,6 +260,13 @@ class PotensiLahanController extends Controller {
 
         DB::table('lahan')->insert($data);
 
+        AktivitasLog::catat('create', 'potensi_lahan', [
+            'record_id'   => $data['id_lahan'],
+            'label_modul' => 'Lahan #' . $data['id_lahan'] . ' - ' . ($request->alamat_lahan ?? ''),
+            'data_baru'   => Arr::except($data, ['edit_oleh','tgl_edit']),
+            'keterangan'  => 'Tambah data potensi lahan baru #' . $data['id_lahan'] . ', luas ' . $request->luas_lahan . ' Ha',
+        ]);
+
         return response()->json(['success' => true, 'message' => 'Data berhasil disimpan']);
     }
 
@@ -286,6 +302,13 @@ class PotensiLahanController extends Controller {
 
         DB::table('lahan')->where('id_lahan', $id)->update($data);
 
+        AktivitasLog::catat('update', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id . ' - ' . ($request->alamat_lahan ?? ''),
+            'data_baru'   => array_except($data, ['edit_oleh','tgl_edit']),
+            'keterangan'  => 'Edit data potensi lahan #' . $id . ', luas jadi ' . $request->luas_lahan . ' Ha',
+        ]);
+
         return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
     }
 
@@ -293,6 +316,12 @@ class PotensiLahanController extends Controller {
         DB::table('lahan')->where('id_lahan', $id)->update([
             'valid_oleh' => auth()->user() ? auth()->user()->username : 'system',
             'tgl_valid'  => Carbon::now(),
+        ]);
+
+        AktivitasLog::catat('validasi', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id,
+            'keterangan'  => 'Validasi potensi lahan #' . $id,
         ]);
 
         return redirect()->back()->with('success', 'Data lahan berhasil divalidasi.');
@@ -304,14 +333,28 @@ class PotensiLahanController extends Controller {
             'tgl_valid'  => null,
         ]);
 
+        AktivitasLog::catat('unvalidasi', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id,
+            'keterangan'  => 'Batalkan validasi potensi lahan #' . $id,
+        ]);
+
         return redirect()->back()->with('success', 'Validasi lahan berhasil dibatalkan.');
     }
 
     public function destroy(Request $request, $id) {
+        $old = DB::table('lahan')->where('id_lahan', $id)->first();
         DB::table('lahan')->where('id_lahan', $id)->update([
             'deletestatus' => '0',
             'edit_oleh'    => auth()->user() ? auth()->user()->id : null,
             'tgl_edit'     => Carbon::now(),
+        ]);
+
+        AktivitasLog::catat('delete', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id . ($old ? ' - ' . ($old->alamat_lahan ?? '') : ''),
+            'data_lama'   => $old ? (array)$old : null,
+            'keterangan'  => 'Hapus potensi lahan #' . $id . ($old ? ', luas ' . $old->luas_lahan . ' Ha' : ''),
         ]);
 
         return redirect()->back()->with('success', 'Data lahan berhasil dihapus.');

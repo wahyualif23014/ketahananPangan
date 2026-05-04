@@ -320,6 +320,9 @@
                 if (this.modalMode === 'edit' && this.formData.id_jabatan) {
                     return "{{ url('/admin/data-utama/jabatan') }}/" + this.formData.id_jabatan;
                 }
+                if (this.modalMode === 'delete' && this.formData.id_jabatan) {
+                    return "{{ url('/admin/data-utama/jabatan') }}/" + this.formData.id_jabatan;
+                }
                 return "#";
             },
             

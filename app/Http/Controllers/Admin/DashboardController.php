@@ -231,25 +231,72 @@ class DashboardController extends Controller
                 return $item;
             });
 
-        // Pending Validation
-        $pendingValidation = DB::table('panen')
+        $pendingSearch = $request->input('pending_search', '');
+        $pendingYear = $request->input('pending_year', '');
+        $pendingMonth = $request->input('pending_month', '');
+        $pendingJenis = $request->input('pending_jenis', '');
+
+        // Pending Validation Potensi
+        $qPotensi = DB::table('lahan')
+            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction')
+            ->where('lahan.deletestatus', '1')
+            ->whereNull('lahan.valid_oleh');
+
+        if ($pendingSearch) {
+            $qPotensi->where(function($q) use ($pendingSearch) {
+                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+            });
+        }
+        if ($pendingYear) $qPotensi->whereYear('lahan.datetransaction', $pendingYear);
+        if ($pendingMonth) $qPotensi->whereMonth('lahan.datetransaction', $pendingMonth);
+        if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
+
+        $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
+
+        // Pending Validation Kelola
+        $qTanam = DB::table('tanam')
+            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
+            ->where('tanam.deletestatus', '1')
+            ->whereNull('tanam.valid_oleh');
+
+        if ($pendingSearch) {
+            $qTanam->where(function($q) use ($pendingSearch) {
+                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+            });
+        }
+        if ($pendingYear) $qTanam->whereYear('tanam.tgl_tanam', $pendingYear);
+        if ($pendingMonth) $qTanam->whereMonth('tanam.tgl_tanam', $pendingMonth);
+        if ($pendingJenis) $qTanam->where('lahan.id_jenis_lahan', $pendingJenis);
+
+        $qPanen = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('tingkat.nama_tingkat as satwil', DB::raw('COUNT(panen.id_panen) as pending_count'))
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
             ->where('panen.deletestatus', '1')
-            ->whereNull('panen.valid_oleh')
-            ->groupBy('tingkat.nama_tingkat')
-            ->orderByDesc('pending_count')
-            ->limit(4)
+            ->whereNull('panen.valid_oleh');
+
+        if ($pendingSearch) {
+            $qPanen->where(function($q) use ($pendingSearch) {
+                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+            });
+        }
+        if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);
+        if ($pendingMonth) $qPanen->whereMonth('panen.tgl_panen', $pendingMonth);
+        if ($pendingJenis) $qPanen->where('lahan.id_jenis_lahan', $pendingJenis);
+
+        $pendingKelola = $qTanam->union($qPanen)
+            ->orderBy('tanggal', 'desc')
+            ->limit(100)
             ->get();
-            
-        $totalPendingSatwil = DB::table('panen')
-            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->where('panen.deletestatus', '1')
-            ->whereNull('panen.valid_oleh')
-            ->distinct('tingkat.id_tingkat')
-            ->count('tingkat.id_tingkat');
 
         // Line Chart Data
         $yearlyPanenData = DB::table('panen')
@@ -313,8 +360,8 @@ class DashboardController extends Controller
             'harvestingAnalytics',
             'kwartalData',
             'mapData',
-            'pendingValidation',
-            'totalPendingSatwil',
+            'pendingPotensi',
+            'pendingKelola',
             'chartMonthlyData',
             'chartYearlyLabels',
             'chartYearlyData',
