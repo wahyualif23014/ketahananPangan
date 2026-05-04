@@ -523,7 +523,7 @@
                             </td>
                             <td class="px-4 py-4 w-72">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick='openViewModal(@json($item))'
+                                    <button onclick='openViewModal({!! json_encode($item) !!})'
                                         class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                         Detail
                                     </button>

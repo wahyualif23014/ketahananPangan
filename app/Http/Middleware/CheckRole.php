@@ -11,14 +11,26 @@ class CheckRole
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!$request->user()) {
-            return redirect('/login');
+            return redirect()->route('login');
         }
 
-        // Cek apakah kolom role user ada di dalam daftar roles yang diizinkan
         if (in_array($request->user()->role, $roles)) {
             return $next($request);
         }
 
-        abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+        // For AJAX/JSON requests, return 403 JSON
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        // For web requests: redirect to own dashboard (prevents route enumeration)
+        $home = match ($request->user()->role) {
+            'admin'    => route('admin.dashboard'),
+            'operator' => route('operator.dashboard'),
+            'view'     => route('view.dashboard'),
+            default    => route('login'),
+        };
+
+        return redirect($home)->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
     }
 }
