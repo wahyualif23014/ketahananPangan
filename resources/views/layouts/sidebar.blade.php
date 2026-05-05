@@ -68,12 +68,24 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
         </div>
 
         <h2 class="text-[13px] font-semibold text-[#E5E7EB] tracking-wide truncate max-w-full leading-tight text-center">
-            {{ Auth::user()->nama_anggota }}
+            {{ Auth::user()->username }}
         </h2>
+        <p class="text-[10px] text-[#9CA3AF] mt-0.5 truncate max-w-full text-center">
+            {{ Auth::user()->nama_anggota }}
+        </p>
 
         <div class="mt-2 {{ $roleData['bg'] }} border {{ $roleData['border'] }} px-2.5 py-0.5 rounded-full">
             <p class="text-[10px] uppercase font-bold {{ $roleData['text'] }} tracking-wider">
-                {{ $roleData['label'] }}
+                {{ Auth::user()->jabatan->nama_jabatan ?? $roleData['label'] }}
+            </p>
+        </div>
+
+        <div class="mt-2 text-center w-full px-2">
+            <p class="text-[9px] text-emerald-400 font-bold tracking-widest uppercase">
+                @php
+                    $lokasiTugas = \Illuminate\Support\Facades\DB::table('tingkat')->where('id_tingkat', Auth::user()->id_tugas)->value('nama_tingkat');
+                @endphp
+                {{ $lokasiTugas ?? 'POLDA JAWA TIMUR' }}
             </p>
         </div>
     </div>

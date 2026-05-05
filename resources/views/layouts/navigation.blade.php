@@ -44,14 +44,20 @@
              class="px-6 py-8 text-center border-b border-white/5 bg-gradient-to-b from-transparent to-white/[0.02] shrink-0">
             <div class="relative inline-block mb-3">
                 <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-white/10 flex items-center justify-center text-xl font-semibold text-white shadow-xl">
-                    {{ collect(explode(' ', Auth::user()->name))->map(fn($n) => $n[0])->take(2)->join('') }}
+                    {{ collect(explode(' ', Auth::user()->nama_anggota))->filter(fn($n) => !empty($n))->map(fn($n) => mb_substr($n, 0, 1))->take(2)->implode('') }}
                 </div>
                 <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full"></div>
             </div>
-            <h2 class="text-sm font-semibold text-white tracking-tight truncate">{{ Auth::user()->name }}</h2>
-            <p class="text-[10px] text-slate-500 mt-1 font-mono">NRP : {{ Auth::user()->nrp }}</p>
+            <h2 class="text-sm font-semibold text-white tracking-tight truncate">{{ Auth::user()->username }}</h2>
+            <p class="text-[10px] text-slate-500 mt-1 font-mono">{{ Auth::user()->nama_anggota }}</p>
+            <p class="text-[10px] text-emerald-400 mt-1 font-semibold">{{ Auth::user()->jabatan->nama_jabatan ?? 'Anggota' }}</p>
             <div class="mt-3 inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                <p class="text-[9px] text-emerald-400 font-bold tracking-widest uppercase">POLDA JAWA TIMUR</p>
+                <p class="text-[9px] text-emerald-400 font-bold tracking-widest uppercase">
+                    @php
+                        $lokasiTugas = \Illuminate\Support\Facades\DB::table('tingkat')->where('id_tingkat', Auth::user()->id_tugas)->value('nama_tingkat');
+                    @endphp
+                    {{ $lokasiTugas ?? 'POLDA JAWA TIMUR' }}
+                </p>
             </div>
         </div>
 

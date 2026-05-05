@@ -5,10 +5,11 @@
 @section('content')
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
-    
+
     .dashboard-container {
         font-family: 'Outfit', sans-serif;
     }
+
     .topo-pattern {
         background-color: transparent;
         background-image: radial-gradient(#10b981 1px, transparent 1px);
@@ -45,7 +46,7 @@
                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 <span class="text-[11px] font-black tracking-widest text-slate-600 uppercase ml-1">LIVE</span>
-                
+
                 <select name="quarter" onchange="this.form.submit()" class="bg-transparent border-none text-[11px] font-black tracking-widest text-slate-600 uppercase focus:ring-0 cursor-pointer pl-1 pr-2 py-1">
                     <option value="all" {{ $quarterFilter == 'all' ? 'selected' : '' }}>Semua Q</option>
                     <option value="1" {{ $quarterFilter == '1' ? 'selected' : '' }}>Q1</option>
@@ -58,7 +59,7 @@
                     @php $currentYear = date('Y'); @endphp
                     @for($y = 2024; $y <= $currentYear + 2; $y++)
                         <option value="{{ $y }}" {{ $yearFilter == $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endfor
+                        @endfor
                 </select>
             </form>
             <button onclick="window.location.reload()" title="Refresh Dashboard"
@@ -81,7 +82,9 @@
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex items-center justify-between mb-6">
                 <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-500/30">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                    </svg>
                 </div>
                 <button @click="open = !open" class="text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-emerald-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
@@ -99,13 +102,13 @@
                 <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no1 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
-                        @php $det = $potensiDetails[$id] ?? null; @endphp
-                        @if($det)
-                        <li class="flex flex-col border-l-4 border-emerald-300 pl-3">
-                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no1++ }}. {{ $nama }}</span>
-                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-emerald-600">{{ $det->total_lokasi }} lokasi</span></span>
-                        </li>
-                        @endif
+                    @php $det = $potensiDetails[$id] ?? null; @endphp
+                    @if($det)
+                    <li class="flex flex-col border-l-4 border-emerald-300 pl-3">
+                        <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no1++ }}. {{ $nama }}</span>
+                        <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-emerald-600">{{ $det->total_lokasi }} lokasi</span></span>
+                    </li>
+                    @endif
                     @endforeach
                 </ul>
             </div>
@@ -116,7 +119,9 @@
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex items-center justify-between mb-6">
                 <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-indigo-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-500/30">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                    </svg>
                 </div>
                 <button @click="open = !open" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-blue-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
@@ -134,13 +139,13 @@
                 <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no2 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
-                        @php $det = $tanamDetails[$id] ?? null; @endphp
-                        @if($det)
-                        <li class="flex flex-col border-l-4 border-blue-300 pl-3">
-                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no2++ }}. {{ $nama }}</span>
-                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-blue-600">{{ $det->total_lokasi }} lokasi</span></span>
-                        </li>
-                        @endif
+                    @php $det = $tanamDetails[$id] ?? null; @endphp
+                    @if($det)
+                    <li class="flex flex-col border-l-4 border-blue-300 pl-3">
+                        <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no2++ }}. {{ $nama }}</span>
+                        <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-blue-600">{{ $det->total_lokasi }} lokasi</span></span>
+                    </li>
+                    @endif
                     @endforeach
                 </ul>
             </div>
@@ -151,7 +156,9 @@
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex items-center justify-between mb-6">
                 <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-amber-500/30">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
                 </div>
                 <button @click="open = !open" class="text-xs text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-amber-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
@@ -169,13 +176,13 @@
                 <ul class="space-y-3 max-h-56 overflow-y-auto pr-2 custom-scrollbar">
                     @php $no3 = 1; @endphp
                     @foreach($jenisLahanList as $id => $nama)
-                        @php $det = $panenDetails[$id] ?? null; @endphp
-                        @if($det)
-                        <li class="flex flex-col border-l-4 border-amber-300 pl-3">
-                            <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no3++ }}. {{ $nama }}</span>
-                            <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-amber-600">{{ $det->total_lokasi }} lokasi</span></span>
-                        </li>
-                        @endif
+                    @php $det = $panenDetails[$id] ?? null; @endphp
+                    @if($det)
+                    <li class="flex flex-col border-l-4 border-amber-300 pl-3">
+                        <span class="text-[11px] md:text-xs font-bold text-slate-500 uppercase mb-0.5">{{ $no3++ }}. {{ $nama }}</span>
+                        <span class="text-sm md:text-base font-black text-slate-800">{{ number_format($det->total_luas, 2) }} Ha <span class="text-slate-400 font-medium mx-1">/</span> <span class="text-amber-600">{{ $det->total_lokasi }} lokasi</span></span>
+                    </li>
+                    @endif
                     @endforeach
                 </ul>
             </div>
@@ -186,7 +193,10 @@
             <div class="absolute -right-8 -top-8 w-40 h-40 bg-rose-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex items-center justify-between mb-6">
                 <div class="w-16 h-16 bg-gradient-to-br from-rose-400 to-red-500 text-white rounded-2xl flex items-center justify-center transform group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-rose-500/30">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
                 </div>
                 <button @click="open = !open" class="text-xs text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl uppercase tracking-widest font-black transition-colors border border-rose-100 shadow-sm">
                     <span x-show="!open">Lihat Rincian</span>
@@ -222,7 +232,9 @@
     ===================================================================== --}}
     <div class="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-1 mt-6">
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex items-center justify-between relative overflow-hidden">
-            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
+            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path>
+            </svg>
             <div class="relative z-10 flex items-center gap-4">
                 <div class="w-1.5 h-8 bg-blue-500 rounded-full"></div>
                 <div>
@@ -411,7 +423,9 @@
     ===================================================================== --}}
     <div class="bg-white/90 backdrop-blur-3xl rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-1">
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex items-center relative overflow-hidden">
-            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
+            <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path>
+            </svg>
             <div class="flex items-center gap-4 relative z-10 w-full">
                 <div class="w-1.5 h-8 bg-amber-500 rounded-full"></div>
                 <div>
@@ -423,15 +437,15 @@
         <div class="p-6">
             @php
             $qStyles = [
-                'blue' => ['bg' => 'bg-blue-50/50', 'border' => 'border-blue-100', 'hover' => 'hover:border-blue-300 hover:shadow-blue-500/10 hover:-translate-y-1', 'text' => 'text-blue-800', 'badge' => 'bg-blue-100 text-blue-700 border-blue-200', 'icon' => 'text-blue-500'],
-                'emerald' => ['bg' => 'bg-emerald-50/50', 'border' => 'border-emerald-100', 'hover' => 'hover:border-emerald-300 hover:shadow-emerald-500/10 hover:-translate-y-1', 'text' => 'text-emerald-800', 'badge' => 'bg-emerald-100 text-emerald-700 border-emerald-200', 'icon' => 'text-emerald-500'],
-                'amber' => ['bg' => 'bg-amber-50/50', 'border' => 'border-amber-100', 'hover' => 'hover:border-amber-300 hover:shadow-amber-500/10 hover:-translate-y-1', 'text' => 'text-amber-800', 'badge' => 'bg-amber-100 text-amber-700 border-amber-200', 'icon' => 'text-amber-500'],
-                'rose' => ['bg' => 'bg-rose-50/50', 'border' => 'border-rose-100', 'hover' => 'hover:border-rose-300 hover:shadow-rose-500/10 hover:-translate-y-1', 'text' => 'text-rose-800', 'badge' => 'bg-rose-100 text-rose-700 border-rose-200', 'icon' => 'text-rose-500'],
-                'indigo' => ['bg' => 'bg-indigo-50/50', 'border' => 'border-indigo-100', 'hover' => 'hover:border-indigo-300 hover:shadow-indigo-500/10 hover:-translate-y-1', 'text' => 'text-indigo-800', 'badge' => 'bg-indigo-100 text-indigo-700 border-indigo-200', 'icon' => 'text-indigo-500'],
-                'teal' => ['bg' => 'bg-teal-50/50', 'border' => 'border-teal-100', 'hover' => 'hover:border-teal-300 hover:shadow-teal-500/10 hover:-translate-y-1', 'text' => 'text-teal-800', 'badge' => 'bg-teal-100 text-teal-700 border-teal-200', 'icon' => 'text-teal-500'],
-                'sky' => ['bg' => 'bg-sky-50/50', 'border' => 'border-sky-100', 'hover' => 'hover:border-sky-300 hover:shadow-sky-500/10 hover:-translate-y-1', 'text' => 'text-sky-800', 'badge' => 'bg-sky-100 text-sky-700 border-sky-200', 'icon' => 'text-sky-500'],
-                'violet' => ['bg' => 'bg-violet-50/50', 'border' => 'border-violet-100', 'hover' => 'hover:border-violet-300 hover:shadow-violet-500/10 hover:-translate-y-1', 'text' => 'text-violet-800', 'badge' => 'bg-violet-100 text-violet-700 border-violet-200', 'icon' => 'text-violet-500'],
-                'slate' => ['bg' => 'bg-slate-50/50', 'border' => 'border-slate-200', 'hover' => 'hover:border-slate-400 hover:shadow-slate-500/10 hover:-translate-y-1', 'text' => 'text-slate-800', 'badge' => 'bg-slate-200 text-slate-700 border-slate-300', 'icon' => 'text-slate-500']
+            'blue' => ['bg' => 'bg-blue-50/50', 'border' => 'border-blue-100', 'hover' => 'hover:border-blue-300 hover:shadow-blue-500/10 hover:-translate-y-1', 'text' => 'text-blue-800', 'badge' => 'bg-blue-100 text-blue-700 border-blue-200', 'icon' => 'text-blue-500'],
+            'emerald' => ['bg' => 'bg-emerald-50/50', 'border' => 'border-emerald-100', 'hover' => 'hover:border-emerald-300 hover:shadow-emerald-500/10 hover:-translate-y-1', 'text' => 'text-emerald-800', 'badge' => 'bg-emerald-100 text-emerald-700 border-emerald-200', 'icon' => 'text-emerald-500'],
+            'amber' => ['bg' => 'bg-amber-50/50', 'border' => 'border-amber-100', 'hover' => 'hover:border-amber-300 hover:shadow-amber-500/10 hover:-translate-y-1', 'text' => 'text-amber-800', 'badge' => 'bg-amber-100 text-amber-700 border-amber-200', 'icon' => 'text-amber-500'],
+            'rose' => ['bg' => 'bg-rose-50/50', 'border' => 'border-rose-100', 'hover' => 'hover:border-rose-300 hover:shadow-rose-500/10 hover:-translate-y-1', 'text' => 'text-rose-800', 'badge' => 'bg-rose-100 text-rose-700 border-rose-200', 'icon' => 'text-rose-500'],
+            'indigo' => ['bg' => 'bg-indigo-50/50', 'border' => 'border-indigo-100', 'hover' => 'hover:border-indigo-300 hover:shadow-indigo-500/10 hover:-translate-y-1', 'text' => 'text-indigo-800', 'badge' => 'bg-indigo-100 text-indigo-700 border-indigo-200', 'icon' => 'text-indigo-500'],
+            'teal' => ['bg' => 'bg-teal-50/50', 'border' => 'border-teal-100', 'hover' => 'hover:border-teal-300 hover:shadow-teal-500/10 hover:-translate-y-1', 'text' => 'text-teal-800', 'badge' => 'bg-teal-100 text-teal-700 border-teal-200', 'icon' => 'text-teal-500'],
+            'sky' => ['bg' => 'bg-sky-50/50', 'border' => 'border-sky-100', 'hover' => 'hover:border-sky-300 hover:shadow-sky-500/10 hover:-translate-y-1', 'text' => 'text-sky-800', 'badge' => 'bg-sky-100 text-sky-700 border-sky-200', 'icon' => 'text-sky-500'],
+            'violet' => ['bg' => 'bg-violet-50/50', 'border' => 'border-violet-100', 'hover' => 'hover:border-violet-300 hover:shadow-violet-500/10 hover:-translate-y-1', 'text' => 'text-violet-800', 'badge' => 'bg-violet-100 text-violet-700 border-violet-200', 'icon' => 'text-violet-500'],
+            'slate' => ['bg' => 'bg-slate-50/50', 'border' => 'border-slate-200', 'hover' => 'hover:border-slate-400 hover:shadow-slate-500/10 hover:-translate-y-1', 'text' => 'text-slate-800', 'badge' => 'bg-slate-200 text-slate-700 border-slate-300', 'icon' => 'text-slate-500']
             ];
             $qLabels = ['Q1 Jan-Mar', 'Q2 Apr-Jun', 'Q3 Jul-Sep', 'Q4 Okt-Des'];
             @endphp
@@ -442,7 +456,9 @@
                     <div class="{{ $style['bg'] }} px-5 py-4 border-b {{ $style['border'] }} flex items-center gap-3 relative overflow-hidden">
                         <div class="absolute -right-4 -top-4 w-16 h-16 bg-white opacity-40 rounded-full group-hover:scale-150 transition-transform duration-500 pointer-events-none"></div>
                         <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm {{ $style['icon'] }} relative z-10 flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
                         </div>
                         <p class="text-[10px] font-black {{ $style['text'] }} uppercase tracking-widest leading-tight relative z-10">{{ $row['category'] }}</p>
                     </div>
@@ -485,7 +501,9 @@
 
         <div class="lg:col-span-8 bg-white/90 backdrop-blur-3xl rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20">
             <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex items-center relative overflow-hidden">
-                <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path></svg>
+                <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path>
+                </svg>
                 <div class="flex items-center gap-4 relative z-10 w-full">
                     <div class="w-1.5 h-8 bg-teal-500 rounded-full"></div>
                     <div>
@@ -496,7 +514,7 @@
             </div>
             <div class="relative">
                 <div id="map" class="h-[450px] w-full z-0"></div>
-                
+
                 {{-- Floating Overlays for premium look --}}
                 <div class="absolute bottom-6 left-6 z-[400] flex flex-col gap-3 pointer-events-none">
                     <div class="bg-white/95 backdrop-blur-xl px-5 py-3.5 rounded-2xl shadow-2xl border border-white/60 flex items-center gap-4">
@@ -510,7 +528,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 {{-- Top Right Legend Overlay --}}
                 <div class="absolute top-6 right-6 z-[400] pointer-events-none hidden md:block">
                     <div class="bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-slate-700/50 text-right">
@@ -587,17 +605,19 @@
                 <input type="hidden" name="quarter" value="{{ request('quarter', 'all') }}">
 
                 <div class="relative flex-1 min-w-[200px]">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
                     <input type="text" name="pending_search" value="{{ request('pending_search') }}" placeholder="Cari wilayah atau alamat..." class="w-full bg-slate-800/50 border border-slate-700 text-slate-200 text-xs rounded-xl pl-9 pr-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none placeholder-slate-500 transition-all">
                 </div>
-                
+
                 <select name="pending_jenis" class="bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all cursor-pointer min-w-[140px]">
                     <option value="">Semua Jenis Lahan</option>
                     @foreach($jenisLahanList as $id => $nama)
                     <option value="{{ $id }}" {{ request('pending_jenis') == $id ? 'selected' : '' }}>{{ $nama }}</option>
                     @endforeach
                 </select>
-                
+
                 <select name="pending_year" class="bg-slate-800/50 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition-all cursor-pointer w-24">
                     <option value="">Tahun</option>
                     @for($y = date('Y'); $y >= 2020; $y--)
@@ -617,7 +637,9 @@
                         Cari
                     </button>
                     <a href="?year={{ request('year', date('Y')) }}&quarter={{ request('quarter', 'all') }}#pending-section" class="p-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 rounded-xl transition-all group" title="Refresh">
-                        <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
                     </a>
                 </div>
             </form>
@@ -660,7 +682,9 @@
                 @else
                 <div class="py-8 text-center border border-white/[0.06] rounded-lg bg-white/[0.02]">
                     <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
                     </div>
                     <p class="text-sm font-medium text-slate-300">Semua Data Potensi Telah Divalidasi</p>
                 </div>
@@ -703,20 +727,22 @@
                 @else
                 <div class="py-8 text-center border border-white/[0.06] rounded-lg bg-white/[0.02]">
                     <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
                     </div>
                     <p class="text-sm font-medium text-slate-300">Semua Data Kelola Telah Divalidasi</p>
                 </div>
                 @endif
             </div>
-            
+
             <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-800">
                 <p class="text-xs text-slate-500">
-                    Total <span class="text-white font-black text-sm">{{ number_format($totalPendingPotensi + $totalPendingKelola) }}</span> data belum divalidasi
+                    Total <span class="text-white font-black text-sm">{{ number_format(count($pendingPotensi) + count($pendingKelola)) }}</span> data belum divalidasi
                     <span class="text-slate-600 mx-1">—</span>
-                    <span class="text-emerald-400">{{ number_format($totalPendingPotensi) }} Potensi</span>
+                    <span class="text-emerald-400">{{ number_format(count($pendingPotensi)) }} Potensi</span>
                     <span class="text-slate-600 mx-1">+</span>
-                    <span class="text-amber-400">{{ number_format($totalPendingKelola) }} Kelola</span>
+                    <span class="text-amber-400">{{ number_format(count($pendingKelola)) }} Kelola</span>
                 </p>
                 <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
                     Kirim Notifikasi
@@ -750,17 +776,32 @@
                 labels: ['Bulog', 'Pabrik Pakan', 'Tengkulak', 'Konsumsi Sendiri'],
                 datasets: [{
                     label: 'Total Serapan (Ton)',
-                    data: [
-                        {{ $serapanBulog }},
-                        {{ $serapanPabrik }},
-                        {{ $serapanTengkulak }},
-                        {{ $serapanKonsumsi }}
+                    data: [{
+                            {
+                                $serapanBulog
+                            }
+                        },
+                        {
+                            {
+                                $serapanPabrik
+                            }
+                        },
+                        {
+                            {
+                                $serapanTengkulak
+                            }
+                        },
+                        {
+                            {
+                                $serapanKonsumsi
+                            }
+                        }
                     ],
                     backgroundColor: [
-                        'rgba(59, 130, 246, 0.8)',   // blue
-                        'rgba(99, 102, 241, 0.8)',   // indigo
-                        'rgba(245, 158, 11, 0.8)',   // amber
-                        'rgba(16, 185, 129, 0.8)'    // emerald
+                        'rgba(59, 130, 246, 0.8)', // blue
+                        'rgba(99, 102, 241, 0.8)', // indigo
+                        'rgba(245, 158, 11, 0.8)', // amber
+                        'rgba(16, 185, 129, 0.8)' // emerald
                     ],
                     borderColor: [
                         'rgb(59, 130, 246)',
@@ -776,7 +817,9 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: false
+                    },
                     tooltip: {
                         backgroundColor: '#1e293b',
                         titleColor: '#94a3b8',
@@ -795,14 +838,24 @@
                             drawBorder: false
                         },
                         ticks: {
-                            font: { size: 11, weight: '500', family: 'Outfit' },
+                            font: {
+                                size: 11,
+                                weight: '500',
+                                family: 'Outfit'
+                            },
                             color: '#94a3b8'
                         }
                     },
                     x: {
-                        grid: { display: false },
+                        grid: {
+                            display: false
+                        },
                         ticks: {
-                            font: { size: 11, weight: '700', family: 'Outfit' },
+                            font: {
+                                size: 11,
+                                weight: '700',
+                                family: 'Outfit'
+                            },
                             color: '#64748b'
                         }
                     }
@@ -819,11 +872,17 @@
         const dynamicChartData = {
             monthly: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
-                data: {!! json_encode($chartMonthlyData) !!}
+                data: {
+                    !!json_encode($chartMonthlyData) !!
+                }
             },
             yearly: {
-                labels: {!! json_encode($chartYearlyLabels) !!},
-                data: {!! json_encode($chartYearlyData) !!}
+                labels: {
+                    !!json_encode($chartYearlyLabels) !!
+                },
+                data: {
+                    !!json_encode($chartYearlyData) !!
+                }
             }
         };
 
@@ -889,17 +948,17 @@
         // Chart Toggle Logic
         const btnMonthly = document.getElementById('btn-chart-monthly');
         const btnYearly = document.getElementById('btn-chart-yearly');
-        
+
         function updateProdChart(mode) {
             const activeClasses = ['bg-white', 'shadow-sm', 'text-emerald-600', 'border', 'border-emerald-100'];
             const inactiveClasses = ['text-slate-400', 'hover:text-slate-600', 'border-transparent'];
-            
+
             if (mode === 'monthly') {
                 btnMonthly.classList.add(...activeClasses);
                 btnMonthly.classList.remove(...inactiveClasses);
                 btnYearly.classList.remove(...activeClasses);
                 btnYearly.classList.add(...inactiveClasses);
-                
+
                 prodChart.data.labels = dynamicChartData.monthly.labels;
                 prodChart.data.datasets[0].data = dynamicChartData.monthly.data;
             } else {
@@ -907,16 +966,16 @@
                 btnYearly.classList.remove(...inactiveClasses);
                 btnMonthly.classList.remove(...activeClasses);
                 btnMonthly.classList.add(...inactiveClasses);
-                
+
                 prodChart.data.labels = dynamicChartData.yearly.labels;
                 prodChart.data.datasets[0].data = dynamicChartData.yearly.data;
             }
             prodChart.update();
         }
-        
+
         btnMonthly.addEventListener('click', () => updateProdChart('monthly'));
         btnYearly.addEventListener('click', () => updateProdChart('yearly'));
-        
+
         // initialize to monthly
         updateProdChart('monthly');
 
