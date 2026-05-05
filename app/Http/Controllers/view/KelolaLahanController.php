@@ -11,13 +11,31 @@ class KelolaLahanController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = ($user->role === 'admin');
+        $scope = $user->id_tugas;
+
+        $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($isAdmin, $scope) {
+            if (!$isAdmin && $scope && $scope != '0') {
+                return $query->where($column, 'LIKE', $scope . '%');
+            }
+            return $query;
+        };
+
+        $applyTingkatScope = function ($query) use ($isAdmin, $scope) {
+            if (!$isAdmin && $scope && $scope != '0') {
+                return $query->where('id_tingkat', 'LIKE', $scope . '%');
+            }
+            return $query;
+        };
+
         // 1. Fetch Filters Data (Dropdowns)
-        $polresList = DB::table('tingkat')
+        $polresList = $applyTingkatScope(DB::table('tingkat'))
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
             ->orderBy('id_tingkat')
             ->get();
 
-        $polsekList = DB::table('tingkat')
+        $polsekList = $applyTingkatScope(DB::table('tingkat'))
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
             ->orderBy('id_tingkat')
             ->get();
@@ -39,7 +57,7 @@ class KelolaLahanController extends Controller
         ];
 
         // 3. Build Base Data Query (Applying Filters)
-        $dataQuery = DB::table('lahan')
+        $dataQuery = $applyScope(DB::table('lahan'))
             ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->leftJoin('wilayah', 'lahan.id_wilayah', '=', 'wilayah.id_wilayah')
             ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')
@@ -123,7 +141,7 @@ class KelolaLahanController extends Controller
         }
 
         // 4. Hierarchical Pagination: Paginate Polres (Resor)
-        $resorBaseQuery = DB::table('tingkat')
+        $resorBaseQuery = $applyTingkatScope(DB::table('tingkat'))
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'");
         
         // If filters are active, limit Polres to those present in the filtered data
@@ -337,7 +355,7 @@ class KelolaLahanController extends Controller
         $wilayahMap = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
         $search     = $request->input('search', '');
 
-        $lahanQuery = DB::table('lahan')
+        $lahanQuery = $applyScope(DB::table('lahan'), 'id_tingkat')
             ->where('deletestatus', '!=', '0')
             ->orderBy('id_wilayah');
 

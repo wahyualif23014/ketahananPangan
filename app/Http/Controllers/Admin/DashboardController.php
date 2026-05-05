@@ -33,10 +33,10 @@ class DashboardController extends Controller
 
         // 1. KPI Summary
         $potensiTotal = DB::table('lahan')->where('deletestatus', '1')->sum('luas_lahan');
-        
+
         $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereYear('tgl_tanam', $yearFilter);
         $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereYear('tgl_panen', $yearFilter);
-        
+
         if ($quarterFilter != 'all') {
             $tanamQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
             $panenQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
@@ -44,7 +44,7 @@ class DashboardController extends Controller
 
         $tanamTotal = $tanamQuery->sum('luas_tanam');
         $panenTotal = $panenQuery->sum('luas_panen');
-        
+
         $totalTitikLahan = DB::table('lahan')->where('deletestatus', '1')->count();
         $totalPolsek = DB::table('lahan')->where('deletestatus', '1')->distinct('id_tingkat')->count('id_tingkat');
         $polsekAktif = $totalPolsek; // For doughnut chart
@@ -65,7 +65,7 @@ class DashboardController extends Controller
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
             ->where('tanam.deletestatus', '1')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
-            
+
         if ($quarterFilter != 'all') {
             $tanamDetailsQuery->whereRaw('QUARTER(tanam.tgl_tanam) = ?', [$quarterFilter]);
         }
@@ -76,7 +76,7 @@ class DashboardController extends Controller
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
             ->where('panen.deletestatus', '1')
             ->whereYear('panen.tgl_panen', $yearFilter);
-            
+
         if ($quarterFilter != 'all') {
             $panenDetailsQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
         }
@@ -100,7 +100,7 @@ class DashboardController extends Controller
             ->select('status_panen', DB::raw('SUM(luas_panen) as val'))
             ->where('deletestatus', '1')
             ->whereYear('tgl_panen', $yearFilter);
-            
+
         if ($quarterFilter != 'all') {
             $harvestCardsData->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
         }
@@ -244,10 +244,10 @@ class DashboardController extends Controller
             ->whereNull('lahan.valid_oleh');
 
         if ($pendingSearch) {
-            $qPotensi->where(function($q) use ($pendingSearch) {
+            $qPotensi->where(function ($q) use ($pendingSearch) {
                 $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
             });
         }
         if ($pendingYear) $qPotensi->whereYear('lahan.datetransaction', $pendingYear);
@@ -267,10 +267,10 @@ class DashboardController extends Controller
             ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
 
         if ($pendingSearch) {
-            $qTanam->where(function($q) use ($pendingSearch) {
+            $qTanam->where(function ($q) use ($pendingSearch) {
                 $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
             });
         }
         if ($pendingYear) $qTanam->whereYear('tanam.tgl_tanam', $pendingYear);
@@ -285,10 +285,10 @@ class DashboardController extends Controller
             ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
 
         if ($pendingSearch) {
-            $qPanen->where(function($q) use ($pendingSearch) {
+            $qPanen->where(function ($q) use ($pendingSearch) {
                 $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                  ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                  ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
             });
         }
         if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);

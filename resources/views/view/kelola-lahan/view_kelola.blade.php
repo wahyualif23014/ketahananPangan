@@ -811,6 +811,7 @@
 
                 url.searchParams.delete('page');
                 window.location.href = url.toString();
+<<<<<<< HEAD
             },
 
             async openValidasi(lahan) {
@@ -912,12 +913,15 @@
                 } catch (error) {
                     alert('Terjadi kesalahan koneksi: ' + error.message);
                 }
+=======
+>>>>>>> 94d0d72549f037d352e36f386d22f01bc882d3b5
             }
         };
     }
 </script>
 </div>
 
+<<<<<<< HEAD
 <!-- MODAL PROSES PANEN -->
 <div x-show="modalPanen" 
      class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
@@ -1073,4 +1077,6 @@
 </div>
 </div>
 
+=======
+>>>>>>> 94d0d72549f037d352e36f386d22f01bc882d3b5
 @endsection

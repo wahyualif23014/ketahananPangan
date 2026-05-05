@@ -32,8 +32,26 @@ class AnggotaController extends Controller
 
         $personels = $query->paginate(250)->appends(['search' => $search]);
         $jabatans = Jabatan::all();
+        $tingkatList = DB::table('tingkat')->orderBy('id_tingkat')->get(['id_tingkat', 'nama_tingkat']);
+        $tingkatMap = $tingkatList->keyBy('id_tingkat');
+        foreach ($tingkatList as $t) {
+            $parts = explode('.', $t->id_tingkat);
+            if (count($parts) == 3) {
+                $parentId = $parts[0] . '.' . $parts[1];
+                if (isset($tingkatMap[$parentId])) {
+                    $t->nama_lengkap = $tingkatMap[$parentId]->nama_tingkat . ' - ' . $t->nama_tingkat;
+                } else {
+                    $t->nama_lengkap = $t->nama_tingkat;
+                }
+            } else {
+                $t->nama_lengkap = $t->nama_tingkat;
+            }
+        }
 
-        return view('admin.anggota.index', compact('personels', 'jabatans', 'search'));
+        $nextId = Anggota::max('id_anggota') + 1;
+        $existingIds = Anggota::pluck('id_anggota')->toArray();
+
+        return view('admin.anggota.index', compact('personels', 'jabatans', 'search', 'tingkatList', 'nextId', 'existingIds'));
     }
 
     public function store(Request $request)

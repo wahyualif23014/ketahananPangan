@@ -1,0 +1,27 @@
+# Exclude heavy dirs that shouldn't be sent to Docker build context
+node_modules
+vendor
+.git
+.vscode
+.idea
+
+# Laravel cache/generated files (will be generated inside container)
+bootstrap/cache/*.php
+storage/logs/*.log
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+
+# Docker files themselves
+.env
+.env.docker
+.env.*.local
+docker-compose*.yml
+
+# Dev/test files
+*.sql
+*.xlsx
+phpunit.xml
+tests/
+npm-debug.log
+yarn-error.log

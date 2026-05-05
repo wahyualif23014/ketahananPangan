@@ -11,14 +11,20 @@ class CheckRole
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!$request->user()) {
-            return redirect('/login');
+            return redirect()->route('login');
         }
 
-        // Cek apakah kolom role user ada di dalam daftar roles yang diizinkan
-        if (in_array($request->user()->role, $roles)) {
+        // Allow admin to bypass role check or if their role is in the allowed list
+        if ($request->user()->role === 'admin' || in_array($request->user()->role, $roles)) {
             return $next($request);
         }
 
-        abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+        // For AJAX/JSON requests, return 403 JSON
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        // For web requests: Throw 403 Forbidden instead of redirecting
+        abort(403, 'Anda tidak memiliki akses ke halaman tersebut.');
     }
 }

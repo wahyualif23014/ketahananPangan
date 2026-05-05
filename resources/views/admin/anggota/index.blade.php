@@ -443,8 +443,13 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">ID Wilayah Tugas</label>
-                                    <input type="text" name="id_tugas" x-model="formData.id_tugas" placeholder="Misal: 11.01" 
+                                    <input type="text" list="wilayah_tugas_list" name="id_tugas" x-model="formData.id_tugas" placeholder="Ketik nama wilayah (misal: jombang)..." autocomplete="off"
                                         class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    <datalist id="wilayah_tugas_list">
+                                        @foreach($tingkatList as $tingkat)
+                                            <option value="{{ $tingkat->id_tingkat }}">{{ $tingkat->id_tingkat }} - {{ $tingkat->nama_lengkap }}</option>
+                                        @endforeach
+                                    </datalist>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">No. Telepon / WA</label>
@@ -507,10 +512,11 @@
 <script>
     function personelApp() {
         return {
+            existingIds: @json($existingIds),
             isModalOpen: {{ $errors->any() ? 'true' : 'false' }},
             modalMode: {!! $errors->any() ? "'add'" : 'null' !!},
             formData: {
-                id_anggota: '{{ old('id_anggota') }}',
+                id_anggota: '{{ old('id_anggota', $errors->any() ? '' : $nextId) }}',
                 nama_anggota: '{!! addslashes(old('nama_anggota')) !!}',
                 username: '{!! addslashes(old('username')) !!}',
                 id_jabatan: '{{ old('id_jabatan') }}',
@@ -523,7 +529,7 @@
                 this.modalMode = mode;
                 this.isModalOpen = true;
                 if (mode === 'add') {
-                    this.formData = { id_anggota: '', nama_anggota: '', username: '', id_jabatan: '', role: 'view', id_tugas: '', no_telp_anggota: '' };
+                    this.formData = { id_anggota: '{{ $nextId }}', nama_anggota: '', username: '', id_jabatan: '', role: 'view', id_tugas: '', no_telp_anggota: '' };
                 } else if (data) {
                     this.formData = {
                         id_anggota: data.id_anggota,
@@ -578,6 +584,11 @@
             },
 
             submitForm(form) {
+                if (this.modalMode === 'add' && this.existingIds.includes(parseInt(this.formData.id_anggota))) {
+                    alert('Peringatan: ID Anggota ' + this.formData.id_anggota + ' sudah digunakan oleh personel lain! Silakan gunakan ID yang berbeda (contoh saran: {{ $nextId }}).');
+                    return;
+                }
+
                 const targetAction = this.getFormAction();
                 const targetMethod = this.getFormMethod();
 

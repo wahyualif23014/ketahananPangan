@@ -10,27 +10,32 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class PotensiLahanController extends Controller {
-    public function index(Request $request) {
+class PotensiLahanController extends Controller
+{
+    public function index(Request $request)
+    {
         $data = $this->getIndexData($request);
         return view('admin.kelola-lahan.potensi.index', $data);
     }
 
-    public function indexOperator(Request $request) {
+    public function indexOperator(Request $request)
+    {
         $data = $this->getIndexData($request);
         return view('operator.kelola-lahan.operator_potensi.operator_kelola_index', $data);
     }
 
-    public function indexView(Request $request) {
+    public function indexView(Request $request)
+    {
         $data = $this->getIndexData($request);
         return view('view.kelola-lahan.view_potensi.view_kelola_index', $data);
     }
 
-    private function getIndexData(Request $request) {
+    private function getIndexData(Request $request)
+    {
         // ===========================
         // DATA STATISTIK (di blade)
         // ===========================
-        $summary = [ 'total_ha' => '0' ];
+        $summary = ['total_ha' => '0'];
         $cats    = [];
 
         // ===========================
@@ -58,14 +63,14 @@ class PotensiLahanController extends Controller {
             ->orderBy('id_wilayah');
 
         if ($search) {
-            $lahanQuery->where(function($q) use ($search, $wilayahMap) {
+            $lahanQuery->where(function ($q) use ($search, $wilayahMap) {
                 $q->where('id_lahan', $search)
-                  ->orWhere('alamat_lahan', 'like', "%{$search}%")
-                  ->orWhere('cp_polisi', 'like', "%{$search}%")
-                  ->orWhere('cp_lahan', 'like', "%{$search}%")
-                  ->orWhere('poktan', 'like', "%{$search}%")
-                  ->orWhere('id_wilayah', 'like', "%{$search}%");
-                  
+                    ->orWhere('alamat_lahan', 'like', "%{$search}%")
+                    ->orWhere('cp_polisi', 'like', "%{$search}%")
+                    ->orWhere('cp_lahan', 'like', "%{$search}%")
+                    ->orWhere('poktan', 'like', "%{$search}%")
+                    ->orWhere('id_wilayah', 'like', "%{$search}%");
+
                 foreach ($wilayahMap as $wId => $wNama) {
                     if (stripos($wNama, $search) !== false) {
                         $q->orWhere('id_wilayah', 'like', "{$wId}%");
@@ -73,7 +78,7 @@ class PotensiLahanController extends Controller {
                 }
             });
         }
-        
+
         if ($resorFilter) {
             $lahanQuery->where('id_tingkat', 'like', $resorFilter . '%');
         }
@@ -198,14 +203,20 @@ class PotensiLahanController extends Controller {
         ];
 
         $komoditiList = DB::table('komoditi')->where('deletestatus', '!=', '0')->get();
-        
+
         $wilayahSemua = DB::table('wilayah')->get();
         // Format Kabupaten: 35.XX (1 dot)
-        $kabupatenList = $wilayahSemua->filter(function($w) { return substr_count($w->id_wilayah, '.') == 1; })->values();
+        $kabupatenList = $wilayahSemua->filter(function ($w) {
+            return substr_count($w->id_wilayah, '.') == 1;
+        })->values();
         // Format Kecamatan: 35.XX.XX (2 dots)
-        $kecamatanList = $wilayahSemua->filter(function($w) { return substr_count($w->id_wilayah, '.') == 2; })->values();
+        $kecamatanList = $wilayahSemua->filter(function ($w) {
+            return substr_count($w->id_wilayah, '.') == 2;
+        })->values();
         // Format Desa: 35.XX.XX.XXXX (3 dots)
-        $desaList = $wilayahSemua->filter(function($w) { return substr_count($w->id_wilayah, '.') == 3; })->values();
+        $desaList = $wilayahSemua->filter(function ($w) {
+            return substr_count($w->id_wilayah, '.') == 3;
+        })->values();
 
         $anggotaList = DB::table('anggota')
             ->where('deletestatus', '!=', '0')
@@ -225,7 +236,8 @@ class PotensiLahanController extends Controller {
         return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'filters', 'allLahanData');
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
             'id_wilayah'        => $request->id_desa,
@@ -263,14 +275,15 @@ class PotensiLahanController extends Controller {
         AktivitasLog::catat('create', 'potensi_lahan', [
             'record_id'   => $data['id_lahan'],
             'label_modul' => 'Lahan #' . $data['id_lahan'] . ' - ' . ($request->alamat_lahan ?? ''),
-            'data_baru'   => Arr::except($data, ['edit_oleh','tgl_edit']),
+            'data_baru'   => Arr::except($data, ['edit_oleh', 'tgl_edit']),
             'keterangan'  => 'Tambah data potensi lahan baru #' . $data['id_lahan'] . ', luas ' . $request->luas_lahan . ' Ha',
         ]);
 
         return response()->json(['success' => true, 'message' => 'Data berhasil disimpan']);
     }
 
-    public function update(Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
             'id_wilayah'        => $request->id_desa,
@@ -305,7 +318,7 @@ class PotensiLahanController extends Controller {
         AktivitasLog::catat('update', 'potensi_lahan', [
             'record_id'   => $id,
             'label_modul' => 'Lahan #' . $id . ' - ' . ($request->alamat_lahan ?? ''),
-            'data_baru'   => array_except($data, ['edit_oleh','tgl_edit']),
+            'data_baru'   => array_except($data, ['edit_oleh', 'tgl_edit']),
             'keterangan'  => 'Edit data potensi lahan #' . $id . ', luas jadi ' . $request->luas_lahan . ' Ha',
         ]);
 
@@ -352,7 +365,8 @@ class PotensiLahanController extends Controller {
         return redirect()->back()->with('success', 'Validasi lahan berhasil dibatalkan.');
     }
 
-    public function destroy(Request $request, $id) {
+    public function destroy(Request $request, $id)
+    {
         $old = DB::table('lahan')->where('id_lahan', $id)->first();
         DB::table('lahan')->where('id_lahan', $id)->update([
             'deletestatus' => '0',
