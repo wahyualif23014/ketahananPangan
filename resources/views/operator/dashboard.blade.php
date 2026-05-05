@@ -711,7 +711,13 @@
             </div>
             
             <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-800">
-                <p class="text-xs text-slate-500">Total <span class="text-slate-300 font-medium">{{ count($pendingPotensi) + count($pendingKelola) }} data</span> memerlukan tindakan segera</p>
+                <p class="text-xs text-slate-500">
+                    Total <span class="text-white font-black text-sm">{{ number_format($totalPendingPotensi + $totalPendingKelola) }}</span> data belum divalidasi
+                    <span class="text-slate-600 mx-1">—</span>
+                    <span class="text-emerald-400">{{ number_format($totalPendingPotensi) }} Potensi</span>
+                    <span class="text-slate-600 mx-1">+</span>
+                    <span class="text-amber-400">{{ number_format($totalPendingKelola) }} Kelola</span>
+                </p>
                 <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
                     Kirim Notifikasi
                 </button>

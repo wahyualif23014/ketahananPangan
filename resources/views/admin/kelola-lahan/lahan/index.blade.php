@@ -69,8 +69,8 @@
             <p class="mt-3 text-sm text-slate-500 font-medium max-w-lg">Monitoring statistik produksi, tanam, dan panen lahan di seluruh wilayah operasional.</p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-            <div class="relative group hidden sm:block">
+        <div class="flex flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+            <div class="relative group flex-1">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -82,7 +82,7 @@
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none uppercase shadow-sm">
             </div>
             <button onclick="window.location.reload()" title="Refresh Data"
-                class="p-3.5 bg-slate-900 text-emerald-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
+                class="p-3.5 bg-slate-900 text-emerald-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700 flex-shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
@@ -114,9 +114,11 @@
                             class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer"
                             :disabled="!selectedResor">
                             <option value="">SEMUA SEKTOR</option>
-                            <template x-for="p in filteredPolseks" :key="p.id_tingkat">
-                                <option :value="p.id_tingkat" x-text="p.id_tingkat + ' - ' + p.nama_tingkat"></option>
-                            </template>
+                            @foreach($polsekList as $p)
+                                @if(empty($filters['resor']) || str_starts_with($p->id_tingkat, $filters['resor'] . '.'))
+                                    <option value="{{ $p->id_tingkat }}">{{ $p->id_tingkat }} - {{ $p->nama_tingkat }}</option>
+                                @endif
+                            @endforeach
                         </select>
                         <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
@@ -160,47 +162,47 @@
             </div>
 
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-6 border-t border-slate-100">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-6">
-                    <div class="space-y-2">
+                <div class="flex flex-col md:flex-row md:items-center gap-6 w-full lg:w-auto">
+                    <div class="space-y-2 w-full md:w-auto">
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">PERIODE WAKTU</label>
-                        <div class="flex items-center h-12 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 w-fit">
+                        <div class="flex items-center h-12 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 w-full sm:w-fit">
                             <button type="button" @click="periodMode = 'semua'; submitFilters()"
                                 :class="periodMode === 'semua' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
-                                class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
+                                class="flex-1 sm:flex-none px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
                                 SEMUA
                             </button>
                             <button type="button" @click="periodMode = 'tanggal'"
                                 :class="periodMode === 'tanggal' ? 'bg-white shadow-md text-emerald-600 border border-emerald-100' : 'text-slate-400 hover:text-slate-600'"
-                                class="px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
+                                class="flex-1 sm:flex-none px-5 h-full text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300">
                                 TANGGAL
                             </button>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <div class="space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+                        <div class="space-y-2 w-full sm:w-auto">
                             <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">MULAI</label>
                             <input type="date" id="start_date" value="{{ $filters['start'] ?? '' }}"
                                 @change="submitFilters()"
                                 :disabled="periodMode === 'semua'"
                                 :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
-                                class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
+                                class="w-full sm:w-36 h-12 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
                         </div>
-                        <div class="pt-5 hidden sm:block text-slate-300 font-black text-[10px]">SAMPAI</div>
-                        <div class="space-y-2">
+                        <div class="hidden sm:block pt-5 text-slate-300 font-black text-[10px]">SAMPAI</div>
+                        <div class="space-y-2 w-full sm:w-auto">
                             <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] transition-opacity ml-1" :class="periodMode === 'semua' ? 'opacity-30' : ''">SELESAI</label>
                             <input type="date" id="end_date" value="{{ $filters['end'] ?? '' }}"
                                 @change="submitFilters()"
                                 :disabled="periodMode === 'semua'"
                                 :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
-                                class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
+                                class="w-full sm:w-36 h-12 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0">
                     <div class="h-10 w-px bg-slate-100 hidden lg:block mx-2"></div>
-                    <div class="space-y-2 flex-1 sm:flex-none">
+                    <div class="space-y-2 w-full sm:w-auto">
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KATEGORI PRODUKSI</label>
                         <select x-model="kategoriProduksi" @change="submitFilters()" class="w-full sm:w-48 h-12 text-[11px] font-black px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase tracking-widest cursor-pointer shadow-sm">
                             <option value="semua">SEMUA / POTENSI</option>
@@ -783,7 +785,6 @@
             selectedJenis: @json($filters['jenis'] ?? ''),
             selectedKomoditi: @json($filters['komoditi'] ?? ''),
             kategoriProduksi: @json($filters['kategori'] ?? 'semua'),
-            polseks: @json($polsekList),
             openResors: [],
             activeHistory: null,
 
@@ -1080,10 +1081,7 @@
                 return this.openResors.includes(id);
 },
 
-            get filteredPolseks() {
-                if (!this.selectedResor) return [];
-                return this.polseks.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
-            },
+
 
             submitFilters() {
                 const url = new URL(window.location.href);

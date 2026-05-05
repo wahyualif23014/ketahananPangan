@@ -140,11 +140,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
                 Route::get('/', [PotensiLahanController::class, 'indexView'])->name('index');
-                Route::post('/store', [PotensiLahanController::class, 'store'])->name('store');
-                Route::put('/validasi/{id}', [PotensiLahanController::class, 'validasi'])->name('validasi');
-                Route::put('/unvalidasi/{id}', [PotensiLahanController::class, 'unvalidasi'])->name('unvalidasi');
-                Route::put('/update/{id}', [PotensiLahanController::class, 'update'])->name('update');
-                Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
+                // Tidak ada route validasi untuk role view
             });
 
             Route::get('/', [KelolaLahanController::class, 'indexView'])->name('index');
@@ -154,6 +150,9 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/panen/{id}', [KelolaLahanController::class, 'updatePanen'])->name('panen.update');
             Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
             Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
+            // Validasi siklus produksi (hanya membaca data + memvalidasi, tidak mengubah data)
+            Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
+            Route::put('/lahan/{id}/validasi', [KelolaLahanController::class, 'validasiLahan'])->name('lahan.validasi');
         });
 
         Route::get('/rekapitulasi', [ViewRekapitulasi::class, 'index'])->name('rekapitulasi.index');

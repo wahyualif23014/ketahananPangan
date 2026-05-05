@@ -740,6 +740,30 @@
             activeHistory: null,
             lahanStages: @json($lahanStagesMap ?? new stdClass()),
 
+            // State modal
+            activeLahan: null,
+            activeProcessId: null,
+            isEditMode: false,
+            modalPanen: false,
+            modalSerapan: false,
+            modalValidasi: false,
+            validasiData: { tanam: [], panen: [], serapan: [] },
+            isLoadingValidasi: false,
+
+            formPanen: {
+                tgl_panen: '',
+                luas_panen: '',
+                total_panen: '',
+                status_panen: '1',
+                keterangan_panen: '',
+            },
+            formSerapan: {
+                tgl_distribusi: '',
+                total_distribusi: '',
+                distribusi_ke: '1',
+                keterangan_serapan: '',
+            },
+
             toggleHistory(id) {
                 this.activeHistory = this.activeHistory === id ? null : id;
             },
@@ -787,10 +811,60 @@
 
                 url.searchParams.delete('page');
                 window.location.href = url.toString();
-            }
-        };
-    }
-</script>
+            },
+
+            async openValidasi(lahan) {
+                this.activeLahan = lahan;
+                this.isLoadingValidasi = true;
+                this.modalValidasi = true;
+                this.validasiData = { tanam: [], panen: [], serapan: [] };
+                try {
+                    const resp = await fetch(`/view/kelola-lahan/lahan/${lahan.id_lahan}/validasi-data`, {
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                    });
+                    this.validasiData = await resp.json();
+                } catch(e) {
+                    alert('Gagal memuat data validasi: ' + e.message);
+                } finally {
+                    this.isLoadingValidasi = false;
+                }
+            },
+
+            async submitValidasi() {
+                if (!confirm('Yakin ingin memvalidasi semua data lahan ini? Setelah validasi, siklus produksi baru dapat dimulai.')) return;
+                try {
+                    const resp = await fetch(`/view/kelola-lahan/lahan/${this.activeLahan.id_lahan}/validasi`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const result = await resp.json();
+                    if (result.success) {
+                        // Reset stage ke 0 (Tanam) — siklus baru siap dimulai
+                        this.lahanStages[this.activeLahan.id_lahan] = 0;
+                        this.modalValidasi = false;
+                        alert('✅ Validasi berhasil! Siklus produksi baru dapat dimulai.');
+                        window.location.reload();
+                    } else {
+                        alert('Gagal: ' + (result.message || 'Terjadi kesalahan.'));
+                    }
+                } catch(e) {
+                    alert('Terjadi kesalahan koneksi: ' + e.message);
+                }
+            },
+
+            async submitPanen() {
+                try {
+                    const url = this.isEditMode ? `/view/kelola-lahan/panen/${this.activeProcessId}` : "{{ route('view.kelola-lahan.panen.store') }}";
+                    const method = this.isEditMode ? 'PUT' : 'POST';
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         },
                         body: JSON.stringify({
                             id_lahan: this.activeLahan.id_lahan,
@@ -838,53 +912,12 @@
                 } catch (error) {
                     alert('Terjadi kesalahan koneksi: ' + error.message);
                 }
-            },
-
-            toggleResor(id) {
-                if (this.openResors.includes(id)) {
-                    this.openResors = this.openResors.filter(i => i !== id);
-                } else {
-                    this.openResors.push(id);
-                }
-            },
-
-            isResorOpen(id) {
-                return this.openResors.includes(id);
-            },
-
-            get filteredPolseks() {
-                if (!this.selectedResor) return [];
-                return this.polseks.filter(p => p.id_tingkat.startsWith(this.selectedResor + '.'));
-            },
-
-            submitFilters() {
-                const url = new URL(window.location.href);
-                const params = {
-                    resor: this.selectedResor,
-                    sektor: this.selectedSektor,
-                    jenis: this.selectedJenis,
-                    komoditi: this.selectedKomoditi,
-                    kategori: this.kategoriProduksi,
-                    start_date: document.getElementById('start_date').value,
-                    end_date: document.getElementById('end_date').value,
-                    search: this.searchQuery
-                };
-
-                Object.keys(params).forEach(key => {
-                    if (params[key]) url.searchParams.set(key, params[key]);
-                    else url.searchParams.delete(key);
-                });
-
-                url.searchParams.delete('page');
-                window.location.href = url.toString();
             }
         };
     }
 </script>
 </div>
 
-<<<<<<< HEAD
-=======
 <!-- MODAL PROSES PANEN -->
 <div x-show="modalPanen" 
      class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
@@ -1040,5 +1073,4 @@
 </div>
 </div>
 
->>>>>>> 08b1e67c14f7b45e8d58d7ee0dc61474cc02bff3
 @endsection

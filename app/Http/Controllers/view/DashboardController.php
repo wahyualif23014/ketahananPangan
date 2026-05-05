@@ -208,7 +208,7 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
             ->where('tanam.deletestatus', '1')
-            ->whereNull('tanam.valid_oleh');
+            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
 
         if ($pendingSearch) {
             $qTanam->where(function($q) use ($pendingSearch) {
@@ -226,7 +226,7 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
             ->where('panen.deletestatus', '1')
-            ->whereNull('panen.valid_oleh');
+            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
 
         if ($pendingSearch) {
             $qPanen->where(function($q) use ($pendingSearch) {

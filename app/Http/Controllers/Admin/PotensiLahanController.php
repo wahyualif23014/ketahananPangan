@@ -313,6 +313,11 @@ class PotensiLahanController extends Controller {
     }
 
     public function validasi(Request $request, $id) {
+        // Hanya admin dan operator yang boleh memvalidasi
+        if (auth()->user() && auth()->user()->role === 'view') {
+            abort(403, 'Anda tidak memiliki izin untuk melakukan validasi.');
+        }
+
         DB::table('lahan')->where('id_lahan', $id)->update([
             'valid_oleh' => auth()->user() ? auth()->user()->username : 'system',
             'tgl_valid'  => Carbon::now(),
@@ -328,6 +333,11 @@ class PotensiLahanController extends Controller {
     }
 
     public function unvalidasi(Request $request, $id) {
+        // Hanya admin dan operator yang boleh membatalkan validasi
+        if (auth()->user() && auth()->user()->role === 'view') {
+            abort(403, 'Anda tidak memiliki izin untuk membatalkan validasi.');
+        }
+
         DB::table('lahan')->where('id_lahan', $id)->update([
             'valid_oleh' => null,
             'tgl_valid'  => null,

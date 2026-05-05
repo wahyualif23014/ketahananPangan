@@ -12,16 +12,12 @@ class KelolaLahanController extends Controller
 {
     private function getIndexData(Request $request)
     {
-        // 1. Fetch Filters Data (Dropdowns)
-        $polresList = DB::table('tingkat')
-            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
-            ->orderBy('id_tingkat')
-            ->get();
+        $polresQuery = DB::table('tingkat')->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'");
+        $polsekQuery = DB::table('tingkat')->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
 
-        $polsekList = DB::table('tingkat')
-            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-            ->orderBy('id_tingkat')
-            ->get();
+        // 1. Fetch Filters Data (Dropdowns)
+        $polresList = $polresQuery->orderBy('id_tingkat')->get();
+        $polsekList = $polsekQuery->orderBy('id_tingkat')->get();
 
         $komoditiList = Komoditi::orderBy('jenis_komoditi')
             ->orderBy('nama_komoditi')
@@ -46,7 +42,8 @@ class KelolaLahanController extends Controller
             ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')
             ->leftJoin('komoditi', 'lahan.id_komoditi', '=', 'komoditi.id_komoditi');
 
-        // Apply Common Filters
+
+
         if ($filters['sektor']) {
             $dataQuery->where('lahan.id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
@@ -65,45 +62,29 @@ class KelolaLahanController extends Controller
         $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
-        $dataQuery = DB::table('lahan')
-            ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->leftJoin('wilayah', 'lahan.id_wilayah', '=', 'wilayah.id_wilayah')
-            ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')
-            ->leftJoin('komoditi', 'lahan.id_komoditi', '=', 'komoditi.id_komoditi')
-            ->leftJoin($latestTanam, 'lahan.id_lahan', '=', 't.id_lahan')
+        $dataQuery->leftJoin($latestTanam, 'lahan.id_lahan', '=', 't.id_lahan')
             ->leftJoin($latestPanen, 't.id_tanam', '=', 'p.id_tanam')
             ->leftJoin($latestDistribusi, 't.id_tanam', '=', 'd.id_tanam');
 
         // Category-Specific Joins & Date Filters
-        if ($filters['kategori'] !== 'semua') {
-            $targetStage = $filters['kategori'] === 'tanam' ? 0 : ($filters['kategori'] === 'panen' ? 1 : 2);
-            $dataQuery->whereRaw("
-                CASE 
-                    WHEN t.id_tanam IS NULL THEN 0
-                    WHEN p.id_panen IS NULL THEN 1
-                    WHEN d.id_distribusi IS NULL THEN 2
-                    ELSE 0
-                END = ?
-            ", [$targetStage]);
+        if ($filters['kategori'] === 'tanam') {
+            $dataQuery->whereNotNull('t.id_tanam');
+            $dateField = 't.tgl_tanam';
+        } elseif ($filters['kategori'] === 'panen') {
+            $dataQuery->whereNotNull('p.id_panen');
+            $dateField = 'p.tgl_panen';
+        } elseif ($filters['kategori'] === 'serapan') {
+            $dataQuery->whereNotNull('d.id_distribusi');
+            $dateField = 'd.tgl_distribusi';
+        } else {
+            $dateField = DB::raw("COALESCE(d.tgl_distribusi, p.tgl_panen, t.tgl_tanam)");
         }
 
-        if ($filters['start'] || $filters['end']) {
-            // Apply date filter dynamically based on the current active stage's date
-            $dateCondition = "
-                CASE 
-                    WHEN t.id_tanam IS NULL THEN NULL
-                    WHEN p.id_panen IS NULL THEN t.tgl_tanam
-                    WHEN d.id_distribusi IS NULL THEN p.tgl_panen
-                    ELSE d.tgl_distribusi
-                END
-            ";
-            
-            if ($filters['start']) {
-                $dataQuery->whereRaw("$dateCondition >= ?", [$filters['start']]);
-            }
-            if ($filters['end']) {
-                $dataQuery->whereRaw("$dateCondition <= ?", [$filters['end']]);
-            }
+        if ($filters['start']) {
+            $dataQuery->where($dateField, '>=', $filters['start']);
+        }
+        if ($filters['end']) {
+            $dataQuery->where($dateField, '<=', $filters['end']);
         }
 
         if ($filters['search']) {
@@ -407,14 +388,6 @@ class KelolaLahanController extends Controller
 
         try {
             DB::transaction(function () use ($request) {
-                // Check if total luas_tanam exceeds lahan luas_lahan
-                $lahan = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
-                if ($lahan) {
-                    $totalTanam = DB::table('tanam')->where('id_lahan', $request->id_lahan)->sum('luas_tanam');
-                    if (($totalTanam + $request->luas_tanam) > $lahan->luas_lahan) {
-                        throw new \Exception('Total luas tanam (' . ($totalTanam + $request->luas_tanam) . ' Ha) melebihi potensi lahan (' . $lahan->luas_lahan . ' Ha).');
-                    }
-                }
 
                 $newId = DB::table('tanam')->max('id_tanam') + 1;
                 $idAnggota = auth()->id();
@@ -683,23 +656,42 @@ class KelolaLahanController extends Controller
 
     public function validasiLahan(Request $request, $id)
     {
+        // Hanya admin dan operator yang boleh memvalidasi
+        if (auth()->user() && auth()->user()->role === 'view') {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk melakukan validasi.'], 403);
+        }
+
         try {
             DB::transaction(function () use ($id) {
-                $username = auth()->user()->username ?? 'admin';
+                // tanam.valid_oleh & panen.valid_oleh adalah kolom INT → gunakan id_anggota
+                // distribusi.valid_oleh → gunakan username (VARCHAR)
+                $idAnggota = auth()->user() ? auth()->user()->id_anggota : null;
+                $username  = auth()->user() ? auth()->user()->username : 'admin';
                 $now = now();
 
-                DB::table('tanam')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
-                DB::table('panen')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
-                DB::table('distribusi')->where('id_lahan', $id)->whereNull('valid_oleh')->update([
-                    'valid_oleh' => $username,
-                    'tgl_valid' => $now,
-                ]);
+                DB::table('tanam')
+                    ->where('id_lahan', $id)
+                    ->where(function($q) { $q->whereNull('valid_oleh')->orWhere('valid_oleh', 0); })
+                    ->update([
+                        'valid_oleh' => $idAnggota,
+                        'tgl_valid'  => $now,
+                    ]);
+
+                DB::table('panen')
+                    ->where('id_lahan', $id)
+                    ->where(function($q) { $q->whereNull('valid_oleh')->orWhere('valid_oleh', 0); })
+                    ->update([
+                        'valid_oleh' => $idAnggota,
+                        'tgl_valid'  => $now,
+                    ]);
+
+                DB::table('distribusi')
+                    ->where('id_lahan', $id)
+                    ->whereNull('valid_oleh')
+                    ->update([
+                        'valid_oleh' => $username,
+                        'tgl_valid'  => $now,
+                    ]);
             });
             return response()->json(['success' => true, 'message' => 'Semua data lahan berhasil divalidasi']);
         } catch (\Exception $e) {

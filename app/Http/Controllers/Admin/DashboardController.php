@@ -254,6 +254,8 @@ class DashboardController extends Controller
         if ($pendingMonth) $qPotensi->whereMonth('lahan.datetransaction', $pendingMonth);
         if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
 
+        // Hitung total sesungguhnya tanpa limit (untuk footer dashboard)
+        $totalPendingPotensi = (clone $qPotensi)->count();
         $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
 
         // Pending Validation Kelola
@@ -262,7 +264,7 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
             ->where('tanam.deletestatus', '1')
-            ->whereNull('tanam.valid_oleh');
+            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
 
         if ($pendingSearch) {
             $qTanam->where(function($q) use ($pendingSearch) {
@@ -280,7 +282,7 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
             ->where('panen.deletestatus', '1')
-            ->whereNull('panen.valid_oleh');
+            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
 
         if ($pendingSearch) {
             $qPanen->where(function($q) use ($pendingSearch) {
@@ -292,6 +294,9 @@ class DashboardController extends Controller
         if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);
         if ($pendingMonth) $qPanen->whereMonth('panen.tgl_panen', $pendingMonth);
         if ($pendingJenis) $qPanen->where('lahan.id_jenis_lahan', $pendingJenis);
+
+        // Total count kelola (tanam + panen) tanpa limit
+        $totalPendingKelola = (clone $qTanam)->count() + (clone $qPanen)->count();
 
         $pendingKelola = $qTanam->union($qPanen)
             ->orderBy('tanggal', 'desc')
@@ -362,6 +367,8 @@ class DashboardController extends Controller
             'mapData',
             'pendingPotensi',
             'pendingKelola',
+            'totalPendingPotensi',
+            'totalPendingKelola',
             'chartMonthlyData',
             'chartYearlyLabels',
             'chartYearlyData',
