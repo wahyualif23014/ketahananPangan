@@ -273,6 +273,7 @@ class DashboardController extends Controller
         if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
 
         $qPotensi = $applyScope($qPotensi, 'lahan.id_tingkat');
+        $totalPendingPotensi = (clone $qPotensi)->count();
         $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
 
         // Pending Validation Kelola
@@ -281,12 +282,8 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
             ->where('tanam.deletestatus', '1')
-<<<<<<< HEAD
-            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
-=======
             ->where('lahan.deletestatus', '!=', '0')
-            ->whereNull('tanam.valid_oleh');
->>>>>>> 36e34ce (operator view)
+            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', '0'); });
 
         if ($pendingSearch) {
             $qTanam->where(function($q) use ($pendingSearch) {
@@ -306,12 +303,8 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
             ->where('panen.deletestatus', '1')
-<<<<<<< HEAD
-            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
-=======
             ->where('lahan.deletestatus', '!=', '0')
-            ->whereNull('panen.valid_oleh');
->>>>>>> 36e34ce (operator view)
+            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', '0'); });
 
         if ($pendingSearch) {
             $qPanen->where(function($q) use ($pendingSearch) {
@@ -326,6 +319,7 @@ class DashboardController extends Controller
         
         $qPanen = $applyScope($qPanen, 'lahan.id_tingkat');
 
+        $totalPendingKelola = (clone $qTanam)->count() + (clone $qPanen)->count();
         $pendingKelola = $qTanam->union($qPanen)
             ->orderBy('tanggal', 'desc')
             ->limit(100)
@@ -433,7 +427,9 @@ class DashboardController extends Controller
             'polsekAktif',
             'chartYears',
             'totalPolsekInScope',
-            'totalLahanAll'
+            'totalLahanAll',
+            'totalPendingPotensi',
+            'totalPendingKelola'
         ));
     }
 }

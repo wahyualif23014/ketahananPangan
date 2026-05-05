@@ -371,8 +371,13 @@ class PotensiLahanController extends Controller
 
     public function validasi($id)
     {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
+
         DB::table('lahan')->where('id_lahan', $id)->update([
-            'valid_oleh' => auth()->user()->username ?? auth()->id(),
+            'valid_oleh' => $user->username ?? auth()->id(),
             'tgl_valid'  => Carbon::now(),
             'status_lahan' => '1',
         ]);
@@ -381,6 +386,11 @@ class PotensiLahanController extends Controller
 
     public function unvalidasi($id)
     {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return back()->with('error', 'Akses ditolak. Pembatalan validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
+
         DB::table('lahan')->where('id_lahan', $id)->update([
             'valid_oleh'   => null,
             'tgl_valid'    => null,

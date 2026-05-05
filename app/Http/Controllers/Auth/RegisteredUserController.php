@@ -35,6 +35,10 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        // Ambil ID terakhir dari id_pengguna untuk increment manual
+        $lastUser = DB::table('anggota')->max('id_pengguna');
+        $newIdPengguna = $lastUser ? $lastUser + 1 : 1;
+
         $user = User::create([
             'id_anggota' => $request->id_anggota,
             'id_jabatan' => $request->id_jabatan,
