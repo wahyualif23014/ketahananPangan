@@ -136,24 +136,14 @@ Route::middleware(['auth'])->group(function () {
 
     // 3. Group Khusus View
     Route::middleware(['checkrole:view'])->prefix('view')->name('view.')->group(function () {
-        Route::get('/dashboard', [AdminDashboard::class, 'indexView'])->name('dashboard');
+        Route::get('/dashboard', [ViewDashboard::class, 'index'])->name('dashboard');
 
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
-                Route::get('/', [PotensiLahanController::class, 'indexView'])->name('index');
-                // Tidak ada route validasi untuk role view
+                Route::get('/', [ViewKelolaLahan::class, 'potensiIndex'])->name('index');
             });
 
-            Route::get('/', [KelolaLahanController::class, 'indexView'])->name('index');
-            Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
-            Route::put('/tanam/{id}', [KelolaLahanController::class, 'updateTanam'])->name('tanam.update');
-            Route::post('/panen', [KelolaLahanController::class, 'storePanen'])->name('panen.store');
-            Route::put('/panen/{id}', [KelolaLahanController::class, 'updatePanen'])->name('panen.update');
-            Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
-            Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
-            // Validasi siklus produksi (hanya membaca data + memvalidasi, tidak mengubah data)
-            Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
-            Route::put('/lahan/{id}/validasi', [KelolaLahanController::class, 'validasiLahan'])->name('lahan.validasi');
+            Route::get('/', [ViewKelolaLahan::class, 'index'])->name('index');
         });
 
         Route::get('/rekapitulasi', [ViewRekapitulasi::class, 'index'])->name('rekapitulasi.index');

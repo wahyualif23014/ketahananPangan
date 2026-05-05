@@ -1,10 +1,5 @@
 @extends('layouts.app')
 
-@php
-    $routeName = request()->route()->getName();
-    $routePrefix = explode('.', $routeName)[0] ?? 'admin';
-@endphp
-
 @section('header', 'Laporan Rekapitulasi Produksi')
 
 @section('content')
@@ -27,7 +22,7 @@
         </div>
 
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-            <form action="{{ route($routePrefix . '.rekapitulasi.index') }}" method="GET" id="form-filter">
+            <form action="{{ route('view.rekapitulasi.index') }}" method="GET" id="form-filter">
                 <div class="relative group w-full sm:w-72">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +51,7 @@
                         </path>
                     </svg>
                 </button>
-                <button type="submit" form="form-filter" formaction="{{ route($routePrefix . '.rekapitulasi.export') }}"
+                <button type="submit" form="form-filter" formaction="{{ route('view.rekapitulasi.export') }}"
                     class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-emerald-200">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -164,7 +159,7 @@
                     async fetchPolsek(polresId) {
                         this.polsekLoading = true;
                         try {
-                            const res = await fetch(`{{ route($routePrefix . '.rekapitulasi.polsek') }}?polres=${encodeURIComponent(polresId)}`, {
+                            const res = await fetch(`{{ route('view.rekapitulasi.polsek') }}?polres=${encodeURIComponent(polresId)}`, {
                                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                             });
                             this.polsekItems = await res.json();

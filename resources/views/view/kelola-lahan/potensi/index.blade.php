@@ -129,8 +129,15 @@
     9 => 'LAHAN LAINNYA'
     ];
 
-    // LOGIKA PENYIAPAN DATA STATISTIK
-    $allLahanData = DB::table('lahan')->where('deletestatus', '!=', '0')->get();
+    // ── Scope berdasarkan id_tugas user yang login ────────────────────────
+    $userScope = auth()->user()->id_tugas ?? '0';
+
+    // LOGIKA PENYIAPAN DATA STATISTIK (scoped ke jurisdiksi user)
+    $lahanStatQuery = DB::table('lahan')->where('deletestatus', '!=', '0');
+    if ($userScope && $userScope !== '0') {
+        $lahanStatQuery->where('id_tingkat', 'LIKE', $userScope . '%');
+    }
+    $allLahanData = $lahanStatQuery->get();
 
     $totalLuasLahan = 0;
     $totalLokasiLahan = 0;

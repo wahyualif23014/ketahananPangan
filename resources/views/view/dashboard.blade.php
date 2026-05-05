@@ -31,12 +31,22 @@
                 <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
                 </svg>
+                <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">{{ $userWilayahLabel }}</span>
+                <svg class="w-3 h-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
                 <span class="text-[10px] text-emerald-600 drop-shadow-sm border-b-2 border-emerald-600 pb-0.5">Dashboard Utama</span>
             </nav>
             <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
                 DASHBOARD <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">SIKAP PRESISI</span>
             </h2>
-            <p class="mt-3 text-sm text-slate-500 font-medium max-w-4xl">Selamat datang, <span class="text-emerald-600 font-bold">{{ Auth::user()->nama_anggota }}</span> &mdash; Ini merupakan Aplikasi Sistem Ketahanan Pangan Presisi Polda Jawa Timur (SIKAP PRESISI). Aplikasi ini dapat Anda akses melalui Komputer Pribadi, Laptop, Tablet dan Perangkat Telepon Genggam yang Anda miliki.</p>
+            <p class="mt-3 text-sm text-slate-500 font-medium max-w-4xl">Selamat datang, <span class="text-emerald-600 font-bold">{{ Auth::user()->nama_anggota }}</span> &mdash; Data yang ditampilkan merupakan cakupan wilayah <span class="text-emerald-600 font-semibold">{{ $userWilayahLabel }}</span>. Gunakan filter tahun &amp; kuartal untuk mempersempit periode analisis.</p>
+            @if($scope && $scope != '0')
+            <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Scope Wilayah: {{ $scope }} &mdash; {{ $userWilayahLabel }}</span>
+            </div>
+            @endif
         </div>
         <div class="flex flex-wrap items-center gap-3">
             <form method="GET" action="{{ route('view.dashboard') }}" class="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl shadow-sm">
@@ -55,10 +65,9 @@
                 </select>
 
                 <select name="year" onchange="this.form.submit()" class="bg-transparent border-none text-[11px] font-black tracking-widest text-emerald-600 uppercase focus:ring-0 cursor-pointer pl-1 pr-6 py-1">
-                    @php $currentYear = date('Y'); @endphp
-                    @for($y = 2024; $y <= $currentYear + 2; $y++)
+                    @foreach($chartYears as $y)
                         <option value="{{ $y }}" {{ $yearFilter == $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endfor
+                    @endforeach
                 </select>
             </form>
             <button onclick="window.location.reload()" title="Refresh Dashboard"
@@ -347,7 +356,7 @@
             <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-400 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Planting Analytics</p>
-                    <h3 class="text-xl font-black text-white mt-0.5">242.74 <span class="text-xs font-bold text-blue-200">Ha</span></h3>
+                    <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($tanamTotal, 2) }} <span class="text-xs font-bold text-blue-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-blue-400/30 text-white text-[10px] font-black rounded-lg border border-blue-300/50 uppercase tracking-widest">Musim {{ $yearFilter }}</span>
             </div>
@@ -377,7 +386,7 @@
             <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 border-b border-emerald-400 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Harvesting Analytics</p>
-                    <h3 class="text-xl font-black text-white mt-0.5">243.72 <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
+                    <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($panenTotal, 2) }} <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-emerald-400/30 text-white text-[10px] font-black rounded-lg border border-emerald-300/50 uppercase tracking-widest">Realisasi {{ $yearFilter }}</span>
             </div>
@@ -532,7 +541,7 @@
                 <div class="relative w-40 h-40 z-10">
                     <canvas id="totalTitikChart"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-2xl font-black text-slate-800">5,528</span>
+                        <span class="text-2xl font-black text-slate-800">{{ number_format($totalTitikLahan) }}</span>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Lahan</span>
                     </div>
                 </div>
@@ -548,7 +557,7 @@
                 <div class="relative w-40 h-40 z-10">
                     <canvas id="pengelolaanPolsekChart"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-2xl font-black text-slate-800">659</span>
+                        <span class="text-2xl font-black text-slate-800">{{ number_format($totalPolsek) }}</span>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Polsek</span>
                     </div>
                 </div>
@@ -712,11 +721,11 @@
             
             <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-800">
                 <p class="text-xs text-slate-500">
-                    Total <span class="text-white font-black text-sm">{{ number_format($totalPendingPotensi + $totalPendingKelola) }}</span> data belum divalidasi
+                    Total <span class="text-white font-black text-sm">{{ number_format(count($pendingPotensi) + count($pendingKelola)) }}</span> data belum divalidasi
                     <span class="text-slate-600 mx-1">—</span>
-                    <span class="text-emerald-400">{{ number_format($totalPendingPotensi) }} Potensi</span>
+                    <span class="text-emerald-400">{{ number_format(count($pendingPotensi)) }} Potensi</span>
                     <span class="text-slate-600 mx-1">+</span>
-                    <span class="text-amber-400">{{ number_format($totalPendingKelola) }} Kelola</span>
+                    <span class="text-amber-400">{{ number_format(count($pendingKelola)) }} Kelola</span>
                 </p>
                 <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
                     Kirim Notifikasi
@@ -968,7 +977,7 @@
             }
         };
 
-        const totalTitikData = <?php echo json_encode([$totalTitikLahan, max(0, 1000 - $totalTitikLahan)]); ?>;
+        const totalTitikData = <?php echo json_encode([$totalTitikLahan, max(0, $totalLahanAll - $totalTitikLahan)]); ?>;
         new Chart(document.getElementById('totalTitikChart'), {
             type: 'doughnut',
             data: {
@@ -982,7 +991,7 @@
             options: donutOptions
         });
 
-        const polsekData = <?php echo json_encode([$polsekAktif, max(0, 800 - $polsekAktif)]); ?>;
+        const polsekData = <?php echo json_encode([$polsekAktif, max(0, $totalPolsekInScope - $polsekAktif)]); ?>;
         new Chart(document.getElementById('pengelolaanPolsekChart'), {
             type: 'doughnut',
             data: {
