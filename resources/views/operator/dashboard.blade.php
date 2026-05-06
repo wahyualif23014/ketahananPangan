@@ -791,11 +791,26 @@
                 labels: ['Bulog', 'Pabrik Pakan', 'Tengkulak', 'Konsumsi Sendiri'],
                 datasets: [{
                     label: 'Total Serapan (Ton)',
-                    data: [
-                        {{ $serapanBulog }},
-                        {{ $serapanPabrik }},
-                        {{ $serapanTengkulak }},
-                        {{ $serapanKonsumsi }}
+                    data: [{
+                            {
+                                $serapanBulog
+                            }
+                        },
+                        {
+                            {
+                                $serapanPabrik
+                            }
+                        },
+                        {
+                            {
+                                $serapanTengkulak
+                            }
+                        },
+                        {
+                            {
+                                $serapanKonsumsi
+                            }
+                        }
                     ],
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.8)', // blue
@@ -872,11 +887,17 @@
         const dynamicChartData = {
             monthly: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
-                data: {!! json_encode($chartMonthlyData) !!}
+                data: {
+                    !!json_encode($chartMonthlyData) !!
+                }
             },
             yearly: {
-                labels: {!! json_encode($chartYearlyLabels) !!},
-                data: {!! json_encode($chartYearlyData) !!}
+                labels: {
+                    !!json_encode($chartYearlyLabels) !!
+                },
+                data: {
+                    !!json_encode($chartYearlyData) !!
+                }
             }
         };
 

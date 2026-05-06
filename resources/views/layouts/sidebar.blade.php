@@ -37,15 +37,22 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
     class="w-72 -translate-x-full md:translate-x-0 fixed inset-y-0 left-0 z-50 flex flex-col h-full transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] bg-slate-900 text-white border-r border-white/5 shadow-2xl md:relative shrink-0 overflow-hidden">
     
     {{-- Sidebar Header --}}
-    <div class="h-16 flex items-center justify-between px-6 border-b border-white/5 bg-slate-900 shrink-0 overflow-hidden">
-        <div class="flex items-center gap-3 overflow-hidden">
-            <div class="p-1.5 bg-emerald-500 rounded-lg flex-shrink-0 shadow-lg shadow-emerald-500/20">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
+    <div class="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-slate-900/95 backdrop-blur-md shrink-0 overflow-hidden transition-colors duration-300">
+        <div class="flex items-center gap-3.5 overflow-hidden w-full">
+            <div class="relative flex-shrink-0 group flex items-center justify-center h-10 w-10">
+                <div class="absolute inset-0 bg-emerald-500/20 rounded-xl blur-md group-hover:bg-emerald-500/40 transition-all duration-500"></div>
+                <img src="{{ asset('logo-sikap.png') }}" alt="Logo SIKAP" class="w-9 h-9 object-contain relative z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
             </div>
-            <div x-show="sidebarExpanded" x-transition.opacity.duration.300ms class="flex flex-col whitespace-nowrap overflow-hidden">
-                <span class="text-sm font-bold tracking-widest text-[#E5E7EB] uppercase">Sikap <span class="text-emerald-400">Presisi</span></span>
+            <div x-show="sidebarExpanded" 
+                 x-transition:enter="transition ease-out duration-300 delay-100"
+                 x-transition:enter-start="opacity-0 translate-x-4"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 translate-x-4"
+                 class="flex flex-col whitespace-nowrap overflow-hidden">
+                <span class="text-[15px] font-black tracking-widest text-white uppercase drop-shadow-sm leading-tight">Sikap <span class="text-emerald-400">Presisi</span></span>
+                <span class="text-[9px] font-bold tracking-[0.2em] text-slate-400 uppercase leading-tight mt-0.5">Polda Jawa Timur</span>
             </div>
         </div>
 
@@ -58,8 +65,16 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
     </div>
 
     {{-- User Profile Area --}}
-    <div x-show="sidebarExpanded" x-cloak x-transition.opacity.duration.300ms
-        class="px-5 py-6 flex flex-col items-center border-b border-[#1F2937] shrink-0 bg-[#0c1424]">
+    <div x-show="sidebarExpanded" x-cloak 
+        x-transition:enter="transition ease-out duration-300 delay-150"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        class="px-5 py-6 flex flex-col items-center border-b border-[#1F2937] shrink-0 bg-gradient-to-b from-[#0c1424] to-slate-900 relative overflow-hidden">
+        
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
 
         <div class="relative mb-3">
             <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#1F2937] to-[#111827] border border-[#1F2937] flex items-center justify-center text-lg font-bold text-white shadow-xl">

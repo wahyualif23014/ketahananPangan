@@ -259,7 +259,6 @@
                                 </span>
                             </div>
                         </div>
-
                     </div>
 
                     <!-- Right Stats/ID -->
@@ -417,7 +416,10 @@
                                 @endforeach
                             </div>
                         </div>
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
                     </div>
                 </div>
                 @endif
