@@ -16,7 +16,7 @@ class KelolaLahanController extends Controller
 
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%'); });
             }
             return $query;
         };
@@ -24,8 +24,8 @@ class KelolaLahanController extends Controller
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($scope) {
-                    $q->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); })
-                        ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, \'.%\')", [$scope, $scope]);
+                    $q->where(function($q) use ($scope) { $q->where('id_tingkat', $scope)->orWhere('id_tingkat', 'LIKE', $scope . '.%'); })
+                        ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
                 });
             }
             return $query;
@@ -299,7 +299,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $statsData->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $statsData->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
+            $statsData->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
 
         $potensiTotal = (clone $statsData)->sum('luas_lahan');
@@ -313,7 +313,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $tanamQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $tanamQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
+            $tanamQuery->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
         $tanamTotal = (clone $tanamQuery)->sum('luas_tanam') ?? 0;
         $tanamDetails = (clone $tanamQuery)->selectRaw('id_jenis_lahan, SUM(luas_tanam) as total_luas, COUNT(id_lahan) as total_lokasi')
@@ -326,7 +326,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $panenQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $panenQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
+            $panenQuery->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
         $panenTotal = (clone $panenQuery)->sum('luas_panen_ha') ?? 0;
         $panenDetails = (clone $panenQuery)->selectRaw('id_jenis_lahan, SUM(luas_panen_ha) as total_luas, COUNT(id_lahan) as total_lokasi')
@@ -339,7 +339,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $serapanQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $serapanQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
+            $serapanQuery->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
         $serapanTotal = (clone $serapanQuery)->sum('total_serapan_ton') ?? 0;
         $serapanDetails = (clone $serapanQuery)->selectRaw('id_jenis_lahan, SUM(total_serapan_ton) as total_luas, COUNT(id_lahan) as total_lokasi')

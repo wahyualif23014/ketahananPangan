@@ -946,13 +946,13 @@
                         if (result.success) {
                             this.modalTanam = false;
                             if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 1;
-                            alert(result.message);
-                            window.location.reload();
+                            $notify('success', 'Tanam Berhasil Dicatat', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
                         } else {
-                            alert('Gagal: ' + (result.message || 'Terjadi kesalahan server.'));
+                            $notify('error', 'Gagal Menyimpan', result.message || 'Terjadi kesalahan server.');
                         }
                     } catch (error) {
-                        alert('Terjadi kesalahan koneksi: ' + error.message);
+                        $notify('error', 'Kesalahan Koneksi', error.message);
                     }
                 },
 
@@ -976,13 +976,13 @@
                         if (result.success) {
                             this.modalPanen = false;
                             if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 2;
-                            alert(result.message);
-                            window.location.reload();
+                            $notify('success', 'Panen Berhasil Dicatat', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
                         } else {
-                            alert('Gagal: ' + (result.message || 'Terjadi kesalahan server.'));
+                            $notify('error', 'Gagal Menyimpan', result.message || 'Terjadi kesalahan server.');
                         }
                     } catch (error) {
-                        alert('Terjadi kesalahan koneksi: ' + error.message);
+                        $notify('error', 'Kesalahan Koneksi', error.message);
                     }
                 },
 
@@ -1005,72 +1005,63 @@
                         const result = await response.json();
                         if (result.success) {
                             this.modalSerapan = false;
-                            if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 0; // Reset to Tanam
-                            alert(result.message);
-                            window.location.reload();
+                            if (!this.isEditMode) this.lahanStages[this.activeLahan.id_lahan] = 0;
+                            $notify('success', 'Serapan Berhasil Dicatat', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
                         } else {
-                            alert('Gagal: ' + (result.message || 'Terjadi kesalahan server.'));
+                            $notify('error', 'Gagal Menyimpan', result.message || 'Terjadi kesalahan server.');
                         }
                     } catch (error) {
-                        alert('Terjadi kesalahan koneksi: ' + error.message);
+                        $notify('error', 'Kesalahan Koneksi', error.message);
                     }
                 },
 
                 async deleteTanam(id) {
-                    if (!confirm('Apakah Anda yakin ingin menghapus data tanam ini beserta panen & serapan di dalamnya?')) return;
+                    const ok = await $confirm({ type: 'danger', title: 'Hapus Data Tanam?', message: 'Seluruh data panen & serapan terkait juga akan ikut dihapus.', confirmText: 'Ya, Hapus Semua' });
+                    if (!ok) return;
                     try {
                         const response = await fetch(`/operator/kelola-lahan/tanam/${id}`, {
                             method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                         });
                         const result = await response.json();
                         if (result.success) {
-                            alert(result.message);
-                            window.location.reload();
-                        } else alert('Gagal: ' + result.message);
-                    } catch (e) {
-                        alert('Terjadi kesalahan: ' + e.message);
-                    }
+                            $notify('success', 'Data Tanam Dihapus', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else $notify('error', 'Gagal Menghapus', result.message);
+                    } catch (e) { $notify('error', 'Kesalahan', e.message); }
                 },
 
                 async deletePanen(id) {
-                    if (!confirm('Apakah Anda yakin ingin menghapus data panen ini beserta serapannya?')) return;
+                    const ok = await $confirm({ type: 'danger', title: 'Hapus Data Panen?', message: 'Data serapan terkait juga akan ikut dihapus.', confirmText: 'Ya, Hapus' });
+                    if (!ok) return;
                     try {
                         const response = await fetch(`/operator/kelola-lahan/panen/${id}`, {
                             method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                         });
                         const result = await response.json();
                         if (result.success) {
-                            alert(result.message);
-                            window.location.reload();
-                        } else alert('Gagal: ' + result.message);
-                    } catch (e) {
-                        alert('Terjadi kesalahan: ' + e.message);
-                    }
+                            $notify('success', 'Data Panen Dihapus', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else $notify('error', 'Gagal Menghapus', result.message);
+                    } catch (e) { $notify('error', 'Kesalahan', e.message); }
                 },
 
                 async deleteSerapan(id) {
-                    if (!confirm('Apakah Anda yakin ingin menghapus data serapan ini?')) return;
+                    const ok = await $confirm({ type: 'danger', title: 'Hapus Data Serapan?', message: 'Data serapan ini akan dihapus secara permanen dari sistem.', confirmText: 'Ya, Hapus' });
+                    if (!ok) return;
                     try {
                         const response = await fetch(`/operator/kelola-lahan/serapan/${id}`, {
                             method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                         });
                         const result = await response.json();
                         if (result.success) {
-                            alert(result.message);
-                            window.location.reload();
-                        } else alert('Gagal: ' + result.message);
-                    } catch (e) {
-                        alert('Terjadi kesalahan: ' + e.message);
-                    }
+                            $notify('success', 'Data Serapan Dihapus', result.message);
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else $notify('error', 'Gagal Menghapus', result.message);
+                    } catch (e) { $notify('error', 'Kesalahan', e.message); }
                 },
 
                 toggleResor(id) {

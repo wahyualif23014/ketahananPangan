@@ -17,7 +17,7 @@ class PotensiLahanController extends Controller
         // Jurisdictional scope: allows seeing parent Resor header too
         $applyScope = function ($query, $column = 'id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%'); });
             }
             return $query;
         };
@@ -27,8 +27,8 @@ class PotensiLahanController extends Controller
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($scope) {
-                    $q->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); })
-                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, \'.%\')", [$scope, $scope]);
+                    $q->where(function($q) use ($scope) { $q->where('id_tingkat', $scope)->orWhere('id_tingkat', 'LIKE', $scope . '.%'); })
+                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
                 });
             }
             return $query;
@@ -67,7 +67,7 @@ class PotensiLahanController extends Controller
         if ($filters['sektor']) {
             $lahanQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $lahanQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
+            $lahanQuery->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
 
         // Filter: Jenis Lahan

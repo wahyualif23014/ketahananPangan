@@ -22,7 +22,7 @@ class RekapitulasiController extends Controller
         return function ($query, string $column = 'id_polres') use ($scope) {
             if ($scope && $scope !== '0') {
                 $polresPrefix = implode('.', array_slice(explode('.', $scope), 0, 2));
-                $query->where(function($q) use ($column, $polresPrefix) { $q->where($column, $polresPrefix)->orWhere($column, \'LIKE\', $polresPrefix . \'.%\'); });
+                $query->where(function($q) use ($column, $polresPrefix) { $q->where($column, $polresPrefix)->orWhere($column, 'LIKE', $polresPrefix . '.%'); });
             }
             return $query;
         };
@@ -39,8 +39,8 @@ class RekapitulasiController extends Controller
             if ($scope && $scope !== '0') {
                 $polresPrefix = implode('.', array_slice(explode('.', $scope), 0, 2));
                 $query->where(function ($q) use ($polresPrefix, $scope) {
-                    $q->where(function($q) use ($polresPrefix) { $q->where(\'id_tingkat\', $polresPrefix)->orWhere(\'id_tingkat\', \'LIKE\', $polresPrefix . \'.%\'); })
-                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, \'.%\')", [$scope, $scope]);
+                    $q->where(function($q) use ($polresPrefix) { $q->where('id_tingkat', $polresPrefix)->orWhere('id_tingkat', 'LIKE', $polresPrefix . '.%'); })
+                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
                 });
             }
             return $query;

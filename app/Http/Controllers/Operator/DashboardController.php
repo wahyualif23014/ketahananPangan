@@ -22,7 +22,7 @@ class DashboardController extends Controller
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->where('panen.deletestatus', '1');
             if ($scope && $scope != '0') {
-                $yearDetect->where(function($q) use ($scope) { $q->where(\'lahan.id_tingkat\', $scope)->orWhere(\'lahan.id_tingkat\', \'LIKE\', $scope . \'.%\'); });
+                $yearDetect->where(function($q) use ($scope) { $q->where('lahan.id_tingkat', $scope)->orWhere('lahan.id_tingkat', 'LIKE', $scope . '.%'); });
             }
             $detectedYear = $yearDetect->max(DB::raw('YEAR(panen.tgl_panen)'));
             // Fallback: try from tanam
@@ -31,7 +31,7 @@ class DashboardController extends Controller
                     ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                     ->where('tanam.deletestatus', '1');
                 if ($scope && $scope != '0') {
-                    $yearDetect2->where(function($q) use ($scope) { $q->where(\'lahan.id_tingkat\', $scope)->orWhere(\'lahan.id_tingkat\', \'LIKE\', $scope . \'.%\'); });
+                    $yearDetect2->where(function($q) use ($scope) { $q->where('lahan.id_tingkat', $scope)->orWhere('lahan.id_tingkat', 'LIKE', $scope . '.%'); });
                 }
                 $detectedYear = $yearDetect2->max(DB::raw('YEAR(tanam.tgl_tanam)'));
             }
@@ -40,7 +40,7 @@ class DashboardController extends Controller
 
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%'); });
             }
             return $query;
         };
@@ -82,14 +82,14 @@ class DashboardController extends Controller
         $totalPolsekInScopeQuery = DB::table('tingkat')
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
         if ($scope && $scope != '0') {
-            $totalPolsekInScopeQuery->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); });
+            $totalPolsekInScopeQuery->where(function($q) use ($scope) { $q->where('id_tingkat', $scope)->orWhere('id_tingkat', 'LIKE', $scope . '.%'); });
         }
         $totalPolsekInScope = max($totalPolsekInScopeQuery->count(), $polsekAktif);
 
         // Total semua lahan (aktif + non-aktif) dalam scope — untuk denominator donut titik lahan
         $totalLahanAllQuery = DB::table('lahan');
         if ($scope && $scope != '0') {
-            $totalLahanAllQuery->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); });
+            $totalLahanAllQuery->where(function($q) use ($scope) { $q->where('id_tingkat', $scope)->orWhere('id_tingkat', 'LIKE', $scope . '.%'); });
         }
         $totalLahanAll = max($totalLahanAllQuery->count(), $totalTitikLahan);
 
