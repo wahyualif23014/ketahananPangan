@@ -239,7 +239,7 @@ class DashboardController extends Controller
         // Pending Validation Potensi
         $qPotensi = DB::table('lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction')
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction', 'lahan.id_jenis_lahan')
             ->where('lahan.deletestatus', '1')
             ->whereNull('lahan.valid_oleh');
 
@@ -262,7 +262,7 @@ class DashboardController extends Controller
         $qTanam = DB::table('tanam')
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
             ->where('tanam.deletestatus', '1')
             ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
 
@@ -280,7 +280,7 @@ class DashboardController extends Controller
         $qPanen = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
+            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
             ->where('panen.deletestatus', '1')
             ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
 

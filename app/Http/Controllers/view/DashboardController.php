@@ -98,7 +98,7 @@ class DashboardController extends Controller
             $totalTitikLahan
         );
 
-        // ── 2. Master Jenis Lahan ────────────────────────────────────────────
+        // ── 2. Master Jenis Lahan ──────────────────────
         $jenisLahanList = DB::table('jenislahan')->pluck('nama_jenis_lahan', 'id_jenis_lahan');
 
         // ── 3. Details per jenis lahan ──────────────────────────────────────
@@ -138,19 +138,25 @@ class DashboardController extends Controller
         $panenDetails = $panenDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
 
         // ── 4. Serapan Hasil ─────────────────────────────────────────────────
-        $serapanRaw = $applyScope(
+        $serapanRawQuery = $applyScope(
             DB::table('distribusi')
                 ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
                 ->select('distribusi.distribusi_ke', DB::raw('SUM(distribusi.total_distribusi) as val'))
                 ->where('distribusi.deletestatus', '1')
                 ->where('lahan.deletestatus', '!=', '0')
-                ->groupBy('distribusi.distribusi_ke'),
+                ->whereYear('distribusi.tgl_distribusi', $yearFilter),
             'lahan.id_tingkat'
-        )->pluck('val', 'distribusi_ke');
+        );
+
+        if ($quarterFilter != 'all') {
+            $serapanRawQuery->whereRaw('QUARTER(distribusi.tgl_distribusi) = ?', [$quarterFilter]);
+        }
+
+        $serapanRaw = $serapanRawQuery->groupBy('distribusi.distribusi_ke')->pluck('val', 'distribusi_ke');
 
         $serapanBulog     = $serapanRaw['1'] ?? 0;
-        $serapanTengkulak = $serapanRaw['2'] ?? 0;
-        $serapanPabrik    = $serapanRaw['3'] ?? 0;
+        $serapanPabrik    = $serapanRaw['2'] ?? 0;
+        $serapanTengkulak = $serapanRaw['3'] ?? 0;
         $serapanKonsumsi  = $serapanRaw['4'] ?? 0;
         $totalSerapan     = $serapanBulog + $serapanTengkulak + $serapanPabrik + $serapanKonsumsi;
 
@@ -217,31 +223,48 @@ class DashboardController extends Controller
             'lahan.id_tingkat'
         )->get();
 
-        $milikPolriQ   = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
-        $poktanBinaanQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
-        $totalQ        = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+        $allJenisLahan = [
+            1 => ['label' => 'Produktif (Poktan Binaan Polri)', 'accent' => 'emerald'],
+            2 => ['label' => 'Hutan (Perhutanan Sosial)',       'accent' => 'teal'],
+            3 => ['label' => 'Luas Baku Sawah (LBS)',           'accent' => 'blue'],
+            4 => ['label' => 'Pesantren',                       'accent' => 'violet'],
+            5 => ['label' => 'Milik Polri',                     'accent' => 'indigo'],
+            6 => ['label' => 'Produktif (Masy. Binaan Polri)',  'accent' => 'sky'],
+            7 => ['label' => 'Produktif (Tumpang Sari)',        'accent' => 'amber'],
+            8 => ['label' => 'Hutan (Perhutani/Inhutani)',      'accent' => 'rose'],
+            9 => ['label' => 'Lahan Lainnya',                   'accent' => 'slate'],
+        ];
+
+        // Build per-jenis Q arrays
+        $jenisQData = [];
+        $totalQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+
+        foreach ($allJenisLahan as $jId => $jInfo) {
+            $jenisQData[$jId] = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+        }
 
         foreach ($kwartalRaw as $item) {
             $qIndex = $item->q - 1;
             if ($qIndex >= 0 && $qIndex <= 3) {
-                if ($item->id_jenis_lahan == 5) {
-                    $milikPolriQ[$qIndex]['luas']  += $item->total_ha;
-                    $milikPolriQ[$qIndex]['hasil'] += $item->total_ton;
-                }
-                if ($item->id_jenis_lahan == 1) {
-                    $poktanBinaanQ[$qIndex]['luas']  += $item->total_ha;
-                    $poktanBinaanQ[$qIndex]['hasil'] += $item->total_ton;
+                $jId = $item->id_jenis_lahan;
+                if (isset($jenisQData[$jId])) {
+                    $jenisQData[$jId][$qIndex]['luas']  += $item->total_ha;
+                    $jenisQData[$jId][$qIndex]['hasil'] += $item->total_ton;
                 }
                 $totalQ[$qIndex]['luas']  += $item->total_ha;
                 $totalQ[$qIndex]['hasil'] += $item->total_ton;
             }
         }
 
-        $kwartalData = [
-            ['category' => 'Milik Polri',              'accent' => 'blue',    'q' => $milikPolriQ],
-            ['category' => 'Produktif (Poktan Binaan)', 'accent' => 'emerald', 'q' => $poktanBinaanQ],
-            ['category' => 'Total Keseluruhan',         'accent' => 'amber',   'q' => $totalQ],
-        ];
+        $kwartalData = [];
+        foreach ($allJenisLahan as $jId => $jInfo) {
+            $kwartalData[] = [
+                'category' => $jId . '. ' . $jInfo['label'],
+                'accent'   => $jInfo['accent'],
+                'q'        => $jenisQData[$jId],
+            ];
+        }
+        $kwartalData[] = ['category' => 'Total Keseluruhan', 'accent' => 'amber', 'q' => $totalQ];
 
         // ── 8. Map Data (scoped) ─────────────────────────────────────────────
         $mapData = $applyScope(
@@ -269,7 +292,7 @@ class DashboardController extends Controller
         $qPotensi = $applyScope(
             DB::table('lahan')
                 ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction', 'lahan.id_jenis_lahan')
                 ->where('lahan.deletestatus', '!=', '0')
                 ->whereNull('lahan.valid_oleh'),
             'lahan.id_tingkat'
@@ -290,7 +313,7 @@ class DashboardController extends Controller
             DB::table('tanam')
                 ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                 ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
                 ->where('tanam.deletestatus', '1')
                 ->where('lahan.deletestatus', '!=', '0')
                 ->whereNull('tanam.valid_oleh'),
@@ -301,7 +324,7 @@ class DashboardController extends Controller
             DB::table('panen')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
                 ->where('panen.deletestatus', '1')
                 ->where('lahan.deletestatus', '!=', '0')
                 ->whereNull('panen.valid_oleh'),

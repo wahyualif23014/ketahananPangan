@@ -358,7 +358,7 @@
         <div class="bg-white/90 backdrop-blur rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 overflow-hidden relative">
             <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-400 flex items-center justify-between">
                 <div>
-                    <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Planting Analytics</p>
+                    <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Lahan Tanam</p>
                     <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($tanamTotal, 2) }} <span class="text-xs font-bold text-blue-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-blue-400/30 text-white text-[10px] font-black rounded-lg border border-blue-300/50 uppercase tracking-widest">Musim {{ $yearFilter }}</span>
@@ -388,7 +388,7 @@
         <div class="bg-white/90 backdrop-blur rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 overflow-hidden relative">
             <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 border-b border-emerald-400 flex items-center justify-between">
                 <div>
-                    <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Harvesting Analytics</p>
+                    <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Lahan Panen</p>
                     <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($panenTotal, 2) }} <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-emerald-400/30 text-white text-[10px] font-black rounded-lg border border-emerald-300/50 uppercase tracking-widest">Realisasi {{ $yearFilter }}</span>
@@ -645,9 +645,18 @@
             </form>
         </div>
         <div class="p-6" x-data="{ activeTab: 'potensi' }">
-            <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
-                <button @click="activeTab = 'potensi'" :class="activeTab === 'potensi' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Data Potensi ({{ count($pendingPotensi) }})</button>
-                <button @click="activeTab = 'kelola'" :class="activeTab === 'kelola' ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Kelola Lahan ({{ count($pendingKelola) }})</button>
+            <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-2">
+                    <button @click="activeTab = 'potensi'" :class="activeTab === 'potensi' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Data Potensi ({{ count($pendingPotensi) }})</button>
+                    <button @click="activeTab = 'kelola'" :class="activeTab === 'kelola' ? 'bg-amber-500/20 text-amber-400 border-amber-500/50' : 'bg-transparent text-slate-400 border-transparent hover:text-slate-300'" class="px-4 py-2 text-xs font-black uppercase tracking-widest border rounded-lg transition-all">Kelola Lahan ({{ count($pendingKelola) }})</button>
+                </div>
+                
+                @if(request('pending_jenis'))
+                <div class="hidden md:flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Filter:</span>
+                    <span class="text-[10px] font-black text-indigo-400 uppercase tracking-wider">{{ $jenisLahanList[request('pending_jenis')] ?? 'Semua Jenis Lahan' }}</span>
+                </div>
+                @endif
             </div>
 
             <!-- Tab Data Potensi -->
@@ -667,6 +676,9 @@
                             <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('operator.kelola-lahan.potensi.index', ['search' => $item->id_lahan]) }}'">
                                 <td class="py-3 pl-2 w-1/4">
                                     <p class="text-xs font-medium text-slate-200 group-hover:text-emerald-400 transition-colors">{{ $item->satwil }}</p>
+                                    <span class="inline-block mt-1 px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 text-[8px] font-black uppercase tracking-widest rounded shadow-sm">
+                                        {{ $jenisLahanList[$item->id_jenis_lahan] ?? 'Lainnya' }}
+                                    </span>
                                 </td>
                                 <td class="py-3 w-2/4">
                                     <p class="text-[10px] text-slate-400">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 60) }}</p>
@@ -708,7 +720,10 @@
                             <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('operator.kelola-lahan.daftar.index', ['search' => $item->id_lahan]) }}'">
                                 <td class="py-3 pl-2 w-1/3">
                                     <p class="text-xs font-medium text-slate-200 group-hover:text-amber-400 transition-colors">{{ $item->satwil }}</p>
-                                    <p class="text-[10px] text-slate-500 mt-0.5">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 40) }}</p>
+                                    <p class="text-[10px] text-slate-500 mt-0.5 mb-1">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 40) }}</p>
+                                    <span class="inline-block px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 text-[8px] font-black uppercase tracking-widest rounded shadow-sm">
+                                        {{ $jenisLahanList[$item->id_jenis_lahan] ?? 'Lainnya' }}
+                                    </span>
                                 </td>
                                 <td class="py-3 w-1/3">
                                     <span class="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest {{ $item->jenis == 'Tanam' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30' }}">
@@ -776,26 +791,11 @@
                 labels: ['Bulog', 'Pabrik Pakan', 'Tengkulak', 'Konsumsi Sendiri'],
                 datasets: [{
                     label: 'Total Serapan (Ton)',
-                    data: [{
-                            {
-                                $serapanBulog
-                            }
-                        },
-                        {
-                            {
-                                $serapanPabrik
-                            }
-                        },
-                        {
-                            {
-                                $serapanTengkulak
-                            }
-                        },
-                        {
-                            {
-                                $serapanKonsumsi
-                            }
-                        }
+                    data: [
+                        {{ $serapanBulog }},
+                        {{ $serapanPabrik }},
+                        {{ $serapanTengkulak }},
+                        {{ $serapanKonsumsi }}
                     ],
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.8)', // blue
@@ -872,17 +872,11 @@
         const dynamicChartData = {
             monthly: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
-                data: {
-                    !!json_encode($chartMonthlyData) !!
-                }
+                data: {!! json_encode($chartMonthlyData) !!}
             },
             yearly: {
-                labels: {
-                    !!json_encode($chartYearlyLabels) !!
-                },
-                data: {
-                    !!json_encode($chartYearlyData) !!
-                }
+                labels: {!! json_encode($chartYearlyLabels) !!},
+                data: {!! json_encode($chartYearlyData) !!}
             }
         };
 
