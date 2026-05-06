@@ -19,12 +19,12 @@ class PesanController extends Controller
 
         $user = Auth::user();
         
-        $pesanMasuk = Pesan::with('sender')
+        $pesanMasuk = Pesan::with('sender.tingkat')
             ->where('recipient_id', $user->id_anggota)
             ->orderBy('created_at', 'desc')
             ->get();
             
-        $pesanTerkirim = Pesan::with('recipient')
+        $pesanTerkirim = Pesan::with('recipient.tingkat')
             ->where('sender_id', $user->id_anggota)
             ->orderBy('created_at', 'desc')
             ->get();

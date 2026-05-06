@@ -30,4 +30,9 @@ class Anggota extends Model
     {
         return $this->belongsTo(Jabatan::class, 'id_jabatan', 'id_jabatan');
     }
+
+    public function tingkat()
+    {
+        return $this->belongsTo(TingkatKesatuan::class, 'id_tugas', 'id_tingkat');
+    }
 }

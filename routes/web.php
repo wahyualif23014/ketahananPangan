@@ -37,6 +37,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard Admin
         Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
+        Route::post('/dashboard/notify-pending', [AdminDashboard::class, 'notifyPending'])->name('dashboard.notify-pending');
 
         // Grouping Data Utama
         Route::prefix('data-utama')->group(function () {

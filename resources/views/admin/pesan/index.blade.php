@@ -55,7 +55,7 @@
                 <div @click="openMessage({{ $pesan->toJson() }}, 'masuk')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender->nama_anggota }}</span>
+                            <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender->nama_anggota }} {{ $pesan->sender->tingkat ? '- ' . $pesan->sender->tingkat->nama_tingkat : ($pesan->sender->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                             @if(!$pesan->is_read)
                             <span class="w-2 h-2 rounded-full bg-sky-500"></span>
                             @endif
@@ -77,7 +77,7 @@
                 @forelse($pesanTerkirim as $pesan)
                 <div @click="openMessage({{ $pesan->toJson() }}, 'terkirim')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
-                        <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient->nama_anggota }}</span>
+                        <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient->nama_anggota }} {{ $pesan->recipient->tingkat ? '- ' . $pesan->recipient->tingkat->nama_tingkat : ($pesan->recipient->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                         <span class="text-[10px] text-slate-400 font-bold flex-shrink-0">{{ $pesan->created_at->diffForHumans() }}</span>
                     </div>
                     <p class="text-xs font-semibold text-slate-600 mb-1 line-clamp-1">{{ $pesan->judul ?? 'Tanpa Judul' }}</p>
@@ -110,7 +110,7 @@
                         <div>
                             <h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase" x-text="activePesan.judul || 'Tanpa Judul'"></h3>
                             <div class="flex items-center gap-3 mt-2">
-                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest" x-text="tab === 'masuk' ? 'Dari: ' + activePesan.sender.nama_anggota : 'Kepada: ' + activePesan.recipient.nama_anggota"></span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest" x-text="tab === 'masuk' ? 'Dari: ' + activePesan.sender.nama_anggota + (activePesan.sender.tingkat ? ' - ' + activePesan.sender.tingkat.nama_tingkat : (activePesan.sender.role === 'admin' ? ' - POLDA JATIM' : '')) : 'Kepada: ' + activePesan.recipient.nama_anggota + (activePesan.recipient.tingkat ? ' - ' + activePesan.recipient.tingkat.nama_tingkat : (activePesan.recipient.role === 'admin' ? ' - POLDA JATIM' : ''))"></span>
                                 <span class="text-xs text-slate-400 font-medium" x-text="formatDate(activePesan.created_at)"></span>
                             </div>
                         </div>

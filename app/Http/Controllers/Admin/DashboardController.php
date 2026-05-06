@@ -14,6 +14,77 @@ class DashboardController extends Controller
         return view('admin.dashboard', $data);
     }
 
+    public function notifyPending(Request $request)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($user->role !== 'admin') {
+            return back()->with('error', 'Hanya admin yang dapat mengirim notifikasi.');
+        }
+
+        // Ambil semua id_tingkat yang pending dari Potensi
+        $pendingPotensiTingkat = DB::table('lahan')
+            ->where('deletestatus', '1')
+            ->whereNull('valid_oleh')
+            ->pluck('id_tingkat')->toArray();
+
+        // Ambil dari Kelola Lahan (Tanam)
+        $pendingTanamTingkat = DB::table('tanam')
+            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+            ->where('tanam.deletestatus', '1')
+            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); })
+            ->pluck('lahan.id_tingkat')->toArray();
+
+        // Ambil dari Kelola Lahan (Panen)
+        $pendingPanenTingkat = DB::table('panen')
+            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+            ->where('panen.deletestatus', '1')
+            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); })
+            ->pluck('lahan.id_tingkat')->toArray();
+
+        $allPendingTingkat = array_unique(array_merge($pendingPotensiTingkat, $pendingTanamTingkat, $pendingPanenTingkat));
+
+        if (empty($allPendingTingkat)) {
+            return back()->with('success', 'Tidak ada data pending yang memerlukan notifikasi.');
+        }
+
+        // Ekstrak Polres (2 tingkat pertama, misal 11.30)
+        $polresTingkat = [];
+        foreach ($allPendingTingkat as $tingkat) {
+            $parts = explode('.', $tingkat);
+            if (count($parts) >= 2) {
+                $polresTingkat[] = $parts[0] . '.' . $parts[1];
+            } else {
+                $polresTingkat[] = $tingkat;
+            }
+        }
+        $polresTingkat = array_unique($polresTingkat);
+
+        // Cari operator Polres
+        $penerima = \App\Models\Anggota::where('role', 'operator')
+            ->whereIn('id_tugas', $polresTingkat)
+            ->where('deletestatus', '2')
+            ->get();
+
+        if ($penerima->isEmpty()) {
+            return back()->with('error', 'Tidak ditemukan operator Polres untuk wilayah yang pending.');
+        }
+
+        $count = 0;
+        foreach ($penerima as $p) {
+            \App\Models\Pesan::create([
+                'id_pesan' => \Illuminate\Support\Str::uuid(),
+                'sender_id' => $user->id_anggota,
+                'recipient_id' => $p->id_anggota,
+                'judul' => 'Peringatan: Data Menunggu Validasi',
+                'isi_pesan' => 'Halo ' . $p->nama_anggota . ', terdapat data potensi atau kelola lahan di wilayah Anda (atau polsek jajaran Anda) yang masih menunggu validasi. Mohon segera periksa menu Kelola Lahan dan lakukan validasi. Terima kasih.',
+                'is_read' => false
+            ]);
+            $count++;
+        }
+
+        return back()->with('success', "Notifikasi berhasil dikirim ke $count operator Polres.");
+    }
+
     public function indexOperator(Request $request)
     {
         $data = $this->getIndexData($request);

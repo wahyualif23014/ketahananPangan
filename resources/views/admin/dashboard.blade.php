@@ -21,6 +21,19 @@
     {{-- Background pattern --}}
     <div class="fixed inset-0 topo-pattern -z-10 pointer-events-none"></div>
 
+    @if(session('success'))
+    <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-2xl flex items-center gap-3 shadow-sm mx-1 mt-6">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span class="font-bold text-sm">{{ session('success') }}</span>
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl flex items-center gap-3 shadow-sm mx-1 mt-6">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <span class="font-bold text-sm">{{ session('error') }}</span>
+    </div>
+    @endif
+
     {{-- =====================================================================
          1. HEADER
     ===================================================================== --}}
@@ -576,9 +589,12 @@
                     <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Satuan wilayah yang belum melakukan sinkronisasi data final</p>
                 </div>
             </div>
-            <button class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-95 hidden md:block">
-                Kirim Notifikasi Massal
-            </button>
+            <form method="POST" action="{{ route('admin.dashboard.notify-pending') }}" class="hidden md:block">
+                @csrf
+                <button type="submit" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-95">
+                    Kirim Notifikasi Massal
+                </button>
+            </form>
         </div>
 
         <div class="px-8 py-4 border-b border-slate-800 bg-slate-900/50 relative z-10" id="pending-section">
@@ -646,6 +662,7 @@
                             <tr class="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 <th class="pb-3 pl-2">Satwil</th>
                                 <th class="pb-3">Alamat Lahan</th>
+                                <th class="pb-3">Jenis Lahan</th>
                                 <th class="pb-3 pr-2 text-right">Luas (Ha)</th>
                             </tr>
                         </thead>
@@ -654,14 +671,16 @@
                             <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index', ['search' => $item->id_lahan]) }}'">
                                 <td class="py-3 pl-2 w-1/4">
                                     <p class="text-xs font-medium text-slate-200 group-hover:text-emerald-400 transition-colors">{{ $item->satwil }}</p>
-                                    <span class="inline-block mt-1 px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 text-[8px] font-black uppercase tracking-widest rounded shadow-sm">
+                                </td>
+                                <td class="py-3 w-1/3">
+                                    <p class="text-[10px] text-slate-400">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 60) }}</p>
+                                </td>
+                                <td class="py-3 w-1/4">
+                                    <span class="inline-block px-2 py-1 bg-slate-800 text-slate-300 border border-slate-700 text-[9px] font-black uppercase tracking-widest rounded shadow-sm">
                                         {{ $jenisLahanList[$item->id_jenis_lahan] ?? 'Lainnya' }}
                                     </span>
                                 </td>
-                                <td class="py-3 w-2/4">
-                                    <p class="text-[10px] text-slate-400">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 60) }}</p>
-                                </td>
-                                <td class="py-3 pr-2 text-right w-1/4">
+                                <td class="py-3 pr-2 text-right w-1/6">
                                     <p class="text-xs font-bold text-emerald-400">{{ number_format($item->luas_lahan, 2) }}</p>
                                 </td>
                             </tr>
@@ -687,27 +706,30 @@
                         <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
                             <tr class="border-b border-slate-800 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 <th class="pb-3 pl-2">Satwil</th>
-                                <th class="pb-3">Jenis & Tanggal</th>
+                                <th class="pb-3">Jenis Lahan</th>
+                                <th class="pb-3">Kategori & Tanggal</th>
                                 <th class="pb-3 pr-2 text-right">Luas (Ha)</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/50">
                             @foreach($pendingKelola as $item)
                             <tr class="hover:bg-white/[0.02] transition-colors group cursor-pointer" onclick="window.location.href='{{ route('admin.kelola-lahan.daftar.index', ['search' => $item->id_lahan]) }}'">
-                                <td class="py-3 pl-2 w-1/3">
+                                <td class="py-3 pl-2 w-1/4">
                                     <p class="text-xs font-medium text-slate-200 group-hover:text-amber-400 transition-colors">{{ $item->satwil }}</p>
-                                    <p class="text-[10px] text-slate-500 mt-0.5 mb-1">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 40) }}</p>
-                                    <span class="inline-block px-1.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 text-[8px] font-black uppercase tracking-widest rounded shadow-sm">
+                                    <p class="text-[10px] text-slate-500 mt-0.5">{{ \Illuminate\Support\Str::limit($item->alamat_lahan, 40) }}</p>
+                                </td>
+                                <td class="py-3 w-1/4">
+                                    <span class="inline-block px-2 py-1 bg-slate-800 text-slate-300 border border-slate-700 text-[9px] font-black uppercase tracking-widest rounded shadow-sm">
                                         {{ $jenisLahanList[$item->id_jenis_lahan] ?? 'Lainnya' }}
                                     </span>
                                 </td>
-                                <td class="py-3 w-1/3">
+                                <td class="py-3 w-1/4">
                                     <span class="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest {{ $item->jenis == 'Tanam' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30' }}">
                                         {{ $item->jenis }}
                                     </span>
                                     <p class="text-[10px] text-slate-400 mt-1">{{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}</p>
                                 </td>
-                                <td class="py-3 pr-2 text-right w-1/3">
+                                <td class="py-3 pr-2 text-right w-1/4">
                                     <p class="text-xs font-bold text-amber-400">{{ number_format($item->luas, 2) }}</p>
                                 </td>
                             </tr>
@@ -733,9 +755,12 @@
                     <span class="text-slate-600 mx-1">+</span>
                     <span class="text-amber-400">{{ number_format($totalPendingKelola) }} Kelola</span>
                 </p>
-                <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
-                    Kirim Notifikasi
-                </button>
+                <form method="POST" action="{{ route('admin.dashboard.notify-pending') }}" class="md:hidden">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95">
+                        Kirim Notifikasi
+                    </button>
+                </form>
             </div>
         </div>
     </div>
