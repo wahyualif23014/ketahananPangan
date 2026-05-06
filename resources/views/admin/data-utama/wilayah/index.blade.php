@@ -259,6 +259,7 @@
                                 </span>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Right Stats/ID -->
@@ -552,6 +553,7 @@
             </div>
         </form>
     </div>
+
 </div>
 
 <script>
