@@ -44,10 +44,14 @@
         <!-- Sidebar Messages -->
         <div class="w-full md:w-96 bg-slate-50 border-r border-slate-200 flex flex-col">
             <div class="p-6 border-b border-slate-200">
-                <div class="flex items-center bg-slate-200/50 p-1 rounded-xl">
+                <div class="flex items-center bg-slate-200/50 p-1 rounded-xl mb-3">
                     <button @click="tab = 'masuk'; activePesan = null" :class="tab === 'masuk' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all">Pesan Masuk</button>
                     <button @click="tab = 'terkirim'; activePesan = null" :class="tab === 'terkirim' ? 'bg-white shadow-sm text-sky-600' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all">Terkirim</button>
                 </div>
+                <button @click="markAllAsRead" x-show="tab === 'masuk'" class="w-full py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-sky-600 bg-white hover:bg-sky-50 border border-slate-200 hover:border-sky-200 rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    Tandai Semua Terbaca
+                </button>
             </div>
             
             <div class="flex-1 overflow-y-auto" x-show="tab === 'masuk'">
@@ -57,7 +61,7 @@
                         <div class="flex items-center gap-2">
                             <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender->nama_anggota }} {{ $pesan->sender->tingkat ? '- ' . $pesan->sender->tingkat->nama_tingkat : ($pesan->sender->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                             @if(!$pesan->is_read)
-                            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                            <span x-show="!readMessages.includes('{{ $pesan->id }}')" class="w-2 h-2 rounded-full bg-sky-500"></span>
                             @endif
                         </div>
                         <span class="text-[10px] text-slate-400 font-bold flex-shrink-0">{{ $pesan->created_at->diffForHumans() }}</span>
@@ -246,6 +250,7 @@ document.addEventListener('alpine:init', () => {
         tab: 'masuk',
         activePesan: null,
         isComposeOpen: false,
+        readMessages: [],
         composeData: {
             recipient_id: '',
             judul: '',
@@ -267,8 +272,25 @@ document.addEventListener('alpine:init', () => {
                     }
                 }).then(() => {
                     pesan.is_read = 1; // local update
+                    if (!this.readMessages.includes(pesan.id)) {
+                        this.readMessages.push(pesan.id.toString());
+                    }
                 });
             }
+        },
+        
+        markAllAsRead() {
+            const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
+            fetch(rolePath + `/pesan/read-all`, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            }).then(() => {
+                window.location.reload();
+            });
         },
         
         replyPesan(pesan) {

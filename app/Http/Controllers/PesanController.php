@@ -150,6 +150,15 @@ class PesanController extends Controller
         return back()->with('success', 'Pesan berhasil dikirim!');
     }
 
+    public function markAllAsRead()
+    {
+        Pesan::where('recipient_id', Auth::user()->id_anggota)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+            
+        return response()->json(['success' => true]);
+    }
+
     public function markAsRead($id)
     {
         $pesan = Pesan::findOrFail($id);

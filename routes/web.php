@@ -105,6 +105,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('pesan')->name('pesan.')->group(function () {
             Route::get('/', [\App\Http\Controllers\PesanController::class, 'index'])->name('index');
             Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
+            Route::put('/read-all', [\App\Http\Controllers\PesanController::class, 'markAllAsRead'])->name('read-all');
             Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
         });
     });
@@ -145,6 +146,7 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('pesan')->name('pesan.')->group(function () {
             Route::get('/', [\App\Http\Controllers\PesanController::class, 'index'])->name('index');
             Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
+            Route::put('/read-all', [\App\Http\Controllers\PesanController::class, 'markAllAsRead'])->name('read-all');
             Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
         });
     });
