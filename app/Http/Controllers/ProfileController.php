@@ -16,8 +16,14 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $jabatan = \Illuminate\Support\Facades\DB::table('jabatan')->where('id_jabatan', $user->id_jabatan)->value('nama_jabatan') ?? 'Tidak Ada Jabatan';
+        $wilayah = \Illuminate\Support\Facades\DB::table('tingkat')->where('id_tingkat', $user->id_tugas)->value('nama_tingkat') ?? 'Semua Wilayah';
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'jabatan' => $jabatan,
+            'wilayah' => $wilayah,
         ]);
     }
 
