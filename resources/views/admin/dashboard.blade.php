@@ -346,7 +346,7 @@
         <div class="bg-white/90 backdrop-blur rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 overflow-hidden relative">
             <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-400 flex items-center justify-between">
                 <div>
-                    <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Planting Analytics</p>
+                    <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Lahan Tanam</p>
                     <h3 class="text-xl font-black text-white mt-0.5">242.74 <span class="text-xs font-bold text-blue-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-blue-400/30 text-white text-[10px] font-black rounded-lg border border-blue-300/50 uppercase tracking-widest">Musim {{ $yearFilter }}</span>
@@ -376,7 +376,7 @@
         <div class="bg-white/90 backdrop-blur rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 overflow-hidden relative">
             <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 border-b border-emerald-400 flex items-center justify-between">
                 <div>
-                    <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Harvesting Analytics</p>
+                    <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Lahan Panen</p>
                     <h3 class="text-xl font-black text-white mt-0.5">243.72 <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-emerald-400/30 text-white text-[10px] font-black rounded-lg border border-emerald-300/50 uppercase tracking-widest">Realisasi {{ $yearFilter }}</span>

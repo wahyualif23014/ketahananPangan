@@ -243,6 +243,42 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
             @endif
         </a>
 
+        {{-- Pesan --}}
+        @if($userRole === 'admin' || $userRole === 'operator')
+        @php
+            $pesanRoute = $userRole === 'admin' ? 'admin.pesan.index' : 'operator.pesan.index';
+            $pesanActive = $userRole === 'admin' ? 'admin.pesan.*' : 'operator.pesan.*';
+            
+            // Hitung pesan yang belum dibaca
+            $unreadPesan = \App\Models\Pesan::where('recipient_id', Auth::user()->id_anggota)->where('is_read', false)->count();
+        @endphp
+        <a href="{{ route($pesanRoute) }}"
+            class="group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 mt-1
+           {{ request()->routeIs($pesanActive) ? 'bg-sky-500/10 text-sky-400' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}"
+            :class="sidebarExpanded ? 'justify-start' : 'justify-center'">
+            <div class="relative shrink-0 flex items-center justify-center">
+                <svg class="w-[20px] h-[20px] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                </svg>
+                @if($unreadPesan > 0)
+                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500 text-[8px] font-bold text-white items-center justify-center"></span>
+                </span>
+                @endif
+            </div>
+            <div class="flex-1 flex items-center justify-between ml-3" x-show="sidebarExpanded" x-transition.opacity>
+                <span class="text-[13px] font-medium tracking-wide">Pesan Komunikasi</span>
+                @if($unreadPesan > 0)
+                <span class="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">{{ $unreadPesan }}</span>
+                @endif
+            </div>
+            @if(request()->routeIs($pesanActive))
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-sky-400"></div>
+            @endif
+        </a>
+        @endif
+
         {{-- Aktivitas Log (Admin Only) --}}
         @if($userRole === 'admin')
         <a href="{{ route('admin.aktivitas.index') }}"

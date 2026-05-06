@@ -31,7 +31,7 @@ class AnggotaController extends Controller
         }
 
         $personels = $query->paginate(250)->appends(['search' => $search]);
-        $jabatans = Jabatan::all();
+        $jabatans = Jabatan::where('deletestatus', '2')->get();
         $tingkatList = DB::table('tingkat')->orderBy('id_tingkat')->get(['id_tingkat', 'nama_tingkat']);
         $tingkatMap = $tingkatList->keyBy('id_tingkat');
         foreach ($tingkatList as $t) {

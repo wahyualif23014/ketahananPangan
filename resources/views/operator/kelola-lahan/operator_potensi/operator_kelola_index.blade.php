@@ -334,9 +334,13 @@
                                     @change="submitFilters()"
                                     :disabled="periodMode === 'semua'"
                                     :class="periodMode === 'semua' ? 'bg-slate-50/50 text-slate-300 border-slate-100 cursor-not-allowed' : 'bg-white text-slate-700 border-slate-200 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 cursor-text'"
-                                    class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
-                            </div>
                         </div>
+                    </div>
+                    <div class="flex items-end mt-4 lg:mt-0">
+                        <a href="{{ route('operator.kelola-lahan.potensi.index') }}" class="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all text-[10px] font-black uppercase tracking-widest border border-rose-100 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Reset Filter
+                        </a>
                     </div>
                 </div>
             </div>
@@ -548,8 +552,11 @@
         // 13. Foto Lahan
         var fotoEl = document.getElementById('vm_foto');
         var fotoWrap = document.getElementById('vm_foto_wrap');
+        var fotoError = document.getElementById('vm_foto_error');
         if (item.dokumentasi_lahan) {
             fotoEl.src = '/' + item.dokumentasi_lahan;
+            fotoEl.classList.remove('hidden');
+            if (fotoError) fotoError.classList.add('hidden');
             fotoWrap.classList.remove('hidden');
         } else { fotoWrap.classList.add('hidden'); }
         
@@ -724,7 +731,11 @@
                 </a>
                 <div id="vm_foto_wrap" class="hidden">
                     <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Foto Lahan</p>
-                    <img id="vm_foto" src="" alt="Dokumentasi Lahan" class="w-full rounded-2xl object-cover max-h-48 border border-slate-200">
+                    <img id="vm_foto" src="" alt="Dokumentasi Lahan" class="w-full rounded-2xl object-cover max-h-48 border border-slate-200" onerror="this.classList.add('hidden'); document.getElementById('vm_foto_error').classList.remove('hidden');">
+                    <div id="vm_foto_error" class="hidden w-full p-4 border border-rose-200 bg-rose-50 text-rose-500 rounded-2xl text-center text-xs font-bold flex flex-col items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        File dokumentasi rusak atau tidak ditemukan
+                    </div>
                 </div>
             </div>
 

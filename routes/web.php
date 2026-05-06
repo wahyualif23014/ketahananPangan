@@ -99,6 +99,13 @@ Route::middleware(['auth'])->group(function () {
         // Aktivitas Log
         Route::get('/aktivitas', [AktivitasController::class, 'index'])->name('aktivitas.index');
         Route::get('/aktivitas/{id}', [AktivitasController::class, 'show'])->name('aktivitas.show');
+
+        // Pesan
+        Route::prefix('pesan')->name('pesan.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\PesanController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
+            Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
+        });
     });
 
     // 2. Group Khusus Operator
@@ -132,6 +139,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/rekapitulasi', [OperatorRekapitulasi::class, 'index'])->name('rekapitulasi.index');
         Route::get('/rekapitulasi/polsek', [OperatorRekapitulasi::class, 'getPolsek'])->name('rekapitulasi.polsek');
         Route::get('/rekapitulasi/export', [OperatorRekapitulasi::class, 'export'])->name('rekapitulasi.export');
+
+        // Pesan
+        Route::prefix('pesan')->name('pesan.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\PesanController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
+            Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
+        });
     });
 
     // 3. Group Khusus View
