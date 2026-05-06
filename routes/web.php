@@ -107,6 +107,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
             Route::put('/read-all', [\App\Http\Controllers\PesanController::class, 'markAllAsRead'])->name('read-all');
             Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
+            Route::delete('/delete-multiple', [\App\Http\Controllers\PesanController::class, 'destroyMultiple'])->name('destroy-multiple');
+            Route::delete('/{id}', [\App\Http\Controllers\PesanController::class, 'destroy'])->name('destroy');
         });
     });
 
@@ -148,6 +150,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [\App\Http\Controllers\PesanController::class, 'store'])->name('store');
             Route::put('/read-all', [\App\Http\Controllers\PesanController::class, 'markAllAsRead'])->name('read-all');
             Route::put('/{id}/read', [\App\Http\Controllers\PesanController::class, 'markAsRead'])->name('read');
+            Route::delete('/delete-multiple', [\App\Http\Controllers\PesanController::class, 'destroyMultiple'])->name('destroy-multiple');
+            Route::delete('/{id}', [\App\Http\Controllers\PesanController::class, 'destroy'])->name('destroy');
         });
     });
 

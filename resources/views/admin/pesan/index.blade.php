@@ -52,6 +52,21 @@
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                     Tandai Semua Terbaca
                 </button>
+                
+                <div x-show="selectedMessages.length > 0" class="flex gap-2 mt-2">
+                    <button @click="deleteMultipleMessages" class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Hapus (<span x-text="selectedMessages.length"></span>)
+                    </button>
+                    <button @click="selectedMessages = []" class="px-3 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-lg">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div x-show="selectedMessages.length === 0" class="flex gap-2 mt-2">
+                    <button @click="selectAll" class="w-full py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-sky-600 bg-white border border-slate-200 rounded-lg transition-all flex items-center justify-center gap-1">
+                        Pilih Semua Pesan
+                    </button>
+                </div>
             </div>
             
             <div class="flex-1 overflow-y-auto" x-show="tab === 'masuk'">
@@ -59,6 +74,7 @@
                 <div @click="openMessage({{ $pesan->toJson() }}, 'masuk')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
                         <div class="flex items-center gap-2">
+                            <input type="checkbox" value="{{ $pesan->id }}" x-model="selectedMessages" @click.stop class="w-3 h-3 text-sky-600 rounded border-slate-300 cursor-pointer">
                             <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender->nama_anggota }} {{ $pesan->sender->tingkat ? '- ' . $pesan->sender->tingkat->nama_tingkat : ($pesan->sender->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                             @if(!$pesan->is_read)
                             <span x-show="!readMessages.includes('{{ $pesan->id }}')" class="w-2 h-2 rounded-full bg-sky-500"></span>
@@ -81,7 +97,10 @@
                 @forelse($pesanTerkirim as $pesan)
                 <div @click="openMessage({{ $pesan->toJson() }}, 'terkirim')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
-                        <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient->nama_anggota }} {{ $pesan->recipient->tingkat ? '- ' . $pesan->recipient->tingkat->nama_tingkat : ($pesan->recipient->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" value="{{ $pesan->id }}" x-model="selectedMessages" @click.stop class="w-3 h-3 text-sky-600 rounded border-slate-300 cursor-pointer">
+                            <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient->nama_anggota }} {{ $pesan->recipient->tingkat ? '- ' . $pesan->recipient->tingkat->nama_tingkat : ($pesan->recipient->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
+                        </div>
                         <span class="text-[10px] text-slate-400 font-bold flex-shrink-0">{{ $pesan->created_at->diffForHumans() }}</span>
                     </div>
                     <p class="text-xs font-semibold text-slate-600 mb-1 line-clamp-1">{{ $pesan->judul ?? 'Tanpa Judul' }}</p>
@@ -122,7 +141,11 @@
                     <div class="p-8 flex-1 overflow-y-auto">
                         <div class="prose prose-slate max-w-none text-slate-600 whitespace-pre-wrap leading-relaxed" x-text="activePesan.isi_pesan"></div>
                     </div>
-                    <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <button @click="deletePesan(activePesan)" class="flex items-center gap-2 px-5 py-2.5 bg-white text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            Hapus
+                        </button>
                         <button @click="replyPesan(activePesan)" x-show="tab === 'masuk'" class="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
                             Balas
@@ -251,6 +274,7 @@ document.addEventListener('alpine:init', () => {
         activePesan: null,
         isComposeOpen: false,
         readMessages: [],
+        selectedMessages: [],
         composeData: {
             recipient_id: '',
             judul: '',
@@ -298,6 +322,56 @@ document.addEventListener('alpine:init', () => {
             this.composeData.judul = 'Re: ' + (pesan.judul || 'Tanpa Judul');
             this.composeData.isi_pesan = '\n\n--- Membalas Pesan Sebelumnya ---\n' + pesan.isi_pesan;
             this.isComposeOpen = true;
+        },
+        
+        deletePesan(pesan) {
+            if (confirm('Apakah Anda yakin ingin menghapus pesan ini?')) {
+                const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
+                fetch(rolePath + `/pesan/${pesan.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                }).then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Gagal menghapus pesan.');
+                    }
+                });
+            }
+        },
+        
+        selectAll() {
+            // Collect IDs based on the active tab
+            const checkboxes = document.querySelectorAll(`[x-show="tab === '${this.tab}'"] input[type="checkbox"]`);
+            this.selectedMessages = Array.from(checkboxes).map(cb => cb.value);
+        },
+        
+        deleteMultipleMessages() {
+            if (this.selectedMessages.length === 0) return;
+            if (confirm(`Apakah Anda yakin ingin menghapus ${this.selectedMessages.length} pesan terpilih?`)) {
+                const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
+                fetch(rolePath + `/pesan/delete-multiple`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ ids: this.selectedMessages })
+                }).then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Gagal menghapus pesan terpilih.');
+                    }
+                });
+            }
         },
         
         formatDate(dateStr) {

@@ -169,4 +169,32 @@ class PesanController extends Controller
         
         return response()->json(['success' => true]);
     }
+
+    public function destroy($id)
+    {
+        $pesan = Pesan::findOrFail($id);
+        
+        // Only allow sender or recipient to delete the message
+        if ($pesan->sender_id == Auth::user()->id_anggota || $pesan->recipient_id == Auth::user()->id_anggota) {
+            $pesan->delete();
+            return response()->json(['success' => true]);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+    }
+
+    public function destroyMultiple(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        $userId = Auth::user()->id_anggota;
+        
+        Pesan::whereIn('id', $ids)
+            ->where(function($query) use ($userId) {
+                $query->where('sender_id', $userId)
+                      ->orWhere('recipient_id', $userId);
+            })
+            ->delete();
+            
+        return response()->json(['success' => true]);
+    }
 }
