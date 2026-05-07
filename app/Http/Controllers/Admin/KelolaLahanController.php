@@ -393,9 +393,14 @@ class KelolaLahanController extends Controller
     public function storeTanam(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_tanam' => 'required|date',
-            'luas_tanam' => 'required|numeric',
+            'luas_tanam' => 'required|numeric|min:0',
+            'jenis_bibit' => 'nullable|string|max:255',
+            'kebutuhan_bibit' => 'nullable|string|max:255',
+            'est_awal_panen' => 'nullable|date',
+            'est_akhir_panen' => 'nullable|date',
+            'keterangan_tanam' => 'nullable|string|max:1000',
         ]);
 
         try {
@@ -436,9 +441,12 @@ class KelolaLahanController extends Controller
     public function storePanen(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_panen' => 'required|date',
-            'luas_panen' => 'required|numeric',
+            'luas_panen' => 'required|numeric|min:0',
+            'total_panen' => 'nullable|numeric|min:0',
+            'status_panen' => 'required|integer|in:0,1,2',
+            'keterangan_panen' => 'nullable|string|max:1000',
         ]);
 
         try {
@@ -482,9 +490,11 @@ class KelolaLahanController extends Controller
     public function storeSerapan(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_distribusi' => 'required|date',
-            'total_distribusi' => 'required|numeric',
+            'total_distribusi' => 'required|numeric|min:0',
+            'distribusi_ke' => 'required|integer',
+            'keterangan_serapan' => 'nullable|string|max:1000',
         ]);
 
         try {
@@ -524,6 +534,16 @@ class KelolaLahanController extends Controller
 
     public function updateTanam(Request $request, $id)
     {
+        $request->validate([
+            'tgl_tanam' => 'required|date',
+            'luas_tanam' => 'required|numeric|min:0',
+            'jenis_bibit' => 'nullable|string|max:255',
+            'kebutuhan_bibit' => 'nullable|string|max:255',
+            'est_awal_panen' => 'nullable|date',
+            'est_akhir_panen' => 'nullable|date',
+            'keterangan_tanam' => 'nullable|string|max:1000',
+        ]);
+
         try {
             $old = DB::table('tanam')->where('id_tanam', $id)->first();
             DB::table('tanam')->where('id_tanam', $id)->update([
@@ -552,6 +572,14 @@ class KelolaLahanController extends Controller
 
     public function updatePanen(Request $request, $id)
     {
+        $request->validate([
+            'tgl_panen' => 'required|date',
+            'luas_panen' => 'required|numeric|min:0',
+            'total_panen' => 'nullable|numeric|min:0',
+            'status_panen' => 'required|integer|in:0,1,2',
+            'keterangan_panen' => 'nullable|string|max:1000',
+        ]);
+
         try {
             $old = DB::table('panen')->where('id_panen', $id)->first();
             DB::table('panen')->where('id_panen', $id)->update([
@@ -578,6 +606,13 @@ class KelolaLahanController extends Controller
 
     public function updateSerapan(Request $request, $id)
     {
+        $request->validate([
+            'tgl_distribusi' => 'required|date',
+            'total_distribusi' => 'required|numeric|min:0',
+            'distribusi_ke' => 'required|integer',
+            'keterangan_serapan' => 'nullable|string|max:1000',
+        ]);
+
         try {
             $old = DB::table('distribusi')->where('id_distribusi', $id)->first();
             DB::table('distribusi')->where('id_distribusi', $id)->update([

@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 require "vendor/autoload.php";
 require "bootstrap/app.php";
 $app->make("Illuminate\Contracts\Console\Kernel")->bootstrap();
@@ -58,4 +58,4 @@ Illuminate\Support\Facades\DB::statement("
         id_polres, nama_polres, id_polsek, nama_polsek, l.id_wilayah, w.nama_wilayah,
         l.id_jenis_lahan, jl.nama_jenis_lahan, l.id_komoditi, k.nama_komoditi, l.tahun_lahan
 ");
-echo "OK";
+echo "OK"; -->

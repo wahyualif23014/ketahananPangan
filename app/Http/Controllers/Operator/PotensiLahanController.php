@@ -17,7 +17,7 @@ class PotensiLahanController extends Controller
         // Jurisdictional scope: allows seeing parent Resor header too
         $applyScope = function ($query, $column = 'id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where($column, 'LIKE', $scope . '%');
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
             }
             return $query;
         };
@@ -27,8 +27,8 @@ class PotensiLahanController extends Controller
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($scope) {
-                    $q->where('id_tingkat', 'LIKE', $scope . '%')
-                      ->orWhereRaw("? LIKE CONCAT(id_tingkat, '%')", [$scope]);
+                    $q->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); })
+                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, \'.%\')", [$scope, $scope]);
                 });
             }
             return $query;
@@ -67,7 +67,7 @@ class PotensiLahanController extends Controller
         if ($filters['sektor']) {
             $lahanQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $lahanQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+            $lahanQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
         }
 
         // Filter: Jenis Lahan
@@ -297,6 +297,28 @@ class PotensiLahanController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'id_sektor'        => 'nullable|string',
+            'id_resor'         => 'nullable|string',
+            'id_desa'          => 'required|string',
+            'id_jenis_lahan'   => 'required|integer',
+            'luas_lahan'       => 'required|numeric|min:0',
+            'id_anggota'       => 'required|integer',
+            'cp_lahan'         => 'nullable|string|max:255',
+            'no_cp_lahan'      => 'nullable|string|max:50',
+            'cp_polisi'        => 'nullable|string|max:255',
+            'no_cp_polisi'     => 'nullable|string|max:50',
+            'latitude'         => 'nullable|string|max:50',
+            'longitude'        => 'nullable|string|max:50',
+            'alamat_lahan'     => 'required|string|max:500',
+            'ket_pj'           => 'nullable|string|max:1000',
+            'jml_poktan'       => 'nullable|string|max:255',
+            'jml_petani'       => 'nullable|integer|min:0',
+            'id_komoditi'      => 'nullable|integer',
+            'keterangan_lain'  => 'nullable|string|max:1000',
+            'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
         $data = [
             'id_tingkat'       => $request->id_sektor ?: $request->id_resor,
             'id_wilayah'       => $request->id_desa,
@@ -322,7 +344,7 @@ class PotensiLahanController extends Controller
 
         if ($request->hasFile('dokumentasi_lahan')) {
             $file     = $request->file('dokumentasi_lahan');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time() . '_' . $file->hashName(); // Security: use hashName
             $file->move(public_path('storage/dokumentasi'), $filename);
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
         }
@@ -335,6 +357,35 @@ class PotensiLahanController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'id_sektor'        => 'nullable|string',
+            'id_resor'         => 'nullable|string',
+            'id_desa'          => 'required|string',
+            'id_jenis_lahan'   => 'required|integer',
+            'luas_lahan'       => 'required|numeric|min:0',
+            'id_anggota'       => 'required|integer',
+            'cp_lahan'         => 'nullable|string|max:255',
+            'no_cp_lahan'      => 'nullable|string|max:50',
+            'cp_polisi'        => 'nullable|string|max:255',
+            'no_cp_polisi'     => 'nullable|string|max:50',
+            'latitude'         => 'nullable|string|max:50',
+            'longitude'        => 'nullable|string|max:50',
+            'alamat_lahan'     => 'required|string|max:500',
+            'ket_pj'           => 'nullable|string|max:1000',
+            'jml_poktan'       => 'nullable|string|max:255',
+            'jml_petani'       => 'nullable|integer|min:0',
+            'id_komoditi'      => 'nullable|integer',
+            'keterangan_lain'  => 'nullable|string|max:1000',
+            'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         $data = [
             'id_tingkat'       => $request->id_sektor ?: $request->id_resor,
             'id_wilayah'       => $request->id_desa,
@@ -359,7 +410,7 @@ class PotensiLahanController extends Controller
 
         if ($request->hasFile('dokumentasi_lahan')) {
             $file     = $request->file('dokumentasi_lahan');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time() . '_' . $file->hashName(); // Security: use hashName
             $file->move(public_path('storage/dokumentasi'), $filename);
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
         }
@@ -372,6 +423,13 @@ class PotensiLahanController extends Controller
     public function validasi($id)
     {
         $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
+        }
+
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
             return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
         }
@@ -387,6 +445,13 @@ class PotensiLahanController extends Controller
     public function unvalidasi($id)
     {
         $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
+        }
+
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
             return back()->with('error', 'Akses ditolak. Pembatalan validasi hanya dapat dilakukan oleh tingkat Polres.');
         }
@@ -401,6 +466,14 @@ class PotensiLahanController extends Controller
 
     public function destroy($id)
     {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
+        }
+
         DB::table('lahan')->where('id_lahan', $id)->update([
             'deletestatus' => '0',
         ]);

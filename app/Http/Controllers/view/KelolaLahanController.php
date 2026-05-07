@@ -17,14 +17,14 @@ class KelolaLahanController extends Controller
 
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where($column, 'LIKE', $scope . '%');
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
             }
             return $query;
         };
 
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where('id_tingkat', 'LIKE', $scope . '%');
+                return $query->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); });
             }
             return $query;
         };
@@ -241,7 +241,7 @@ class KelolaLahanController extends Controller
             DB::table('lahan')->where('deletestatus', '!=', '0'), 'id_tingkat'
         );
         if ($filters['sektor'])      (clone $statsBase)->where('id_tingkat', $filters['sektor']);
-        elseif ($filters['resor'])   (clone $statsBase)->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+        elseif ($filters['resor'])   (clone $statsBase)->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
 
         $potensiTotal   = (clone $statsBase)->sum('luas_lahan');
         $potensiDetails = (clone $statsBase)

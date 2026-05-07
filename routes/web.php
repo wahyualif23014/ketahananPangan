@@ -31,7 +31,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'throttle:100,1'])->group(function () {
 
     // 1. Group Khusus Admin
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -175,7 +175,6 @@ Route::middleware(['auth'])->group(function () {
     // Rute Profil Standar
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 require __DIR__ . '/auth.php';

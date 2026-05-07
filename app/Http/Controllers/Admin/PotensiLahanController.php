@@ -238,6 +238,28 @@ class PotensiLahanController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'id_sektor'        => 'nullable|string',
+            'id_resor'         => 'nullable|string',
+            'id_desa'          => 'required|string',
+            'id_jenis_lahan'   => 'required|integer',
+            'luas_lahan'       => 'required|numeric|min:0',
+            'id_anggota'       => 'required|integer',
+            'cp_lahan'         => 'nullable|string|max:255',
+            'no_cp_lahan'      => 'nullable|string|max:50',
+            'cp_polisi'        => 'nullable|string|max:255',
+            'no_cp_polisi'     => 'nullable|string|max:50',
+            'latitude'         => 'nullable|string|max:50',
+            'longitude'        => 'nullable|string|max:50',
+            'alamat_lahan'     => 'required|string|max:500',
+            'ket_pj'           => 'nullable|string|max:1000',
+            'jml_poktan'       => 'nullable|string|max:255',
+            'jml_petani'       => 'nullable|integer|min:0',
+            'id_komoditi'      => 'nullable|integer',
+            'keterangan_lain'  => 'nullable|string|max:1000',
+            'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
             'id_wilayah'        => $request->id_desa,
@@ -262,7 +284,7 @@ class PotensiLahanController extends Controller
 
         if ($request->hasFile('dokumentasi_lahan')) {
             $file = $request->file('dokumentasi_lahan');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time() . '_' . $file->hashName(); // Security improvement: use hashName to avoid path traversal and execute attacks
             // Move file to public/storage/dokumentasi (or public/dokumentasi)
             $file->move(public_path('storage/dokumentasi'), $filename);
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
@@ -284,6 +306,28 @@ class PotensiLahanController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'id_sektor'        => 'nullable|string',
+            'id_resor'         => 'nullable|string',
+            'id_desa'          => 'required|string',
+            'id_jenis_lahan'   => 'required|integer',
+            'luas_lahan'       => 'required|numeric|min:0',
+            'id_anggota'       => 'required|integer',
+            'cp_lahan'         => 'nullable|string|max:255',
+            'no_cp_lahan'      => 'nullable|string|max:50',
+            'cp_polisi'        => 'nullable|string|max:255',
+            'no_cp_polisi'     => 'nullable|string|max:50',
+            'latitude'         => 'nullable|string|max:50',
+            'longitude'        => 'nullable|string|max:50',
+            'alamat_lahan'     => 'required|string|max:500',
+            'ket_pj'           => 'nullable|string|max:1000',
+            'jml_poktan'       => 'nullable|string|max:255',
+            'jml_petani'       => 'nullable|integer|min:0',
+            'id_komoditi'      => 'nullable|integer',
+            'keterangan_lain'  => 'nullable|string|max:1000',
+            'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
             'id_wilayah'        => $request->id_desa,
@@ -308,7 +352,7 @@ class PotensiLahanController extends Controller
 
         if ($request->hasFile('dokumentasi_lahan')) {
             $file = $request->file('dokumentasi_lahan');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $filename = time() . '_' . $file->hashName(); // Security improvement: use hashName
             $file->move(public_path('storage/dokumentasi'), $filename);
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
         }

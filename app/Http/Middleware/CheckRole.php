@@ -10,16 +10,27 @@ class CheckRole
 {
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!$request->user()) {
+        $user = $request->user();
+
+        if (!$user) {
             return redirect()->route('login');
         }
 
-        // Allow admin to bypass role check or if their role is in the allowed list
+        // Security Optimization: Kick out soft-deleted / deactivated users instantly
+        if (isset($user->deletestatus) && $user->deletestatus !== '2') {
+            \Illuminate\Support\Facades\Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Akun Anda telah dinonaktifkan.'], 403);
+            }
+            return redirect()->route('login')->with('error', 'Akun Anda telah dinonaktifkan.');
+        }
+
         if ($request->user()->role === 'admin' || in_array($request->user()->role, $roles)) {
             return $next($request);
         }
-
-        // For AJAX/JSON requests, return 403 JSON
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }

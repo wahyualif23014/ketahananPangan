@@ -28,8 +28,13 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // Laravel akan mencari di tabel anggota berdasarkan kolom username
-        if (! Auth::attempt($this->only('username', 'password'), $this->boolean('remember'))) {
+        $credentials = [
+            'username' => $this->username,
+            'password' => $this->password,
+            'deletestatus' => '2'
+        ];
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

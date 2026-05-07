@@ -1,6 +1,16 @@
 <IfModule mod_rewrite.c>
+    # Security: Disable Directory Browsing unconditionally
+    Options -Indexes
+
+    # Security: Prevent Clickjacking and MIME-sniffing
+    <IfModule mod_headers.c>
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-XSS-Protection "1; mode=block"
+    </IfModule>
+
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        Options -MultiViews
     </IfModule>
 
     RewriteEngine On

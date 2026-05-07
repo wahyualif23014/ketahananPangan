@@ -20,7 +20,7 @@ class DashboardController extends Controller
         // Closure scope — berlaku untuk semua query
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where($column, 'LIKE', $scope . '%');
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
             }
             return $query;
         };

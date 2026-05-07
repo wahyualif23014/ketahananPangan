@@ -16,7 +16,7 @@ class KelolaLahanController extends Controller
 
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
-                return $query->where($column, 'LIKE', $scope . '%');
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, \'LIKE\', $scope . \'.%\'); });
             }
             return $query;
         };
@@ -24,8 +24,8 @@ class KelolaLahanController extends Controller
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($scope) {
-                    $q->where('id_tingkat', 'LIKE', $scope . '%')
-                        ->orWhereRaw("? LIKE CONCAT(id_tingkat, '%')", [$scope]);
+                    $q->where(function($q) use ($scope) { $q->where(\'id_tingkat\', $scope)->orWhere(\'id_tingkat\', \'LIKE\', $scope . \'.%\'); })
+                        ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, \'.%\')", [$scope, $scope]);
                 });
             }
             return $query;
@@ -299,7 +299,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $statsData->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $statsData->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+            $statsData->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
         }
 
         $potensiTotal = (clone $statsData)->sum('luas_lahan');
@@ -313,7 +313,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $tanamQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $tanamQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+            $tanamQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
         }
         $tanamTotal = (clone $tanamQuery)->sum('luas_tanam') ?? 0;
         $tanamDetails = (clone $tanamQuery)->selectRaw('id_jenis_lahan, SUM(luas_tanam) as total_luas, COUNT(id_lahan) as total_lokasi')
@@ -326,7 +326,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $panenQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $panenQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+            $panenQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
         }
         $panenTotal = (clone $panenQuery)->sum('luas_panen_ha') ?? 0;
         $panenDetails = (clone $panenQuery)->selectRaw('id_jenis_lahan, SUM(luas_panen_ha) as total_luas, COUNT(id_lahan) as total_lokasi')
@@ -339,7 +339,7 @@ class KelolaLahanController extends Controller
         if ($filters['sektor']) {
             $serapanQuery->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
-            $serapanQuery->where('id_tingkat', 'LIKE', $filters['resor'] . '%');
+            $serapanQuery->where(function($q) use ($filters) { $q->where(\'id_tingkat\', $filters[\'resor\'])->orWhere(\'id_tingkat\', \'LIKE\', $filters[\'resor\'] . \'.%\'); });
         }
         $serapanTotal = (clone $serapanQuery)->sum('total_serapan_ton') ?? 0;
         $serapanDetails = (clone $serapanQuery)->selectRaw('id_jenis_lahan, SUM(total_serapan_ton) as total_luas, COUNT(id_lahan) as total_lokasi')
@@ -385,10 +385,22 @@ class KelolaLahanController extends Controller
     public function storeTanam(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_tanam' => 'required|date',
-            'luas_tanam' => 'required|numeric',
+            'luas_tanam' => 'required|numeric|min:0',
+            'jenis_bibit' => 'nullable|string|max:255',
+            'kebutuhan_bibit' => 'nullable|string|max:255',
+            'est_awal_panen' => 'nullable|date',
+            'est_akhir_panen' => 'nullable|date',
+            'keterangan_tanam' => 'nullable|string|max:1000',
         ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Lahan tidak valid atau di luar wilayah tugas Anda!'], 403);
+        }
 
         try {
             DB::transaction(function () use ($request) {
@@ -419,10 +431,20 @@ class KelolaLahanController extends Controller
     public function storePanen(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_panen' => 'required|date',
-            'luas_panen' => 'required|numeric',
+            'luas_panen' => 'required|numeric|min:0',
+            'total_panen' => 'nullable|numeric|min:0',
+            'status_panen' => 'required|integer|in:0,1,2',
+            'keterangan_panen' => 'nullable|string|max:1000',
         ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Lahan tidak valid atau di luar wilayah tugas Anda!'], 403);
+        }
 
         try {
             DB::transaction(function () use ($request) {
@@ -442,7 +464,7 @@ class KelolaLahanController extends Controller
                     'ket_panen' => $request->keterangan_panen, // mapped from frontend form
                     'datetransaction' => now(),
                 ]);
-            });
+            }); 
 
             return response()->json(['success' => true, 'message' => 'Data Panen berhasil disimpan']);
         } catch (\Exception $e) {
@@ -454,10 +476,19 @@ class KelolaLahanController extends Controller
     public function storeSerapan(Request $request)
     {
         $request->validate([
-            'id_lahan' => 'required',
+            'id_lahan' => 'required|integer',
             'tgl_distribusi' => 'required|date',
-            'total_distribusi' => 'required|numeric',
+            'total_distribusi' => 'required|numeric|min:0',
+            'distribusi_ke' => 'required|integer',
+            'keterangan_serapan' => 'nullable|string|max:1000',
         ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $request->id_lahan)->first();
+        if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Lahan tidak valid atau di luar wilayah tugas Anda!'], 403);
+        }
 
         try {
             DB::transaction(function () use ($request) {
@@ -488,6 +519,23 @@ class KelolaLahanController extends Controller
 
     public function updateTanam(Request $request, $id)
     {
+        $request->validate([
+            'tgl_tanam' => 'required|date',
+            'luas_tanam' => 'required|numeric|min:0',
+            'jenis_bibit' => 'nullable|string|max:255',
+            'kebutuhan_bibit' => 'nullable|string|max:255',
+            'est_awal_panen' => 'nullable|date',
+            'est_akhir_panen' => 'nullable|date',
+            'keterangan_tanam' => 'nullable|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('id_tanam', $id)->first(['lahan.id_tingkat']);
+        if (!$tanam || ($scope && $scope != '0' && ((string)$tanam->id_tingkat !== (string)$scope && !str_starts_with((string)$tanam->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::table('tanam')->where('id_tanam', $id)->update([
                 'tgl_tanam' => $request->tgl_tanam,
@@ -508,6 +556,21 @@ class KelolaLahanController extends Controller
 
     public function updatePanen(Request $request, $id)
     {
+        $request->validate([
+            'tgl_panen' => 'required|date',
+            'luas_panen' => 'required|numeric|min:0',
+            'total_panen' => 'nullable|numeric|min:0',
+            'status_panen' => 'required|integer|in:0,1,2',
+            'keterangan_panen' => 'nullable|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_panen', $id)->first(['lahan.id_tingkat']);
+        if (!$panen || ($scope && $scope != '0' && ((string)$panen->id_tingkat !== (string)$scope && !str_starts_with((string)$panen->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::table('panen')->where('id_panen', $id)->update([
                 'tgl_panen' => $request->tgl_panen,
@@ -526,6 +589,20 @@ class KelolaLahanController extends Controller
 
     public function updateSerapan(Request $request, $id)
     {
+        $request->validate([
+            'tgl_distribusi' => 'required|date',
+            'total_distribusi' => 'required|numeric|min:0',
+            'distribusi_ke' => 'required|integer',
+            'keterangan_serapan' => 'nullable|string|max:1000',
+        ]);
+
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::table('distribusi')->where('id_distribusi', $id)->update([
                 'tgl_distribusi' => $request->tgl_distribusi,
@@ -543,6 +620,17 @@ class KelolaLahanController extends Controller
 
     public function validasiSerapan(Request $request, $id)
     {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
+
+        $scope = $user->id_tugas ?? '0';
+        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
+            return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
+        }
+
         try {
             DB::table('distribusi')->where('id_distribusi', $id)->update([
                 'valid_oleh' => auth()->user()->username ?? 'operator',
@@ -556,9 +644,15 @@ class KelolaLahanController extends Controller
 
     public function destroyTanam($id)
     {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('id_tanam', $id)->first(['lahan.id_tingkat']);
+        if (!$tanam || ($scope && $scope != '0' && ((string)$tanam->id_tingkat !== (string)$scope && !str_starts_with((string)$tanam->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::transaction(function () use ($id) {
-                // Delete cascading children if necessary, or just mark deletestatus
                 DB::table('tanam')->where('id_tanam', $id)->update(['deletestatus' => '0']);
                 DB::table('panen')->where('id_tanam', $id)->update(['deletestatus' => '0']);
                 DB::table('distribusi')->where('id_tanam', $id)->update(['deletestatus' => '0']);
@@ -571,6 +665,13 @@ class KelolaLahanController extends Controller
 
     public function destroyPanen($id)
     {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_panen', $id)->first(['lahan.id_tingkat']);
+        if (!$panen || ($scope && $scope != '0' && ((string)$panen->id_tingkat !== (string)$scope && !str_starts_with((string)$panen->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::transaction(function () use ($id) {
                 DB::table('panen')->where('id_panen', $id)->update(['deletestatus' => '0']);
@@ -584,6 +685,13 @@ class KelolaLahanController extends Controller
 
     public function destroySerapan($id)
     {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
         try {
             DB::table('distribusi')->where('id_distribusi', $id)->update(['deletestatus' => '0']);
             return response()->json(['success' => true, 'message' => 'Data Serapan berhasil dihapus']);
@@ -594,12 +702,21 @@ class KelolaLahanController extends Controller
 
     public function getValidasiData($id)
     {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+
         $data = DB::table('lahan')
             ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->where('lahan.id_lahan', $id)
             ->first();
 
-        if (!$data) return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        if (!$data) {
+            return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        }
+
+        if ($scope && $scope != '0' && ((string)$data->id_tingkat !== (string)$scope && !str_starts_with((string)$data->id_tingkat, (string)$scope . '.'))) {
+            return response()->json(['error' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
 
         $tanam = DB::table('tanam')->where('id_lahan', $id)->where('deletestatus', '1')->get();
         $panen = DB::table('panen')->where('id_lahan', $id)->where('deletestatus', '1')->get();
