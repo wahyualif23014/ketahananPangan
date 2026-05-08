@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RekapitulasiLahan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache; // Import Cache untuk optimasi
 use App\Exports\RekapitulasiExport;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -13,7 +14,6 @@ class RekapitulasiController extends Controller
 {
     /**
      * Scope closure untuk tabel RekapitulasiLahan (kolom id_polres).
-     * Menggunakan pola yang sama dengan Operator\RekapitulasiController.
      */
     private function makeScopeClosure(): \Closure
     {
@@ -22,7 +22,9 @@ class RekapitulasiController extends Controller
         return function ($query, string $column = 'id_polres') use ($scope) {
             if ($scope && $scope !== '0') {
                 $polresPrefix = implode('.', array_slice(explode('.', $scope), 0, 2));
-                $query->where(function($q) use ($column, $polresPrefix) { $q->where($column, $polresPrefix)->orWhere($column, 'LIKE', $polresPrefix . '.%'); });
+                $query->where(function($q) use ($column, $polresPrefix) { 
+                    $q->where($column, $polresPrefix)->orWhere($column, 'LIKE', $polresPrefix . '.%'); 
+                });
             }
             return $query;
         };
@@ -39,8 +41,10 @@ class RekapitulasiController extends Controller
             if ($scope && $scope !== '0') {
                 $polresPrefix = implode('.', array_slice(explode('.', $scope), 0, 2));
                 $query->where(function ($q) use ($polresPrefix, $scope) {
-                    $q->where(function($q) use ($polresPrefix) { $q->where('id_tingkat', $polresPrefix)->orWhere('id_tingkat', 'LIKE', $polresPrefix . '.%'); })
-                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
+                    $q->where(function($q) use ($polresPrefix) { 
+                        $q->where('id_tingkat', $polresPrefix)->orWhere('id_tingkat', 'LIKE', $polresPrefix . '.%'); 
+                    })
+                    ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
                 });
             }
             return $query;
@@ -53,38 +57,62 @@ class RekapitulasiController extends Controller
 
         $applyScope   = $this->makeScopeClosure();
         $applyTingkat = $this->makeTingkatScope();
+        $userId       = auth()->id(); // Digunakan untuk unique cache key
 
-        // ── Polres — scoped ke jurisdiksi user view ───────────────────────
-        $polresList = $applyTingkat(DB::table('tingkat'))
-            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
-            ->orderBy('id_tingkat')
-            ->get();
+        // 1. OPTIMASI: Cache list Polres (TTL 1 Jam) - Spesifik per User Scope
+        $polresList = Cache::remember("view_polres_list_{$userId}", 3600, function() use ($applyTingkat) {
+            return $applyTingkat(DB::table('tingkat'))
+                ->select('id_tingkat', 'nama_tingkat') // Explicit Select
+                ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
+                ->orderBy('id_tingkat')
+                ->get();
+        });
 
-        // ── Polsek — cascading, hanya jika polres dipilih ────────────────
+        // 2. OPTIMASI: Polsek List (Cache 5 Menit jika sedang memfilter polres tertentu)
         $polsekList = collect();
         if ($request->filled('polres')) {
-            $polsekList = $applyTingkat(DB::table('tingkat'))
-                ->where('id_tingkat', 'like', $request->polres . '.%')
-                ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-                ->orderBy('nama_tingkat')
-                ->get();
+            $polresReq = $request->polres;
+            $polsekList = Cache::remember("view_polsek_list_{$userId}_{$polresReq}", 300, function() use ($applyTingkat, $polresReq) {
+                return $applyTingkat(DB::table('tingkat'))
+                    ->select('id_tingkat', 'nama_tingkat') // Explicit Select
+                    ->where('id_tingkat', 'like', $polresReq . '.%')
+                    ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
+                    ->orderBy('nama_tingkat')
+                    ->get();
+            });
         }
 
-        $jenisLahanList = DB::table('jenislahan')
-            ->select('id_jenis_lahan', 'nama_jenis_lahan')
-            ->distinct()
-            ->orderBy('id_jenis_lahan', 'asc')
-            ->get();
+        // 3. OPTIMASI: Cache Global untuk Jenis Lahan & Komoditi (TTL 1 Jam)
+        $jenisLahanList = Cache::remember('global_jenis_lahan_view', 3600, function() {
+            return DB::table('jenislahan')
+                ->select('id_jenis_lahan', 'nama_jenis_lahan')
+                ->distinct()
+                ->orderBy('id_jenis_lahan', 'asc')
+                ->get();
+        });
 
-        $komoditiList = DB::table('komoditi')
-            ->select('id_komoditi', 'nama_komoditi')
-            ->get();
+        $komoditiList = Cache::remember('global_komoditi_list_view', 3600, function() {
+            return DB::table('komoditi')
+                ->select('id_komoditi', 'nama_komoditi')
+                ->get();
+        });
 
-        // ── Data Rekapitulasi — scope jurisdiksi dulu, lalu filter user ──
-        $dataRekap = $applyScope(RekapitulasiLahan::query())
+        // 4. OPTIMASI: Explicit Selection & Result Caching
+        // Caching per user selama 60 detik untuk mempercepat navigasi laporan
+        $cacheKey = "rekap_view_data_{$userId}_" . md5(serialize($request->all()) . '_p' . $request->get('page', 1));
+
+        $dataRekap = Cache::remember($cacheKey, 60, function() use ($request, $applyScope) {
+            return $applyScope(RekapitulasiLahan::select([
+                'nama_polres', 'nama_polsek', 'nama_desa', 'kapasitas_lahan_ha',
+                'aktual_tanam_ha', 'aktual_panen_ha', 'total_produksi_panen',
+                'total_titik_lahan', 'persentase_serapan', 'nama_jenis_lahan',
+                'nama_komoditi', 'tahun_lahan'
+            ]))
             ->filter($request->all())
-            ->paginate(100)
-            ->withQueryString();
+            ->paginate(100);
+        });
+
+        $dataRekap->withQueryString();
 
         return view('view.rekapitulasi.view_rekapitulasi', compact(
             'dataRekap',
@@ -102,13 +130,20 @@ class RekapitulasiController extends Controller
         }
 
         $applyTingkat = $this->makeTingkatScope();
+        $userId       = auth()->id();
+        $polresReq    = $request->polres;
 
-        $polsekList = $applyTingkat(DB::table('tingkat'))
-            ->where('id_tingkat', 'like', $request->polres . '.%')
-            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-            ->orderBy('nama_tingkat')
-            ->get()
-            ->map(fn($item) => ['value' => $item->id_tingkat, 'label' => $item->nama_tingkat]);
+        // Optimasi: AJAX Response Caching (5 Menit)
+        $cacheKey = "ajax_view_polsek_{$userId}_{$polresReq}";
+        $polsekList = Cache::remember($cacheKey, 300, function() use ($applyTingkat, $polresReq) {
+            return $applyTingkat(DB::table('tingkat'))
+                ->select('id_tingkat', 'nama_tingkat')
+                ->where('id_tingkat', 'like', $polresReq . '.%')
+                ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
+                ->orderBy('nama_tingkat')
+                ->get()
+                ->map(fn($item) => ['value' => $item->id_tingkat, 'label' => $item->nama_tingkat]);
+        });
 
         return response()->json($polsekList);
     }
