@@ -255,7 +255,7 @@ class KelolaLahanController extends Controller
         $tanamStats = $applyScope(
             DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                 ->where('tanam.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('tanam.valid_oleh'),
+                ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         $tanamTotal   = (clone $tanamStats)->sum('tanam.luas_tanam') ?? 0;
@@ -267,7 +267,7 @@ class KelolaLahanController extends Controller
         $panenStats = $applyScope(
             DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->where('panen.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('panen.valid_oleh'),
+                ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         $panenTotal   = (clone $panenStats)->sum('panen.luas_panen') ?? 0;
@@ -279,7 +279,7 @@ class KelolaLahanController extends Controller
         $serapanStats = $applyScope(
             DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
                 ->where('distribusi.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('distribusi.valid_oleh'),
+                ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         $serapanTotal   = (clone $serapanStats)->sum('distribusi.total_distribusi') ?? 0;

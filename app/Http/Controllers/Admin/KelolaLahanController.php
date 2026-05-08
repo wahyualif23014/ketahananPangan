@@ -301,7 +301,7 @@ class KelolaLahanController extends Controller
             $tanamQuery = DB::table('tanam')
                 ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                 ->join(DB::raw('(SELECT MAX(id_tanam) as max_id FROM tanam GROUP BY id_lahan) as latest'), 'tanam.id_tanam', '=', 'latest.max_id')
-                ->whereNotNull('tanam.valid_oleh')
+                ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', '')
                 ->whereIn('tanam.id_lahan', $filteredLahanIds);
 
             $tanamTotal = (clone $tanamQuery)->sum('tanam.luas_tanam') ?? 0;
@@ -314,7 +314,7 @@ class KelolaLahanController extends Controller
             $panenQuery = DB::table('panen')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->join(DB::raw('(SELECT MAX(id_panen) as max_id FROM panen GROUP BY id_lahan) as latest'), 'panen.id_panen', '=', 'latest.max_id')
-                ->whereNotNull('panen.valid_oleh')
+                ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', '')
                 ->whereIn('panen.id_lahan', $filteredLahanIds);
 
             $panenTotal = (clone $panenQuery)->sum('panen.luas_panen') ?? 0;
@@ -327,7 +327,7 @@ class KelolaLahanController extends Controller
             $serapanQuery = DB::table('distribusi')
                 ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
                 ->join(DB::raw('(SELECT MAX(id_distribusi) as max_id FROM distribusi GROUP BY id_lahan) as latest'), 'distribusi.id_distribusi', '=', 'latest.max_id')
-                ->whereNotNull('distribusi.valid_oleh')
+                ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', '')
                 ->whereIn('distribusi.id_lahan', $filteredLahanIds);
 
             $serapanTotal = (clone $serapanQuery)->sum('distribusi.total_distribusi') ?? 0;
@@ -708,7 +708,7 @@ class KelolaLahanController extends Controller
     {
         try {
             DB::table('tanam')->where('id_tanam', $id)->update([
-                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'valid_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_valid' => now(),
             ]);
             return back()->with('success', 'Data Tanam berhasil divalidasi');
@@ -721,7 +721,7 @@ class KelolaLahanController extends Controller
     {
         try {
             DB::table('panen')->where('id_panen', $id)->update([
-                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'valid_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_valid' => now(),
             ]);
             return back()->with('success', 'Data Panen berhasil divalidasi');

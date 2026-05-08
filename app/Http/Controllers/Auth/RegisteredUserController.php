@@ -27,10 +27,15 @@ class RegisteredUserController extends Controller
         $request->validate([
             'id_anggota' => ['required', 'integer', 'unique:anggota,id_anggota'],
             'id_jabatan' => ['required', 'exists:jabatan,id_jabatan'],
+<<<<<<< Updated upstream
             'nama_anggota' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
             'no_telp_anggota' => ['nullable', 'string', 'max:15'],
             'id_tugas' => ['nullable', 'string', 'max:13'],
+=======
+            'nama_anggota' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
+>>>>>>> Stashed changes
             'role' => ['required', 'in:view,admin,operator'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -42,6 +47,10 @@ class RegisteredUserController extends Controller
         $user = User::create([
             'id_anggota' => $request->id_anggota,
             'id_jabatan' => $request->id_jabatan,
+<<<<<<< Updated upstream
+=======
+            'id_pengguna' => $newIdPengguna,
+>>>>>>> Stashed changes
             'id_tugas' => $request->id_tugas ?? '0',
             'nama_anggota' => $request->nama_anggota,
             'username' => $request->username,

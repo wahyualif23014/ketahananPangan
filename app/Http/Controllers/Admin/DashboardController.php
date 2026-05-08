@@ -137,365 +137,342 @@ class DashboardController extends Controller
     {
         $quarterFilter = $request->input('quarter', 'all');
         $yearFilter = $request->input('year', date('Y'));
-
-        // 1. KPI Summary
-        $potensiTotal = DB::table('lahan')->where('deletestatus', '1')->sum('luas_lahan');
-
-        $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereNotNull('valid_oleh')->whereYear('tgl_tanam', $yearFilter);
-        $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereNotNull('valid_oleh')->whereYear('tgl_panen', $yearFilter);
-
-        if ($quarterFilter != 'all') {
-            $tanamQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
-            $panenQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
-        }
-
-        $tanamTotal = $tanamQuery->sum('luas_tanam');
-        $panenTotal = $panenQuery->sum('luas_panen');
-
-        $totalTitikLahan = DB::table('lahan')->where('deletestatus', '1')->count();
-        $totalPolsek = DB::table('lahan')->where('deletestatus', '1')->distinct('id_tingkat')->count('id_tingkat');
-        $polsekAktif = $totalPolsek; // For doughnut chart
-
-        // Master Jenis Lahan mapping
-        $jenisLahanList = DB::table('jenislahan')
-            ->pluck('nama_jenis_lahan', 'id_jenis_lahan');
-
-        // Details
-        $potensiDetails = DB::table('lahan')
-            ->select('id_jenis_lahan', DB::raw('SUM(luas_lahan) as total_luas'), DB::raw('COUNT(id_lahan) as total_lokasi'))
-            ->where('deletestatus', '1')
-            ->groupBy('id_jenis_lahan')
-            ->get()->keyBy('id_jenis_lahan');
-
-        $tanamDetailsQuery = DB::table('tanam')
-            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-            ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
-            ->where('tanam.deletestatus', '1')
-            ->whereNotNull('tanam.valid_oleh')
-            ->whereYear('tanam.tgl_tanam', $yearFilter);
-
-        if ($quarterFilter != 'all') {
-            $tanamDetailsQuery->whereRaw('QUARTER(tanam.tgl_tanam) = ?', [$quarterFilter]);
-        }
-        $tanamDetails = $tanamDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
-
-        $panenDetailsQuery = DB::table('panen')
-            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
-            ->where('panen.deletestatus', '1')
-            ->whereNotNull('panen.valid_oleh')
-            ->whereYear('panen.tgl_panen', $yearFilter);
-
-        if ($quarterFilter != 'all') {
-            $panenDetailsQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
-        }
-        $panenDetails = $panenDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
-
-        // Serapan Hasil
-        $serapanRaw = DB::table('distribusi')
-            ->select('distribusi_ke', DB::raw('SUM(total_distribusi) as val'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('valid_oleh')
-            ->groupBy('distribusi_ke')
-            ->pluck('val', 'distribusi_ke');
-
-        $serapanBulog = $serapanRaw['1'] ?? 0;
-        $serapanTengkulak = $serapanRaw['3'] ?? 0;
-        $serapanPabrik = $serapanRaw['2'] ?? 0;
-        $serapanKonsumsi = $serapanRaw['4'] ?? 0;
-        $totalSerapan = $serapanBulog + $serapanTengkulak + $serapanPabrik + $serapanKonsumsi;
-
-        // Harvest Status Cards
-        $harvestCardsData = DB::table('panen')
-            ->select('status_panen', DB::raw('SUM(luas_panen) as val'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('valid_oleh')
-            ->whereYear('tgl_panen', $yearFilter);
-
-        if ($quarterFilter != 'all') {
-            $harvestCardsData->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
-        }
-        $harvestCardsData = $harvestCardsData->groupBy('status_panen')->pluck('val', 'status_panen');
-
-        $harvestStats = [
-            'normal' => $harvestCardsData['1'] ?? 0,
-            'failed' => $harvestCardsData['2'] ?? 0,
-            'early'  => $harvestCardsData['3'] ?? 0,
-            'tebasan' => $harvestCardsData['4'] ?? 0,
-        ];
-
-        // Planting & Harvesting Analytics (with lokasi)
-        $plantingAnalytics = [];
-        $totalT = $tanamTotal > 0 ? $tanamTotal : 1;
-        foreach ($tanamDetails as $id => $det) {
-            $name = $jenisLahanList[$id] ?? 'Lain-lain';
-            $plantingAnalytics[$name] = [
-                'val'    => number_format($det->total_luas, 2),
-                'lokasi' => $det->total_lokasi,
-                'pct'    => round(($det->total_luas / $totalT) * 100)
-            ];
-        }
-        arsort($plantingAnalytics);
-
-        $harvestingAnalytics = [];
-        $totalP = $panenTotal > 0 ? $panenTotal : 1;
-        foreach ($panenDetails as $id => $det) {
-            $name = $jenisLahanList[$id] ?? 'Lain-lain';
-            $harvestingAnalytics[$name] = [
-                'val'    => number_format($det->total_luas, 2),
-                'lokasi' => $det->total_lokasi,
-                'pct'    => round(($det->total_luas / $totalP) * 100)
-            ];
-        }
-        arsort($harvestingAnalytics);
-
-        // Kwartal Data - semua 9 jenis lahan
-        $allJenisLahan = [
-            1 => ['label' => 'Produktif (Poktan Binaan Polri)', 'accent' => 'emerald'],
-            2 => ['label' => 'Hutan (Perhutanan Sosial)',       'accent' => 'teal'],
-            3 => ['label' => 'Luas Baku Sawah (LBS)',           'accent' => 'blue'],
-            4 => ['label' => 'Pesantren',                        'accent' => 'violet'],
-            5 => ['label' => 'Milik Polri',                      'accent' => 'indigo'],
-            6 => ['label' => 'Produktif (Masy. Binaan Polri)',   'accent' => 'sky'],
-            7 => ['label' => 'Produktif (Tumpang Sari)',         'accent' => 'amber'],
-            8 => ['label' => 'Hutan (Perhutani/Inhutani)',       'accent' => 'rose'],
-            9 => ['label' => 'Lahan Lainnya',                    'accent' => 'slate'],
-        ];
-
-        $kwartalRaw = DB::table('panen')
-            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->select(
-                DB::raw('QUARTER(panen.tgl_panen) as q'),
-                'lahan.id_jenis_lahan',
-                DB::raw('SUM(panen.luas_panen) as total_ha'),
-                DB::raw('SUM(panen.total_panen) as total_ton')
-            )
-            ->where('panen.deletestatus', '1')
-            ->whereNotNull('panen.tgl_panen')
-            ->whereYear('panen.tgl_panen', $yearFilter)
-            ->groupBy('q', 'lahan.id_jenis_lahan')
-            ->get();
-
-        // Build per-jenis Q arrays
-        $jenisQData = [];
-        $totalQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
-
-        foreach ($allJenisLahan as $jId => $jInfo) {
-            $jenisQData[$jId] = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
-        }
-
-        foreach ($kwartalRaw as $item) {
-            $qIndex = $item->q - 1;
-            if ($qIndex >= 0 && $qIndex <= 3) {
-                $jId = $item->id_jenis_lahan;
-                if (isset($jenisQData[$jId])) {
-                    $jenisQData[$jId][$qIndex]['luas']  += $item->total_ha;
-                    $jenisQData[$jId][$qIndex]['hasil'] += $item->total_ton;
-                }
-                $totalQ[$qIndex]['luas']  += $item->total_ha;
-                $totalQ[$qIndex]['hasil'] += $item->total_ton;
-            }
-        }
-
-        $kwartalData = [];
-        foreach ($allJenisLahan as $jId => $jInfo) {
-            $kwartalData[] = [
-                'category' => $jId . '. ' . $jInfo['label'],
-                'accent'   => $jInfo['accent'],
-                'q'        => $jenisQData[$jId],
-            ];
-        }
-        $kwartalData[] = ['category' => 'Total Keseluruhan', 'accent' => 'amber', 'q' => $totalQ];
-
-        // Available years for chart filter
-        $chartYears = DB::table('lahan')
-            ->select(DB::raw('YEAR(tgl_edit) as yr'))
-            ->whereNotNull('tgl_edit')
-            ->groupBy('yr')
-            ->orderBy('yr')
-            ->pluck('yr')
-            ->filter()
-            ->merge(
-                DB::table('panen')->select(DB::raw('YEAR(tgl_panen) as yr'))
-                    ->whereNotNull('tgl_panen')->groupBy('yr')->pluck('yr')
-            )
-            ->unique()->sort()->values()->toArray();
-        if (empty($chartYears)) {
-            $chartYears = range(2024, (int)date('Y') + 1);
-        }
-
-        // Map Data
-        $mapData = DB::table('lahan')
-            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng', 'lahan.status_lahan as status')
-            ->where('lahan.deletestatus', '1')
-            ->whereNotNull('lahan.latitude')
-            ->whereNotNull('lahan.longitude')
-            ->where('lahan.latitude', '!=', '')
-            ->where('lahan.longitude', '!=', '')
-            ->inRandomOrder()
-            ->limit(200)
-            ->get()
-            ->map(function ($item) {
-                $statusMap = ['1' => 'Produktif', '2' => 'Tanam', '3' => 'Panen'];
-                $item->status = $statusMap[$item->status] ?? 'Produktif';
-                return $item;
-            });
+        $chartYear  = $request->input('chart_year', $yearFilter);
+        $chartMonth = $request->input('chart_month', 'all');
 
         $pendingSearch = $request->input('pending_search', '');
         $pendingYear = $request->input('pending_year', '');
         $pendingMonth = $request->input('pending_month', '');
         $pendingJenis = $request->input('pending_jenis', '');
 
-        // Pending Validation Potensi
-        $qPotensi = DB::table('lahan')
-            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction', 'lahan.id_jenis_lahan')
-            ->where('lahan.deletestatus', '1')
-            ->whereNull('lahan.valid_oleh');
+        $cacheKey = 'admin_dashboard_v2_' . md5(serialize($request->only([
+            'quarter', 'year', 'chart_year', 'chart_month', 
+            'pending_search', 'pending_year', 'pending_month', 'pending_jenis'
+        ])));
 
-        if ($pendingSearch) {
-            $qPotensi->where(function ($q) use ($pendingSearch) {
-                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use (
+            $quarterFilter, $yearFilter, $chartYear, $chartMonth, 
+            $pendingSearch, $pendingYear, $pendingMonth, $pendingJenis
+        ) {     
+            // 1. KPI Summary - Optimasi: Explicit Select
+            $potensiTotal = DB::table('lahan')->where('deletestatus', '1')->sum('luas_lahan');
+
+            $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereYear('tgl_tanam', $yearFilter);
+            $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereYear('tgl_panen', $yearFilter);
+
+            if ($quarterFilter != 'all') {
+                $tanamQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
+                $panenQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            }
+
+            $tanamTotal = $tanamQuery->sum('luas_tanam');
+            $panenTotal = $panenQuery->sum('luas_panen');
+
+            $totalTitikLahan = DB::table('lahan')->where('deletestatus', '1')->count();
+            $totalPolsek = DB::table('lahan')->where('deletestatus', '1')->distinct('id_tingkat')->count('id_tingkat');
+            $polsekAktif = $totalPolsek; 
+
+            // Polres List untuk Notifikasi - Optimasi: Cache
+            $polresList = \Illuminate\Support\Facades\Cache::remember('global_polres_list', 3600, function() {
+                return DB::table('tingkat')
+                    ->select('id_tingkat', 'nama_tingkat')
+                    ->whereRaw('LENGTH(TRIM(id_tingkat)) = 5')
+                    ->get();
             });
-        }
-        if ($pendingYear) $qPotensi->whereYear('lahan.datetransaction', $pendingYear);
-        if ($pendingMonth) $qPotensi->whereMonth('lahan.datetransaction', $pendingMonth);
-        if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
 
-        // Hitung total sesungguhnya tanpa limit (untuk footer dashboard)
-        $totalPendingPotensi = (clone $qPotensi)->count();
-        $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
-
-        // Pending Validation Kelola
-        $qTanam = DB::table('tanam')
-            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
-            ->where('tanam.deletestatus', '1')
-            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
-
-        if ($pendingSearch) {
-            $qTanam->where(function ($q) use ($pendingSearch) {
-                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+            // Master Jenis Lahan mapping - Optimasi: Cache master data
+            $jenisLahanList = \Illuminate\Support\Facades\Cache::remember('global_jenislahan_list', 3600, function() {
+                return DB::table('jenislahan')->pluck('nama_jenis_lahan', 'id_jenis_lahan');
             });
-        }
-        if ($pendingYear) $qTanam->whereYear('tanam.tgl_tanam', $pendingYear);
-        if ($pendingMonth) $qTanam->whereMonth('tanam.tgl_tanam', $pendingMonth);
-        if ($pendingJenis) $qTanam->where('lahan.id_jenis_lahan', $pendingJenis);
 
-        $qPanen = DB::table('panen')
-            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
-            ->where('panen.deletestatus', '1')
-            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
+            // Details - Optimasi: Explicit Select
+            $potensiDetails = DB::table('lahan')
+                ->select('id_jenis_lahan', DB::raw('SUM(luas_lahan) as total_luas'), DB::raw('COUNT(id_lahan) as total_lokasi'))
+                ->where('deletestatus', '1')
+                ->groupBy('id_jenis_lahan')
+                ->get()->keyBy('id_jenis_lahan');
 
-        if ($pendingSearch) {
-            $qPanen->where(function ($q) use ($pendingSearch) {
-                $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
-                    ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
-                    ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+            $tanamDetailsQuery = DB::table('tanam')
+                ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+                ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
+                ->where('tanam.deletestatus', '1')
+                ->whereYear('tanam.tgl_tanam', $yearFilter);
+
+            if ($quarterFilter != 'all') {
+                $tanamDetailsQuery->whereRaw('QUARTER(tanam.tgl_tanam) = ?', [$quarterFilter]);
+            }
+            $tanamDetails = $tanamDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
+
+            $panenDetailsQuery = DB::table('panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
+                ->where('panen.deletestatus', '1')
+                ->whereYear('panen.tgl_panen', $yearFilter);
+
+            if ($quarterFilter != 'all') {
+                $panenDetailsQuery->whereRaw('QUARTER(panen.tgl_panen) = ?', [$quarterFilter]);
+            }
+            $panenDetails = $panenDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
+
+            // Serapan Hasil
+            $serapanRaw = DB::table('distribusi')
+                ->select('distribusi_ke', DB::raw('SUM(total_distribusi) as val'))
+                ->where('deletestatus', '1')
+                ->groupBy('distribusi_ke')
+                ->pluck('val', 'distribusi_ke');
+
+            $serapanBulog = $serapanRaw['1'] ?? 0;
+            $serapanTengkulak = $serapanRaw['3'] ?? 0;
+            $serapanPabrik = $serapanRaw['2'] ?? 0;
+            $serapanKonsumsi = $serapanRaw['4'] ?? 0;
+            $totalSerapan = $serapanBulog + $serapanTengkulak + $serapanPabrik + $serapanKonsumsi;
+
+            // Harvest Status Cards
+            $harvestCardsData = DB::table('panen')
+                ->select('status_panen', DB::raw('SUM(luas_panen) as val'))
+                ->where('deletestatus', '1')
+                ->whereYear('tgl_panen', $yearFilter);
+
+            if ($quarterFilter != 'all') {
+                $harvestCardsData->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            }
+            $harvestCardsData = $harvestCardsData->groupBy('status_panen')->pluck('val', 'status_panen');
+
+            $harvestStats = [
+                'normal' => $harvestCardsData['1'] ?? 0,
+                'failed' => $harvestCardsData['2'] ?? 0,
+                'early'  => $harvestCardsData['3'] ?? 0,
+                'tebasan' => $harvestCardsData['4'] ?? 0,
+            ];
+
+            // Planting & Harvesting Analytics
+            $plantingAnalytics = [];
+            $totalT = $tanamTotal > 0 ? $tanamTotal : 1;
+            foreach ($tanamDetails as $id => $det) {
+                $name = $jenisLahanList[$id] ?? 'Lain-lain';
+                $plantingAnalytics[$name] = [
+                    'val'    => number_format($det->total_luas, 2),
+                    'lokasi' => $det->total_lokasi,
+                    'pct'    => round(($det->total_luas / $totalT) * 100)
+                ];
+            }
+            arsort($plantingAnalytics);
+
+            $harvestingAnalytics = [];
+            $totalP = $panenTotal > 0 ? $panenTotal : 1;
+            foreach ($panenDetails as $id => $det) {
+                $name = $jenisLahanList[$id] ?? 'Lain-lain';
+                $harvestingAnalytics[$name] = [
+                    'val'    => number_format($det->total_luas, 2),
+                    'lokasi' => $det->total_lokasi,
+                    'pct'    => round(($det->total_luas / $totalP) * 100)
+                ];
+            }
+            arsort($harvestingAnalytics);
+
+            // Kwartal Data
+            $allJenisLahan = [
+                1 => ['label' => 'Produktif (Poktan Binaan Polri)', 'accent' => 'emerald'],
+                2 => ['label' => 'Hutan (Perhutanan Sosial)',       'accent' => 'teal'],
+                3 => ['label' => 'Luas Baku Sawah (LBS)',           'accent' => 'blue'],
+                4 => ['label' => 'Pesantren',                        'accent' => 'violet'],
+                5 => ['label' => 'Milik Polri',                      'accent' => 'indigo'],
+                6 => ['label' => 'Produktif (Masy. Binaan Polri)',   'accent' => 'sky'],
+                7 => ['label' => 'Produktif (Tumpang Sari)',         'accent' => 'amber'],
+                8 => ['label' => 'Hutan (Perhutani/Inhutani)',       'accent' => 'rose'],
+                9 => ['label' => 'Lahan Lainnya',                    'accent' => 'slate'],
+            ];
+
+            $kwartalRaw = DB::table('panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->select(
+                    DB::raw('QUARTER(panen.tgl_panen) as q'),
+                    'lahan.id_jenis_lahan',
+                    DB::raw('SUM(panen.luas_panen) as total_ha'),
+                    DB::raw('SUM(panen.total_panen) as total_ton')
+                )
+                ->where('panen.deletestatus', '1')
+                ->whereNotNull('panen.tgl_panen')
+                ->whereYear('panen.tgl_panen', $yearFilter)
+                ->groupBy('q', 'lahan.id_jenis_lahan')
+                ->get();
+
+            $jenisQData = [];
+            $totalQ = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+
+            foreach ($allJenisLahan as $jId => $jInfo) {
+                $jenisQData[$jId] = array_fill(0, 4, ['luas' => 0, 'hasil' => 0]);
+            }
+
+            foreach ($kwartalRaw as $item) {
+                $qIndex = $item->q - 1;
+                if ($qIndex >= 0 && $qIndex <= 3) {
+                    $jId = $item->id_jenis_lahan;
+                    if (isset($jenisQData[$jId])) {
+                        $jenisQData[$jId][$qIndex]['luas']  += $item->total_ha;
+                        $jenisQData[$jId][$qIndex]['hasil'] += $item->total_ton;
+                    }
+                    $totalQ[$qIndex]['luas']  += $item->total_ha;
+                    $totalQ[$qIndex]['hasil'] += $item->total_ton;
+                }
+            }
+
+            $kwartalData = [];
+            foreach ($allJenisLahan as $jId => $jInfo) {
+                $kwartalData[] = [
+                    'category' => $jId . '. ' . $jInfo['label'],
+                    'accent'   => $jInfo['accent'],
+                    'q'        => $jenisQData[$jId],
+                ];
+            }
+            $kwartalData[] = ['category' => 'Total Keseluruhan', 'accent' => 'amber', 'q' => $totalQ];
+
+            // Available years for chart filter
+            $chartYears = \Illuminate\Support\Facades\Cache::remember('chart_available_years', 3600, function() {
+                return DB::table('lahan')
+                    ->select(DB::raw('YEAR(tgl_edit) as yr'))
+                    ->whereNotNull('tgl_edit')
+                    ->groupBy('yr')
+                    ->orderBy('yr')
+                    ->pluck('yr')
+                    ->filter()
+                    ->merge(
+                        DB::table('panen')->select(DB::raw('YEAR(tgl_panen) as yr'))
+                            ->whereNotNull('tgl_panen')->groupBy('yr')->pluck('yr')
+                    )
+                    ->unique()->sort()->values()->toArray();
             });
-        }
-        if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);
-        if ($pendingMonth) $qPanen->whereMonth('panen.tgl_panen', $pendingMonth);
-        if ($pendingJenis) $qPanen->where('lahan.id_jenis_lahan', $pendingJenis);
+            if (empty($chartYears)) $chartYears = range(2024, (int)date('Y') + 1);
 
-        // Total count kelola (tanam + panen) tanpa limit
-        $totalPendingKelola = (clone $qTanam)->count() + (clone $qPanen)->count();
+            // Map Data - Optimasi: Limit & Select
+            $mapData = DB::table('lahan')
+                ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+                ->select('tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng', 'lahan.status_lahan as status')
+                ->where('lahan.deletestatus', '1')
+                ->whereNotNull('lahan.latitude')
+                ->whereNotNull('lahan.longitude')
+                ->where('lahan.latitude', '!=', '')
+                ->where('lahan.longitude', '!=', '')
+                ->limit(300) // Sedikit ditambah untuk visual
+                ->get()
+                ->map(function ($item) {
+                    $statusMap = ['1' => 'Produktif', '2' => 'Tanam', '3' => 'Panen'];
+                    $item->status = $statusMap[$item->status] ?? 'Produktif';
+                    return $item;
+                });
 
-        $pendingKelola = $qTanam->union($qPanen)
-            ->orderBy('tanggal', 'desc')
-            ->limit(100)
-            ->get();
+            // Pending Validation Potensi
+            $qPotensi = DB::table('lahan')
+                ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction', 'lahan.id_jenis_lahan')
+                ->where('lahan.deletestatus', '1')
+                ->whereNull('lahan.valid_oleh');
 
-        // Polres List untuk modal notifikasi
-        $polresList = DB::table('tingkat')
-            ->whereRaw("LENGTH(id_tingkat) - LENGTH(REPLACE(id_tingkat, '.', '')) = 1")
-            ->orderBy('nama_tingkat')
-            ->get(['id_tingkat', 'nama_tingkat']);
+            if ($pendingSearch) {
+                $qPotensi->where(function ($q) use ($pendingSearch) {
+                    $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                        ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                        ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                });
+            }
+            if ($pendingYear) $qPotensi->whereYear('lahan.datetransaction', $pendingYear);
+            if ($pendingMonth) $qPotensi->whereMonth('lahan.datetransaction', $pendingMonth);
+            if ($pendingJenis) $qPotensi->where('lahan.id_jenis_lahan', $pendingJenis);
 
-        // Line Chart Data
-        $yearlyPanenData = DB::table('panen')
-            ->select(DB::raw('YEAR(tgl_panen) as year'), DB::raw('SUM(luas_panen) as total'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('valid_oleh')
-            ->whereNotNull('tgl_panen')
-            ->groupBy('year')
-            ->orderBy('year', 'asc')
-            ->get();
+            $totalPendingPotensi = (clone $qPotensi)->count();
+            $pendingPotensi = $qPotensi->orderBy('lahan.datetransaction', 'desc')->limit(100)->get();
 
-        $chartTahunan = [
-            'labels' => $yearlyPanenData->pluck('year')->toArray(),
-            'data'   => $yearlyPanenData->pluck('total')->toArray()
-        ];
-        $chartYearlyLabels = $chartTahunan['labels'];
-        $chartYearlyData = $chartTahunan['data'];
+            // Pending Validation Kelola
+            $qTanam = DB::table('tanam')
+                ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+                ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
+                ->where('tanam.deletestatus', '1')
+                ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); });
 
-        $chartYear  = $request->input('chart_year', $yearFilter);
-        $chartMonth = $request->input('chart_month', 'all');
+            if ($pendingSearch) {
+                $qTanam->where(function ($q) use ($pendingSearch) {
+                    $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                        ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                        ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                });
+            }
+            if ($pendingYear) $qTanam->whereYear('tanam.tgl_tanam', $pendingYear);
+            if ($pendingMonth) $qTanam->whereMonth('tanam.tgl_tanam', $pendingMonth);
+            if ($pendingJenis) $qTanam->where('lahan.id_jenis_lahan', $pendingJenis);
 
-        $monthlyPanenQuery = DB::table('panen')
-            ->select(DB::raw('MONTH(tgl_panen) as month'), DB::raw('SUM(luas_panen) as total'))
-            ->where('deletestatus', '1')
-            ->whereNotNull('valid_oleh')
-            ->whereNotNull('tgl_panen')
-            ->whereYear('tgl_panen', $chartYear);
+            $qPanen = DB::table('panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
+                ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
+                ->where('panen.deletestatus', '1')
+                ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); });
 
-        if ($chartMonth !== 'all') {
-            $monthlyPanenQuery->whereMonth('tgl_panen', (int)$chartMonth);
-        }
+            if ($pendingSearch) {
+                $qPanen->where(function ($q) use ($pendingSearch) {
+                    $q->where('lahan.alamat_lahan', 'like', "%{$pendingSearch}%")
+                        ->orWhere('tingkat.nama_tingkat', 'like', "%{$pendingSearch}%")
+                        ->orWhere('lahan.id_lahan', 'like', "%{$pendingSearch}%");
+                });
+            }
+            if ($pendingYear) $qPanen->whereYear('panen.tgl_panen', $pendingYear);
+            if ($pendingMonth) $qPanen->whereMonth('panen.tgl_panen', $pendingMonth);
+            if ($pendingJenis) $qPanen->where('lahan.id_jenis_lahan', $pendingJenis);
 
-        $monthlyPanenData = $monthlyPanenQuery->groupBy('month')->orderBy('month')->pluck('total', 'month');
+            $totalPendingKelola = (clone $qTanam)->count() + (clone $qPanen)->count();
+            $pendingKelola = $qTanam->union($qPanen)->orderBy('tanggal', 'desc')->limit(100)->get();
 
-        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-        $chartBulanan = ['labels' => $monthNames, 'data' => []];
-        $chartMonthlyData = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $val = $monthlyPanenData[$i] ?? 0;
-            $chartBulanan['data'][] = $val;
-            $chartMonthlyData[] = $val;
-        }
+            // Line Chart Data
+            $yearlyPanenData = DB::table('panen')->select(DB::raw('YEAR(tgl_panen) as year'), DB::raw('SUM(luas_panen) as total'))
+                ->where('deletestatus', '1')->whereNotNull('tgl_panen')->groupBy('year')->orderBy('year', 'asc')->get();
 
-        return compact(
-            'quarterFilter',
-            'yearFilter',
-            'potensiTotal',
-            'jenisLahanList',
-            'potensiDetails',
-            'tanamTotal',
-            'tanamDetails',
-            'panenTotal',
-            'panenDetails',
-            'totalTitikLahan',
-            'totalPolsek',
-            'totalSerapan',
-            'serapanBulog',
-            'serapanPabrik',
-            'serapanTengkulak',
-            'serapanKonsumsi',
-            'harvestStats',
-            'plantingAnalytics',
-            'harvestingAnalytics',
-            'kwartalData',
-            'mapData',
-            'pendingPotensi',
-            'pendingKelola',
-            'totalPendingPotensi',
-            'totalPendingKelola',
-            'chartMonthlyData',
-            'chartYearlyLabels',
-            'chartYearlyData',
-            'chartTahunan',
-            'chartBulanan',
-            'polsekAktif',
-            'chartYears',
-            'polresList'
-        );
+            $chartTahunan = ['labels' => $yearlyPanenData->pluck('year')->toArray(), 'data' => $yearlyPanenData->pluck('total')->toArray()];
+            
+            $monthlyPanenQuery = DB::table('panen')
+                ->select(DB::raw('MONTH(tgl_panen) as month'), DB::raw('SUM(luas_panen) as total'))
+                ->where('deletestatus', '1')->whereNotNull('tgl_panen')->whereYear('tgl_panen', $chartYear);
+
+            if ($chartMonth !== 'all') $monthlyPanenQuery->whereMonth('tgl_panen', (int)$chartMonth);
+
+            $monthlyPanenData = $monthlyPanenQuery->groupBy('month')->orderBy('month')->pluck('total', 'month');
+            $chartMonthlyData = [];
+            for ($i = 1; $i <= 12; $i++) $chartMonthlyData[] = $monthlyPanenData[$i] ?? 0;
+
+            return [
+                'quarterFilter'       => $quarterFilter,
+                'yearFilter'          => $yearFilter,
+                'potensiTotal'        => $potensiTotal,
+                'jenisLahanList'      => $jenisLahanList,
+                'potensiDetails'      => $potensiDetails,
+                'tanamTotal'          => $tanamTotal,
+                'tanamDetails'        => $tanamDetails,
+                'panenTotal'          => $panenTotal,
+                'panenDetails'        => $panenDetails,
+                'totalTitikLahan'     => $totalTitikLahan,
+                'totalPolsek'         => $totalPolsek,
+                'totalSerapan'        => $totalSerapan,
+                'serapanBulog'        => $serapanBulog,
+                'serapanPabrik'       => $serapanPabrik,
+                'serapanTengkulak'    => $serapanTengkulak,
+                'serapanKonsumsi'     => $serapanKonsumsi,
+                'harvestStats'        => $harvestStats,
+                'plantingAnalytics'   => $plantingAnalytics,
+                'harvestingAnalytics' => $harvestingAnalytics,
+                'kwartalData'         => $kwartalData,
+                'mapData'             => $mapData,
+                'pendingPotensi'      => $pendingPotensi,
+                'pendingKelola'       => $pendingKelola,
+                'totalPendingPotensi' => $totalPendingPotensi,
+                'totalPendingKelola'  => $totalPendingKelola,
+                'chartMonthlyData'    => $chartMonthlyData,
+                'chartYearlyLabels'   => $chartTahunan['labels'],
+                'chartYearlyData'     => $chartTahunan['data'],
+                'chartTahunan'        => $chartTahunan,
+                'chartBulanan'        => ['labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'], 'data' => $chartMonthlyData],
+                'polsekAktif'         => $polsekAktif,
+                'chartYears'          => $chartYears,
+                'polresList'          => $polresList
+            ];
+        });
     }
 }

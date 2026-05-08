@@ -315,7 +315,7 @@ class KelolaLahanController extends Controller
         $tanamQuery = $applyScope(
             DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                 ->where('tanam.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('tanam.valid_oleh'),
+                ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         if ($filters['sektor']) {
@@ -333,7 +333,7 @@ class KelolaLahanController extends Controller
         $panenQuery = $applyScope(
             DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->where('panen.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('panen.valid_oleh'),
+                ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         if ($filters['sektor']) {
@@ -351,7 +351,7 @@ class KelolaLahanController extends Controller
         $serapanQuery = $applyScope(
             DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
                 ->where('distribusi.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
-                ->whereNotNull('distribusi.valid_oleh'),
+                ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
         if ($filters['sektor']) {
@@ -681,7 +681,7 @@ class KelolaLahanController extends Controller
 
         try {
             DB::table('tanam')->where('id_tanam', $id)->update([
-                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'valid_oleh' => auth()->user()->username ?? 'operator',
                 'tgl_valid' => now(),
             ]);
             return back()->with('success', 'Data Tanam berhasil divalidasi');
@@ -699,7 +699,7 @@ class KelolaLahanController extends Controller
 
         try {
             DB::table('panen')->where('id_panen', $id)->update([
-                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'valid_oleh' => auth()->user()->username ?? 'operator',
                 'tgl_valid' => now(),
             ]);
             return back()->with('success', 'Data Panen berhasil divalidasi');
