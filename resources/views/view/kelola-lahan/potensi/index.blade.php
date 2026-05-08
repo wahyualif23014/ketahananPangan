@@ -476,69 +476,6 @@
     </div>
 
 
-    {{-- VIEW DETAIL MODAL --}}
-    <div id="viewModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4" aria-modal="true">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeViewModal()"></div>
-        <div class="relative w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="bg-white rounded-[2rem] shadow-2xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-                <div class="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between flex-shrink-0">
-                    <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        Detail Potensi Lahan
-                    </h3>
-                    <button onclick="closeViewModal()" class="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Polisi Penggerak</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_polisi">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_polisi">-</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Penanggung Jawab</p>
-                            <p class="text-sm font-black text-slate-800" id="vm_cp_lahan">-</p>
-                            <p class="text-xs text-slate-500 mt-1" id="vm_no_cp_lahan">-</p>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Alamat Lahan</p>
-                        <p class="text-sm font-bold text-slate-700" id="vm_alamat">-</p>
-                        <p class="text-xs text-slate-400 mt-0.5" id="vm_lokasi">-</p>
-                        <a id="vm_maps_link" href="#" target="_blank" class="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 rounded-lg transition-all shadow hidden">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            </svg>
-                            Buka di Google Maps
-                        </a>
-                    </div>
-                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
-                        <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-1" id="vm_jenis">-</p>
-                        <h4 class="text-3xl font-black text-emerald-700"><span id="vm_luas">0</span> <span class="text-sm text-emerald-600">HA</span></h4>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-2">Proses Oleh</p>
-                            <p class="text-sm font-bold text-slate-700" id="vm_edit_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_edit">-</p>
-                        </div>
-                        <div class="p-4 rounded-xl border" id="vm_validasi_box">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Validasi Oleh</p>
-                            <p class="text-sm font-bold" id="vm_valid_oleh">-</p>
-                            <p class="text-[10px] text-slate-400 mt-1" id="vm_tgl_valid">-</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <script>
         var jenisLabels = {
