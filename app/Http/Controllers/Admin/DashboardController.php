@@ -21,68 +21,104 @@ class DashboardController extends Controller
             return back()->with('error', 'Hanya admin yang dapat mengirim notifikasi.');
         }
 
-        // Ambil semua id_tingkat yang pending dari Potensi
-        $pendingPotensiTingkat = DB::table('lahan')
-            ->where('deletestatus', '1')
-            ->whereNull('valid_oleh')
-            ->pluck('id_tingkat')->toArray();
+        $dataType    = $request->input('data_type', 'all');    // all | potensi | kelola
+        $targetType  = $request->input('target_type', 'all'); // all | polres | pending
+        $targetPolres = $request->input('target_polres', []);  // diisi jika targetType = polres
 
-        // Ambil dari Kelola Lahan (Tanam)
-        $pendingTanamTingkat = DB::table('tanam')
-            ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-            ->where('tanam.deletestatus', '1')
-            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); })
-            ->pluck('lahan.id_tingkat')->toArray();
+        $pendingPotensiTingkat = [];
+        $pendingKelolaaTingkat  = [];
 
-        // Ambil dari Kelola Lahan (Panen)
-        $pendingPanenTingkat = DB::table('panen')
-            ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->where('panen.deletestatus', '1')
-            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); })
-            ->pluck('lahan.id_tingkat')->toArray();
+        // ── Data Potensi ──────────────────────────────────────────────────────
+        if (in_array($dataType, ['all', 'potensi'])) {
+            $pendingPotensiTingkat = DB::table('lahan')
+                ->where('deletestatus', '1')
+                ->whereNull('valid_oleh')
+                ->pluck('id_tingkat')->toArray();
+        }
 
-        $allPendingTingkat = array_unique(array_merge($pendingPotensiTingkat, $pendingTanamTingkat, $pendingPanenTingkat));
+        // ── Kelola Lahan (Tanam + Panen) ──────────────────────────────────────
+        if (in_array($dataType, ['all', 'kelola'])) {
+            $pendingTanamTingkat = DB::table('tanam')
+                ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
+                ->where('tanam.deletestatus', '1')
+                ->where('lahan.deletestatus', '!=', '0')
+                ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', 0); })
+                ->pluck('lahan.id_tingkat')->toArray();
+
+            $pendingPanenTingkat = DB::table('panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->where('panen.deletestatus', '1')
+                ->where('lahan.deletestatus', '!=', '0')
+                ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', 0); })
+                ->pluck('lahan.id_tingkat')->toArray();
+
+            $pendingKelolaaTingkat = array_merge($pendingTanamTingkat, $pendingPanenTingkat);
+        }
+
+        $allPendingTingkat = array_unique(array_merge($pendingPotensiTingkat, $pendingKelolaaTingkat));
 
         if (empty($allPendingTingkat)) {
             return back()->with('success', 'Tidak ada data pending yang memerlukan notifikasi.');
         }
 
-        // Ekstrak Polres (2 tingkat pertama, misal 11.30)
-        $polresTingkat = [];
+        // ── Ekstrak Polres dari pending tingkat (2 segmen, misal 11.30) ───────
+        $polresPending = [];
         foreach ($allPendingTingkat as $tingkat) {
             $parts = explode('.', $tingkat);
-            if (count($parts) >= 2) {
-                $polresTingkat[] = $parts[0] . '.' . $parts[1];
-            } else {
-                $polresTingkat[] = $tingkat;
-            }
+            $polresPending[] = count($parts) >= 2 ? $parts[0] . '.' . $parts[1] : $tingkat;
         }
-        $polresTingkat = array_unique($polresTingkat);
+        $polresPending = array_values(array_unique($polresPending));
 
-        // Cari operator Polres
+        // ── Tentukan polres target berdasarkan target_type ────────────────────
+        if ($targetType === 'polres') {
+            // Kirim hanya ke polres yang dipilih AND punya pending
+            if (empty($targetPolres)) {
+                return back()->with('error', 'Pilih minimal satu Polres terlebih dahulu.');
+            }
+            $polresTingkat = array_values(array_intersect($polresPending, $targetPolres));
+        } elseif ($targetType === 'pending') {
+            // Otomatis hanya ke polres yang ada data pendingnya
+            $polresTingkat = $polresPending;
+        } else {
+            // 'all' → semua polres yang memiliki operator aktif (tanpa filter pending)
+            $polresTingkat = $polresPending;
+        }
+
+        if (empty($polresTingkat)) {
+            return back()->with('error', 'Polres yang dipilih tidak memiliki data pending.');
+        }
+
+        // ── Buat pesan sesuai tipe data ───────────────────────────────────────
+        $typeLabel = match($dataType) {
+            'potensi' => 'Data Potensi Lahan',
+            'kelola'  => 'Data Kelola Lahan (Tanam/Panen)',
+            default   => 'Data Potensi maupun Kelola Lahan',
+        };
+
+        // ── Cari operator Polres ──────────────────────────────────────────────
         $penerima = \App\Models\Anggota::where('role', 'operator')
             ->whereIn('id_tugas', $polresTingkat)
             ->where('deletestatus', '2')
             ->get();
 
         if ($penerima->isEmpty()) {
-            return back()->with('error', 'Tidak ditemukan operator Polres untuk wilayah yang pending.');
+            return back()->with('error', 'Tidak ditemukan operator Polres untuk wilayah yang dipilih.');
         }
 
         $count = 0;
         foreach ($penerima as $p) {
             \App\Models\Pesan::create([
-                'id_pesan' => \Illuminate\Support\Str::uuid(),
-                'sender_id' => $user->id_anggota,
+                'id_pesan'     => \Illuminate\Support\Str::uuid(),
+                'sender_id'    => $user->id_anggota,
                 'recipient_id' => $p->id_anggota,
-                'judul' => 'Peringatan: Data Menunggu Validasi',
-                'isi_pesan' => 'Halo ' . $p->nama_anggota . ', terdapat data potensi atau kelola lahan di wilayah Anda (atau polsek jajaran Anda) yang masih menunggu validasi. Mohon segera periksa menu Kelola Lahan dan lakukan validasi. Terima kasih.',
-                'is_read' => false
+                'judul'        => 'Peringatan: Data Menunggu Validasi',
+                'isi_pesan'    => 'Halo ' . $p->nama_anggota . ', terdapat ' . $typeLabel . ' di wilayah Anda (atau polsek jajaran Anda) yang masih menunggu validasi. Mohon segera periksa menu Kelola Lahan dan lakukan validasi. Terima kasih.',
+                'is_read'      => false
             ]);
             $count++;
         }
 
-        return back()->with('success', "Notifikasi berhasil dikirim ke $count operator Polres.");
+        return back()->with('success', "Notifikasi berhasil dikirim ke {$count} operator Polres.");
     }
 
     public function indexOperator(Request $request)
@@ -105,8 +141,8 @@ class DashboardController extends Controller
         // 1. KPI Summary
         $potensiTotal = DB::table('lahan')->where('deletestatus', '1')->sum('luas_lahan');
 
-        $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereYear('tgl_tanam', $yearFilter);
-        $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereYear('tgl_panen', $yearFilter);
+        $tanamQuery = DB::table('tanam')->where('deletestatus', '1')->whereNotNull('valid_oleh')->whereYear('tgl_tanam', $yearFilter);
+        $panenQuery = DB::table('panen')->where('deletestatus', '1')->whereNotNull('valid_oleh')->whereYear('tgl_panen', $yearFilter);
 
         if ($quarterFilter != 'all') {
             $tanamQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
@@ -135,6 +171,7 @@ class DashboardController extends Controller
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
             ->where('tanam.deletestatus', '1')
+            ->whereNotNull('tanam.valid_oleh')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
 
         if ($quarterFilter != 'all') {
@@ -146,6 +183,7 @@ class DashboardController extends Controller
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
             ->where('panen.deletestatus', '1')
+            ->whereNotNull('panen.valid_oleh')
             ->whereYear('panen.tgl_panen', $yearFilter);
 
         if ($quarterFilter != 'all') {
@@ -157,6 +195,7 @@ class DashboardController extends Controller
         $serapanRaw = DB::table('distribusi')
             ->select('distribusi_ke', DB::raw('SUM(total_distribusi) as val'))
             ->where('deletestatus', '1')
+            ->whereNotNull('valid_oleh')
             ->groupBy('distribusi_ke')
             ->pluck('val', 'distribusi_ke');
 
@@ -170,6 +209,7 @@ class DashboardController extends Controller
         $harvestCardsData = DB::table('panen')
             ->select('status_panen', DB::raw('SUM(luas_panen) as val'))
             ->where('deletestatus', '1')
+            ->whereNotNull('valid_oleh')
             ->whereYear('tgl_panen', $yearFilter);
 
         if ($quarterFilter != 'all') {
@@ -374,10 +414,17 @@ class DashboardController extends Controller
             ->limit(100)
             ->get();
 
+        // Polres List untuk modal notifikasi
+        $polresList = DB::table('tingkat')
+            ->whereRaw("LENGTH(id_tingkat) - LENGTH(REPLACE(id_tingkat, '.', '')) = 1")
+            ->orderBy('nama_tingkat')
+            ->get(['id_tingkat', 'nama_tingkat']);
+
         // Line Chart Data
         $yearlyPanenData = DB::table('panen')
             ->select(DB::raw('YEAR(tgl_panen) as year'), DB::raw('SUM(luas_panen) as total'))
             ->where('deletestatus', '1')
+            ->whereNotNull('valid_oleh')
             ->whereNotNull('tgl_panen')
             ->groupBy('year')
             ->orderBy('year', 'asc')
@@ -396,6 +443,7 @@ class DashboardController extends Controller
         $monthlyPanenQuery = DB::table('panen')
             ->select(DB::raw('MONTH(tgl_panen) as month'), DB::raw('SUM(luas_panen) as total'))
             ->where('deletestatus', '1')
+            ->whereNotNull('valid_oleh')
             ->whereNotNull('tgl_panen')
             ->whereYear('tgl_panen', $chartYear);
 
@@ -446,7 +494,8 @@ class DashboardController extends Controller
             'chartTahunan',
             'chartBulanan',
             'polsekAktif',
-            'chartYears'
+            'chartYears',
+            'polresList'
         );
     }
 }

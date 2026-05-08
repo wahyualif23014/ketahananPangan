@@ -406,6 +406,9 @@ class PotensiLahanController extends Controller
             'ket_polisi'       => $request->keterangan_lain,
             'edit_oleh'        => auth()->user()->username ?? auth()->id(),
             'tgl_edit'         => Carbon::now(),
+            'valid_oleh'       => null,
+            'tgl_valid'        => null,
+            'status_lahan'     => '0',
         ];
 
         if ($request->hasFile('dokumentasi_lahan')) {

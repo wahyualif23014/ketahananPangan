@@ -53,6 +53,7 @@ class DashboardController extends Controller
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
             ->where('tanam.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('tanam.valid_oleh')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
         $tanamQuery = $applyScope($tanamQuery, 'lahan.id_tingkat');
 
@@ -60,6 +61,7 @@ class DashboardController extends Controller
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('panen.valid_oleh')
             ->whereYear('panen.tgl_panen', $yearFilter);
         $panenQuery = $applyScope($panenQuery, 'lahan.id_tingkat');
         
@@ -109,6 +111,7 @@ class DashboardController extends Controller
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
             ->where('tanam.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('tanam.valid_oleh')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -121,6 +124,7 @@ class DashboardController extends Controller
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('panen.valid_oleh')
             ->whereYear('panen.tgl_panen', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -134,6 +138,7 @@ class DashboardController extends Controller
             ->select('distribusi.distribusi_ke', DB::raw('SUM(distribusi.total_distribusi) as val'))
             ->where('distribusi.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('distribusi.valid_oleh')
             ->whereYear('distribusi.tgl_distribusi', $yearFilter);
 
         if ($quarterFilter != 'all') {
@@ -155,6 +160,7 @@ class DashboardController extends Controller
             ->select('panen.status_panen', DB::raw('SUM(panen.luas_panen) as val'))
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('panen.valid_oleh')
             ->whereYear('panen.tgl_panen', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -203,6 +209,7 @@ class DashboardController extends Controller
             )
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('panen.valid_oleh')
             ->whereNotNull('panen.tgl_panen')
             ->whereYear('panen.tgl_panen', $yearFilter)
             ->groupBy('q', 'lahan.id_jenis_lahan');
@@ -352,6 +359,7 @@ class DashboardController extends Controller
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(DB::raw('YEAR(panen.tgl_panen) as year'), DB::raw('SUM(panen.luas_panen) as total'))
             ->where('panen.deletestatus', '1')
+            ->whereNotNull('panen.valid_oleh')
             ->whereNotNull('panen.tgl_panen')
             ->groupBy('year')
             ->orderBy('year', 'asc');
@@ -372,6 +380,7 @@ class DashboardController extends Controller
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(DB::raw('MONTH(panen.tgl_panen) as month'), DB::raw('SUM(panen.luas_panen) as total'))
             ->where('panen.deletestatus', '1')
+            ->whereNotNull('panen.valid_oleh')
             ->whereNotNull('panen.tgl_panen')
             ->whereYear('panen.tgl_panen', $chartYear);
 

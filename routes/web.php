@@ -87,7 +87,12 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::post('/serapan', [KelolaLahanController::class, 'storeSerapan'])->name('serapan.store');
             Route::put('/serapan/{id}', [KelolaLahanController::class, 'updateSerapan'])->name('serapan.update');
             Route::delete('/serapan/{id}', [KelolaLahanController::class, 'destroySerapan'])->name('serapan.destroy');
+            Route::put('/tanam/{id}/validasi', [KelolaLahanController::class, 'validasiTanam'])->name('tanam.validasi');
+            Route::put('/panen/{id}/validasi', [KelolaLahanController::class, 'validasiPanen'])->name('panen.validasi');
             Route::put('/serapan/{id}/validasi', [KelolaLahanController::class, 'validasiSerapan'])->name('serapan.validasi');
+            Route::put('/tanam/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiTanam'])->name('tanam.unvalidasi');
+            Route::put('/panen/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiPanen'])->name('panen.unvalidasi');
+            Route::put('/serapan/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
             Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/lahan/{id}/validasi', [KelolaLahanController::class, 'validasiLahan'])->name('lahan.validasi');
         });
@@ -136,8 +141,14 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::post('/serapan', [OperatorKelolaLahan::class, 'storeSerapan'])->name('serapan.store');
             Route::put('/serapan/{id}', [OperatorKelolaLahan::class, 'updateSerapan'])->name('serapan.update');
             Route::delete('/serapan/{id}', [OperatorKelolaLahan::class, 'destroySerapan'])->name('serapan.destroy');
+            Route::put('/tanam/{id}/validasi', [OperatorKelolaLahan::class, 'validasiTanam'])->name('tanam.validasi');
+            Route::put('/panen/{id}/validasi', [OperatorKelolaLahan::class, 'validasiPanen'])->name('panen.validasi');
             Route::put('/serapan/{id}/validasi', [OperatorKelolaLahan::class, 'validasiSerapan'])->name('serapan.validasi');
+            Route::put('/tanam/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiTanam'])->name('tanam.unvalidasi');
+            Route::put('/panen/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiPanen'])->name('panen.unvalidasi');
+            Route::put('/serapan/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
             Route::get('/lahan/{id}/validasi-data', [OperatorKelolaLahan::class, 'getValidasiData'])->name('lahan.validasi-data');
+            Route::put('/lahan/{id}/validasi', [OperatorKelolaLahan::class, 'validasiLahan'])->name('lahan.validasi');
         });
 
         Route::get('/rekapitulasi', [OperatorRekapitulasi::class, 'index'])->name('rekapitulasi.index');

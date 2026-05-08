@@ -594,9 +594,13 @@
                     <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Satuan wilayah yang belum melakukan sinkronisasi data final</p>
                 </div>
             </div>
-            <button class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/30 active:scale-95 hidden md:block">
-                Kirim Notifikasi Massal
-            </button>
+            <div class="hidden md:flex flex-col items-end gap-1">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">{{ number_format($totalPendingPotensi + $totalPendingKelola) }} Data Pending</span>
+                </div>
+                <p class="text-[9px] text-slate-500 uppercase tracking-wide">Notifikasi dikelola oleh Admin</p>
+            </div>
         </div>
 
         <div class="px-8 py-4 border-b border-slate-800 bg-slate-900/50 relative z-10" id="pending-section">
@@ -759,9 +763,10 @@
                     <span class="text-slate-600 mx-1">+</span>
                     <span class="text-amber-400">{{ number_format(count($pendingKelola)) }} Kelola</span>
                 </p>
-                <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-all active:scale-95 md:hidden">
-                    Kirim Notifikasi
-                </button>
+                <div class="flex items-center gap-2 md:hidden">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Notifikasi dikelola Admin</span>
+                </div>
             </div>
         </div>
     </div>

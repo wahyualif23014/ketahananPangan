@@ -59,7 +59,7 @@ class KelolaLahanController extends Controller
             $dataQuery->where('lahan.id_komoditi', $filters['komoditi']);
         }
 
-        $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+        $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
         $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
@@ -157,10 +157,12 @@ class KelolaLahanController extends Controller
                     't.tgl_tanam',
                     't.est_awal_panen',
                     't.est_akhir_panen',
+                    't.valid_oleh as tanam_valid_oleh',
                     'p.id_panen',
                     'p.total_panen',
                     'p.tgl_panen',
                     'p.status_panen',
+                    'p.valid_oleh as panen_valid_oleh',
                     'd.id_distribusi',
                     'd.total_distribusi',
                     'd.tgl_distribusi',
@@ -240,6 +242,7 @@ class KelolaLahanController extends Controller
                 $latestTanams = DB::table('tanam')
                     ->select('id_lahan', DB::raw('MAX(id_tanam) as max_id_tanam'))
                     ->whereIn('id_lahan', $lahanIds)
+                    ->where('is_active', 1)
                     ->groupBy('id_lahan')
                     ->get()
                     ->keyBy('id_lahan');
@@ -556,6 +559,8 @@ class KelolaLahanController extends Controller
                 'keterangan_tanam' => $request->keterangan_tanam,
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
+                'valid_oleh' => null,
+                'tgl_valid' => null,
             ]);
             AktivitasLog::catat('update', 'tanam', [
                 'record_id'   => $id,
@@ -590,6 +595,8 @@ class KelolaLahanController extends Controller
                 'ket_panen' => $request->keterangan_panen,
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
+                'valid_oleh' => null,
+                'tgl_valid' => null,
             ]);
             AktivitasLog::catat('update', 'panen', [
                 'record_id'   => $id,
@@ -622,6 +629,8 @@ class KelolaLahanController extends Controller
                 'keterangan_distribusi' => $request->keterangan_serapan,
                 'edit_oleh' => auth()->user()->username ?? 'admin',
                 'tgl_edit' => now(),
+                'valid_oleh' => null,
+                'tgl_valid' => null,
             ]);
             AktivitasLog::catat('update', 'serapan', [
                 'record_id'   => $id,
@@ -675,6 +684,50 @@ class KelolaLahanController extends Controller
         return response()->json(['success' => true, 'message' => 'Data serapan berhasil dihapus']);
     }
 
+    public function unvalidasiTanam($id)
+    {
+        DB::table('tanam')->where('id_tanam', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
+        return back()->with('success', 'Data Tanam berhasil di-unvalidasi');
+    }
+
+    public function unvalidasiPanen($id)
+    {
+        DB::table('panen')->where('id_panen', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
+        return back()->with('success', 'Data Panen berhasil di-unvalidasi');
+    }
+
+    public function unvalidasiSerapan($id)
+    {
+        DB::table('distribusi')->where('id_distribusi', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
+        return back()->with('success', 'Data Serapan berhasil di-unvalidasi');
+    }
+
+    public function validasiTanam(Request $request, $id)
+    {
+        try {
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'tgl_valid' => now(),
+            ]);
+            return back()->with('success', 'Data Tanam berhasil divalidasi');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+        }
+    }
+
+    public function validasiPanen(Request $request, $id)
+    {
+        try {
+            DB::table('panen')->where('id_panen', $id)->update([
+                'valid_oleh' => auth()->user() ? auth()->user()->id_anggota : null,
+                'tgl_valid' => now(),
+            ]);
+            return back()->with('success', 'Data Panen berhasil divalidasi');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+        }
+    }
+
     public function validasiSerapan(Request $request, $id)
     {
         try {
@@ -690,59 +743,41 @@ class KelolaLahanController extends Controller
 
     public function getValidasiData($id)
     {
-        $tanam = DB::table('tanam')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
-        $panen = DB::table('panen')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
-        $serapan = DB::table('distribusi')->where('id_lahan', $id)->whereNull('valid_oleh')->get();
+        $tanam = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->whereNull('valid_oleh')->get();
+        $panen = DB::table('panen')->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')->where('panen.id_lahan', $id)->where('tanam.is_active', 1)->whereNull('panen.valid_oleh')->select('panen.*')->get();
+        $serapan = DB::table('distribusi')->join('tanam', 'distribusi.id_tanam', '=', 'tanam.id_tanam')->where('distribusi.id_lahan', $id)->where('tanam.is_active', 1)->whereNull('distribusi.valid_oleh')->select('distribusi.*')->get();
+        $hasActive = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->exists();
 
         return response()->json([
             'tanam' => $tanam,
             'panen' => $panen,
-            'serapan' => $serapan
+            'serapan' => $serapan,
+            'has_active' => $hasActive
         ]);
     }
 
     public function validasiLahan(Request $request, $id)
     {
-        // Hanya admin dan operator yang boleh memvalidasi
+        // Hanya admin dan operator polres yang boleh memvalidasi
         if (auth()->user() && auth()->user()->role === 'view') {
             return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk melakukan validasi.'], 403);
         }
 
         try {
-            DB::transaction(function () use ($id) {
-                // tanam.valid_oleh & panen.valid_oleh adalah kolom INT → gunakan id_anggota
-                // distribusi.valid_oleh → gunakan username (VARCHAR)
-                $idAnggota = auth()->user() ? auth()->user()->id_anggota : null;
-                $username  = auth()->user() ? auth()->user()->username : 'admin';
-                $now = now();
+            // Check if there are unvalidated items
+            $tanam = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->where('deletestatus', '1')->whereNull('valid_oleh')->exists();
+            $panen = DB::table('panen')->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')->where('panen.id_lahan', $id)->where('tanam.is_active', 1)->where('panen.deletestatus', '1')->where('tanam.deletestatus', '1')->whereNull('panen.valid_oleh')->exists();
+            $serapan = DB::table('distribusi')->join('tanam', 'distribusi.id_tanam', '=', 'tanam.id_tanam')->where('distribusi.id_lahan', $id)->where('tanam.is_active', 1)->where('distribusi.deletestatus', '1')->where('tanam.deletestatus', '1')->whereNull('distribusi.valid_oleh')->exists();
 
-                DB::table('tanam')
-                    ->where('id_lahan', $id)
-                    ->where(function($q) { $q->whereNull('valid_oleh')->orWhere('valid_oleh', 0); })
-                    ->update([
-                        'valid_oleh' => $idAnggota,
-                        'tgl_valid'  => $now,
-                    ]);
+            if ($tanam || $panen || $serapan) {
+                return back()->with('error', 'Masih ada data yang belum divalidasi secara terpisah.');
+            }
 
-                DB::table('panen')
-                    ->where('id_lahan', $id)
-                    ->where(function($q) { $q->whereNull('valid_oleh')->orWhere('valid_oleh', 0); })
-                    ->update([
-                        'valid_oleh' => $idAnggota,
-                        'tgl_valid'  => $now,
-                    ]);
-
-                DB::table('distribusi')
-                    ->where('id_lahan', $id)
-                    ->whereNull('valid_oleh')
-                    ->update([
-                        'valid_oleh' => $username,
-                        'tgl_valid'  => $now,
-                    ]);
-            });
-            return response()->json(['success' => true, 'message' => 'Semua data lahan berhasil divalidasi']);
+            DB::table('tanam')->where('id_lahan', $id)->update(['is_active' => 0]);
+            
+            return back()->with('success', 'Siklus kelola lahan selesai dan telah diarsipkan.');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
         }
     }
 }

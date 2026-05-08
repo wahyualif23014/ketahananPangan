@@ -62,7 +62,7 @@ class KelolaLahanController extends Controller
         ];
 
         // 3. Sub-queries for latest cycle data
-        $latestTanam     = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+        $latestTanam     = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
         $latestPanen     = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
@@ -204,7 +204,9 @@ class KelolaLahanController extends Controller
             if (!empty($lahanIds)) {
                 $latestTanams = DB::table('tanam')
                     ->select('id_lahan', DB::raw('MAX(id_tanam) as max_id_tanam'))
-                    ->whereIn('id_lahan', $lahanIds)->groupBy('id_lahan')
+                    ->whereIn('id_lahan', $lahanIds)
+                    ->where('is_active', 1)
+                    ->groupBy('id_lahan')
                     ->get()->keyBy('id_lahan');
 
                 $tanamIds2  = $latestTanams->pluck('max_id_tanam')->toArray();
@@ -252,7 +254,8 @@ class KelolaLahanController extends Controller
         // Tanam / Panen / Serapan stats via scoped joins
         $tanamStats = $applyScope(
             DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-                ->where('tanam.deletestatus', '1')->where('lahan.deletestatus', '!=', '0'),
+                ->where('tanam.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->whereNotNull('tanam.valid_oleh'),
             'lahan.id_tingkat'
         );
         $tanamTotal   = (clone $tanamStats)->sum('tanam.luas_tanam') ?? 0;
@@ -263,7 +266,8 @@ class KelolaLahanController extends Controller
 
         $panenStats = $applyScope(
             DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-                ->where('panen.deletestatus', '1')->where('lahan.deletestatus', '!=', '0'),
+                ->where('panen.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->whereNotNull('panen.valid_oleh'),
             'lahan.id_tingkat'
         );
         $panenTotal   = (clone $panenStats)->sum('panen.luas_panen') ?? 0;
@@ -274,7 +278,8 @@ class KelolaLahanController extends Controller
 
         $serapanStats = $applyScope(
             DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
-                ->where('distribusi.deletestatus', '1')->where('lahan.deletestatus', '!=', '0'),
+                ->where('distribusi.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->whereNotNull('distribusi.valid_oleh'),
             'lahan.id_tingkat'
         );
         $serapanTotal   = (clone $serapanStats)->sum('distribusi.total_distribusi') ?? 0;
