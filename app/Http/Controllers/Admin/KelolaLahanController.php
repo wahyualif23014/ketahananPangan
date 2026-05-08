@@ -38,6 +38,8 @@ class KelolaLahanController extends Controller
 
         // 3. Build Base Data Query (Applying Filters)
         $dataQuery = DB::table('lahan')
+            ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('lahan.valid_oleh')
             ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->leftJoin('wilayah', 'lahan.id_wilayah', '=', 'wilayah.id_wilayah')
             ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')

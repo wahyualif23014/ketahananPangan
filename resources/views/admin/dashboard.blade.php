@@ -805,7 +805,7 @@
     <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="document.getElementById('modalNotifikasi').classList.add('hidden')"></div>
 
     {{-- Modal Panel --}}
-    <div class="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-[2rem] shadow-2xl overflow-hidden" x-data="notifModal()" x-init="init()">
+    <div class="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" x-data="notifModal()" x-init="init()">
 
         {{-- Header --}}
         <div class="bg-gradient-to-r from-emerald-900/60 to-teal-900/40 px-7 py-5 border-b border-slate-800 flex items-center justify-between">
@@ -827,10 +827,10 @@
             </button>
         </div>
 
-        <form method="POST" action="{{ route('admin.dashboard.notify-pending') }}" id="formNotifMassal">
+        <form method="POST" action="{{ route('admin.dashboard.notify-pending') }}" id="formNotifMassal" class="flex flex-col flex-1 overflow-hidden">
             @csrf
 
-            <div class="px-7 py-6 space-y-6">
+            <div class="px-7 py-6 space-y-6 overflow-y-auto flex-1">
 
                 {{-- SECTION 1: Target Penerima --}}
                 <div>
@@ -973,12 +973,12 @@
             </div>
 
             {{-- Footer Buttons --}}
-            <div class="px-7 py-5 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between gap-4">
-                <button type="button" onclick="document.getElementById('modalNotifikasi').classList.add('hidden')" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all">
+            <div class="px-7 py-5 bg-slate-950/40 border-t border-slate-800 flex flex-wrap items-center justify-end gap-3 flex-shrink-0">
+                <button type="button" onclick="document.getElementById('modalNotifikasi').classList.add('hidden')" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all whitespace-nowrap">
                     Batal
                 </button>
-                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" class="flex-1 min-w-[140px] px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                     Kirim Notifikasi

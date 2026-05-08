@@ -63,7 +63,7 @@ class KelolaLahanController extends Controller
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
         // 3. Build Base Data Query (Applying Filters)
-        $dataQuery = $applyScope(DB::table('lahan')->where('lahan.deletestatus', '!=', '0'))
+        $dataQuery = $applyScope(DB::table('lahan')->where('lahan.deletestatus', '!=', '0')->whereNotNull('lahan.valid_oleh'))
             ->leftJoin('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->leftJoin('wilayah', 'lahan.id_wilayah', '=', 'wilayah.id_wilayah')
             ->leftJoin('anggota', 'lahan.id_anggota', '=', 'anggota.id_anggota')
@@ -298,7 +298,7 @@ class KelolaLahanController extends Controller
         }
 
         // 5. Calculate Stats (Aggregated) — scoped to operator's jurisdiction first
-        $statsData = $applyScope(DB::table('lahan')->where('deletestatus', '!=', '0'), 'id_tingkat');
+        $statsData = $applyScope(DB::table('lahan')->where('deletestatus', '!=', '0')->whereNotNull('valid_oleh'), 'id_tingkat');
         if ($filters['sektor']) {
             $statsData->where('id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {

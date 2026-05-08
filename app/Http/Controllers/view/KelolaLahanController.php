@@ -68,7 +68,7 @@ class KelolaLahanController extends Controller
 
         // 4. Base query (SCOPED)
         $dataQuery = $applyScope(
-            DB::table('lahan')->where('lahan.deletestatus', '!=', '0'),
+            DB::table('lahan')->where('lahan.deletestatus', '!=', '0')->whereNotNull('lahan.valid_oleh'),
             'lahan.id_tingkat'
         )
             ->leftJoin('tingkat',   'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
@@ -240,7 +240,7 @@ class KelolaLahanController extends Controller
 
         // 6. Stats (SCOPED)
         $statsBase = $applyScope(
-            DB::table('lahan')->where('deletestatus', '!=', '0'), 'id_tingkat'
+            DB::table('lahan')->where('deletestatus', '!=', '0')->whereNotNull('valid_oleh'), 'id_tingkat'
         );
         if ($filters['sektor'])      (clone $statsBase)->where('id_tingkat', $filters['sektor']);
         elseif ($filters['resor'])   (clone $statsBase)->where(function($q) use ($filters) { $q->where('id_tingkat', $filters['resor'])->orWhere('id_tingkat', 'LIKE', $filters['resor'] . '.%'); });

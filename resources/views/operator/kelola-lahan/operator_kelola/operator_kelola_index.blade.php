@@ -475,6 +475,18 @@
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
                                     <button @click='editTanam("{{ $row->id_tanam }}", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                 </div>
+                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                @if(!$row->tanam_valid_oleh)
+                                <form action="{{ route('operator.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                </form>
+                                @else
+                                <span class="text-[9px] font-black text-emerald-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                <form action="{{ route('operator.kelola-lahan.tanam.unvalidasi', $row->id_tanam) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
+                                </form>
+                                @endif
+                                @endif
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
@@ -492,6 +504,18 @@
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
                                     <button @click='editPanen("{{ $row->id_panen }}", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                 </div>
+                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                @if(!$row->panen_valid_oleh)
+                                <form action="{{ route('operator.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                </form>
+                                @else
+                                <span class="text-[9px] font-black text-amber-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                <form action="{{ route('operator.kelola-lahan.panen.unvalidasi', $row->id_panen) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
+                                </form>
+                                @endif
+                                @endif
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
@@ -509,15 +533,25 @@
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
                                     <button @click='editSerapan("{{ $row->id_distribusi }}", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                 </div>
-                                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                <div class="flex flex-col">
-                                    <span class="text-[8px] font-black uppercase text-slate-400 tracking-widest">Status Data</span>
-                                    @if(!$row->id_tanam || !$row->id_distribusi || !$row->serapan_valid_oleh || !$row->tanam_valid_oleh || !$row->panen_valid_oleh)
-                                        <span class="text-[9px] font-bold text-slate-500 tracking-tight mt-1">Belum Validasi</span>
-                                    @else
-                                        <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
-                                    @endif
-                                </div>
+                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                @if(!$row->serapan_valid_oleh)
+                                <form action="{{ route('operator.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-white border border-indigo-200 text-indigo-600 rounded text-[9px] font-black uppercase hover:bg-indigo-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                </form>
+                                @else
+                                <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                <form action="{{ route('operator.kelola-lahan.serapan.unvalidasi', $row->id_distribusi) }}" method="POST" class="mt-1">@csrf @method('PUT')
+                                    <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
+                                </form>
+                                @endif
+                                @else
+                                {{-- Polsek: hanya tampilkan status saja --}}
+                                @if($row->serapan_valid_oleh)
+                                <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                @else
+                                <span class="text-[9px] font-bold text-slate-400 tracking-tight mt-1">Belum Validasi</span>
+                                @endif
+                                @endif
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
