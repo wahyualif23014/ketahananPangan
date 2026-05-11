@@ -61,10 +61,10 @@
             </nav>
             <div class="flex items-center gap-3">
                 <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
-                    KELOLA <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
+                    RIWAYAT <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
                 </h2>
                 @if(collect($filters)->filter()->isNotEmpty())
-                <a href="{{ route('view.kelola-lahan.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
+                <a href="{{ route('view.kelola-lahan.riwayat.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
                     RESET FILTER
                 </a>
                 @endif

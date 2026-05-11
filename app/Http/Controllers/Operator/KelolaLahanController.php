@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class KelolaLahanController extends Controller
 {
-    public function index(Request $request)
+    private function getIndexData(Request $request, $mode = 'active')
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
@@ -58,7 +58,11 @@ class KelolaLahanController extends Controller
             'search'    => $request->search
         ];
 
-        $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
+        if ($mode === 'history') {
+            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+        } else {
+            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
+        }
         $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
@@ -188,6 +192,7 @@ class KelolaLahanController extends Controller
                     'p.total_panen',
                     'p.tgl_panen',
                     'p.status_panen',
+                    'p.luas_panen',
                     'p.valid_oleh as panen_valid_oleh',
                     'd.id_distribusi',
                     'd.total_distribusi',
@@ -342,6 +347,7 @@ class KelolaLahanController extends Controller
             $panenQuery->where(function($q) use ($filters) { $q->where('lahan.id_tingkat', $filters['resor'])->orWhere('lahan.id_tingkat', 'LIKE', $filters['resor'] . '.%'); });
         }
         $panenTotal = (clone $panenQuery)->sum('panen.luas_panen') ?? 0;
+        $panenTonTotal = (clone $panenQuery)->sum('panen.total_panen') ?? 0;
         $panenDetails = (clone $panenQuery)->selectRaw('lahan.id_jenis_lahan, SUM(panen.luas_panen) as total_luas, COUNT(lahan.id_lahan) as total_lokasi')
             ->whereNotNull('lahan.id_jenis_lahan')
             ->groupBy('lahan.id_jenis_lahan')
@@ -381,15 +387,17 @@ class KelolaLahanController extends Controller
             'potensi' => number_format($potensiTotal, 2),
             'tanam'   => number_format($tanamTotal, 2),
             'panen'   => number_format($panenTotal, 2),
+            'panen_ton' => number_format($panenTonTotal, 2),
             'serapan' => number_format($serapanTotal, 2),
             'potensi_details' => $potensiDetails,
             'tanam_details' => $tanamDetails,
             'panen_details' => $panenDetails,
             'serapan_details' => $serapanDetails,
-            'jenis_lahan_list' => $jenisLahanList
+            'jenis_lahan_list' => $jenisLahanList,
+            'mode' => $mode
         ];
 
-        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', compact(
+        return compact(
             'polresList',
             'polsekList',
             'komoditiList',
@@ -397,7 +405,17 @@ class KelolaLahanController extends Controller
             'stats',
             'data',
             'lahanStagesMap'
-        ));
+        );
+    }
+
+    public function index(Request $request)
+    {
+        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', $this->getIndexData($request, 'active'));
+    }
+
+    public function riwayatIndex(Request $request)
+    {
+        return view('operator.kelola-lahan.operator_riwayat.index', $this->getIndexData($request, 'history'));
     }
 
     public function storeTanam(Request $request)
@@ -421,16 +439,37 @@ class KelolaLahanController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($request, $lahan) {
                 $newId = DB::table('tanam')->max('id_tanam') + 1;
                 $idAnggota = auth()->id();
+
+                // ── VALIDASI KAPASITAS LAHAN ──
+                $luasLahan = (float)($lahan->luas_lahan ?? 0);
+                $luasTerpakai = (float)DB::table('tanam')
+                    ->where('id_lahan', $request->id_lahan)
+                    ->where('is_active', 1)
+                    ->sum('luas_tanam');
+
+                $luasBaru = (float)$request->luas_tanam;
+                $sisaLahan = $luasLahan - $luasTerpakai;
+
+                if ($luasBaru > $sisaLahan) {
+                    throw new \Exception(
+                        "Luas tanam melebihi kapasitas lahan! " .
+                        "Kapasitas lahan: {$luasLahan} Ha | " .
+                        "Sudah digunakan (Siklus Aktif): {$luasTerpakai} Ha | " .
+                        "Sisa tersedia: " . number_format($sisaLahan, 2) . " Ha. " .
+                        "Anda memasukkan {$luasBaru} Ha."
+                    );
+                }
+                // ── AKHIR VALIDASI KAPASITAS ──
 
                 DB::table('tanam')->insert([
                     'id_tanam' => $newId,
                     'id_lahan' => $request->id_lahan,
                     'tgl_tanam' => $request->tgl_tanam,
                     'luas_tanam' => $request->luas_tanam,
-                    'nama_bibit' => $request->jenis_bibit, // mapped from frontend form
+                    'nama_bibit' => $request->jenis_bibit,
                     'kebutuhan_bibit' => $request->kebutuhan_bibit,
                     'est_awal_panen' => $request->est_awal_panen,
                     'est_akhir_panen' => $request->est_akhir_panen,
@@ -442,7 +481,7 @@ class KelolaLahanController extends Controller
             return response()->json(['success' => true, 'message' => 'Data Tanam berhasil disimpan']);
         } catch (\Exception $e) {
             \Log::error('storeTanam error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
@@ -468,7 +507,36 @@ class KelolaLahanController extends Controller
             DB::transaction(function () use ($request) {
                 $newId = DB::table('panen')->max('id_panen') + 1;
                 $idAnggota = auth()->id();
-                $idTanam = DB::table('tanam')->where('id_lahan', $request->id_lahan)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
+                $idTanam = $request->id_tanam ?? DB::table('tanam')->where('id_lahan', $request->id_lahan)->where('is_active', 1)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
+
+                // ── VALIDASI: Tanam harus sudah divalidasi oleh Polres/Admin ──
+                if ($idTanam) {
+                    $tanam = DB::table('tanam')->where('id_tanam', $idTanam)->first();
+                    if (!$tanam || !$tanam->valid_oleh) {
+                        throw new \Exception('Data tanam pada lahan ini belum divalidasi oleh Polres/Admin. Harap tunggu validasi tanam terlebih dahulu sebelum menginput panen.');
+                    }
+
+                    // ── VALIDASI: Total luas panen tidak melebihi luas tanam ──
+                    $luasTanam = (float)$tanam->luas_tanam;
+                    $totalPanenSebelumnya = (float)DB::table('panen')->where('id_tanam', $idTanam)->sum('luas_panen');
+                    $luasPanenBaru = $request->status_panen == 2 ? 0 : (float)$request->luas_panen;
+                    $sisaPanen = $luasTanam - $totalPanenSebelumnya;
+
+                    if ($luasPanenBaru > $sisaPanen) {
+                        throw new \Exception(
+                            "Luas panen melebihi sisa luas tanam! " .
+                            "Luas tanam: {$luasTanam} Ha | " .
+                            "Sudah dipanen: " . number_format($totalPanenSebelumnya, 2) . " Ha | " .
+                            "Sisa tersedia: " . number_format($sisaPanen, 2) . " Ha."
+                        );
+                    }
+                } else {
+                    throw new \Exception('Tidak ada data tanam aktif untuk lahan ini. Harap input tanam terlebih dahulu.');
+                }
+                // ── AKHIR VALIDASI ──
+
+                $luasPanen = $request->status_panen == 2 ? 0 : $request->luas_panen;
+                $totalPanen = $request->status_panen == 2 ? 0 : ($request->total_panen ?? 0);
 
                 DB::table('panen')->insert([
                     'id_panen' => $newId,
@@ -476,10 +544,10 @@ class KelolaLahanController extends Controller
                     'id_lahan' => $request->id_lahan,
                     'id_anggota' => $idAnggota,
                     'tgl_panen' => $request->tgl_panen,
-                    'luas_panen' => $request->luas_panen,
-                    'total_panen' => $request->total_panen ?? 0,
+                    'luas_panen' => $luasPanen,
+                    'total_panen' => $totalPanen,
                     'status_panen' => $request->status_panen,
-                    'ket_panen' => $request->keterangan_panen, // mapped from frontend form
+                    'ket_panen' => $request->keterangan_panen,
                     'datetransaction' => now(),
                 ]);
             }); 
@@ -487,7 +555,7 @@ class KelolaLahanController extends Controller
             return response()->json(['success' => true, 'message' => 'Data Panen berhasil disimpan']);
         } catch (\Exception $e) {
             \Log::error('storePanen error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
     }
 
@@ -646,47 +714,47 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
         DB::table('tanam')->where('id_tanam', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
-        return back()->with('success', 'Data Tanam berhasil di-unvalidasi');
+        return response()->json(['success' => true, 'message' => 'Data Tanam berhasil di-unvalidasi']);
     }
 
     public function unvalidasiPanen($id)
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
         DB::table('panen')->where('id_panen', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
-        return back()->with('success', 'Data Panen berhasil di-unvalidasi');
+        return response()->json(['success' => true, 'message' => 'Data Panen berhasil di-unvalidasi']);
     }
 
     public function unvalidasiSerapan($id)
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
         DB::table('distribusi')->where('id_distribusi', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
-        return back()->with('success', 'Data Serapan berhasil di-unvalidasi');
+        return response()->json(['success' => true, 'message' => 'Data Serapan berhasil di-unvalidasi']);
     }
 
     public function validasiTanam(Request $request, $id)
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
 
         try {
             DB::table('tanam')->where('id_tanam', $id)->update([
                 'valid_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_valid' => now(),
+                'tgl_valid'  => now(),
             ]);
-            return back()->with('success', 'Data Tanam berhasil divalidasi');
+            return response()->json(['success' => true, 'message' => 'Data Tanam berhasil divalidasi']);
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
         }
     }
 
@@ -694,17 +762,17 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
 
         try {
             DB::table('panen')->where('id_panen', $id)->update([
                 'valid_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_valid' => now(),
+                'tgl_valid'  => now(),
             ]);
-            return back()->with('success', 'Data Panen berhasil divalidasi');
+            return response()->json(['success' => true, 'message' => 'Data Panen berhasil divalidasi']);
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
         }
     }
 
@@ -712,48 +780,23 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
         }
 
         $scope = $user->id_tugas ?? '0';
         $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
-            return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
         try {
             DB::table('distribusi')->where('id_distribusi', $id)->update([
                 'valid_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_valid' => now(),
+                'tgl_valid'  => now(),
             ]);
-            return back()->with('success', 'Data Serapan berhasil divalidasi');
+            return response()->json(['success' => true, 'message' => 'Data Serapan berhasil divalidasi']);
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
-        }
-    }
-
-    public function validasiLahan(Request $request, $id)
-    {
-        $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Anda tidak memiliki izin untuk melakukan validasi.');
-        }
-
-        try {
-            // Check if there are unvalidated items
-            $tanam = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->where('deletestatus', '1')->whereNull('valid_oleh')->exists();
-            $panen = DB::table('panen')->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')->where('panen.id_lahan', $id)->where('tanam.is_active', 1)->where('panen.deletestatus', '1')->where('tanam.deletestatus', '1')->whereNull('panen.valid_oleh')->exists();
-            $serapan = DB::table('distribusi')->join('tanam', 'distribusi.id_tanam', '=', 'tanam.id_tanam')->where('distribusi.id_lahan', $id)->where('tanam.is_active', 1)->where('distribusi.deletestatus', '1')->where('tanam.deletestatus', '1')->whereNull('distribusi.valid_oleh')->exists();
-
-            if ($tanam || $panen || $serapan) {
-                return back()->with('error', 'Masih ada data yang belum divalidasi secara terpisah.');
-            }
-
-            DB::table('tanam')->where('id_lahan', $id)->update(['is_active' => 0]);
-            
-            return back()->with('success', 'Siklus kelola lahan selesai dan telah diarsipkan.');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
         }
     }
 
@@ -761,16 +804,16 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('id_tanam', $id)->first(['lahan.id_tingkat']);
+        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('tanam.id_tanam', $id)->first(['lahan.id_tingkat', 'tanam.id_tanam']);
         if (!$tanam || ($scope && $scope != '0' && ((string)$tanam->id_tingkat !== (string)$scope && !str_starts_with((string)$tanam->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
         try {
             DB::transaction(function () use ($id) {
-                DB::table('tanam')->where('id_tanam', $id)->update(['deletestatus' => '0']);
-                DB::table('panen')->where('id_tanam', $id)->update(['deletestatus' => '0']);
-                DB::table('distribusi')->where('id_tanam', $id)->update(['deletestatus' => '0']);
+                DB::table('distribusi')->where('id_tanam', $id)->delete();
+                DB::table('panen')->where('id_tanam', $id)->delete();
+                DB::table('tanam')->where('id_tanam', $id)->delete();
             });
             return response()->json(['success' => true, 'message' => 'Data Tanam berhasil dihapus']);
         } catch (\Exception $e) {
@@ -782,15 +825,15 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_panen', $id)->first(['lahan.id_tingkat']);
+        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('panen.id_panen', $id)->first(['lahan.id_tingkat', 'panen.id_panen']);
         if (!$panen || ($scope && $scope != '0' && ((string)$panen->id_tingkat !== (string)$scope && !str_starts_with((string)$panen->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
         try {
             DB::transaction(function () use ($id) {
-                DB::table('panen')->where('id_panen', $id)->update(['deletestatus' => '0']);
-                DB::table('distribusi')->where('id_panen', $id)->update(['deletestatus' => '0']);
+                DB::table('distribusi')->where('id_panen', $id)->delete();
+                DB::table('panen')->where('id_panen', $id)->delete();
             });
             return response()->json(['success' => true, 'message' => 'Data Panen berhasil dihapus']);
         } catch (\Exception $e) {
@@ -802,16 +845,133 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('distribusi.id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.id_distribusi']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
         try {
-            DB::table('distribusi')->where('id_distribusi', $id)->update(['deletestatus' => '0']);
+            DB::table('distribusi')->where('id_distribusi', $id)->delete();
             return response()->json(['success' => true, 'message' => 'Data Serapan berhasil dihapus']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function tolakValidasiTanam(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres yang bisa menolak validasi.'], 403);
+        }
+        $request->validate(['alasan' => 'required|string|max:1000']);
+        $alasan = $request->alasan;
+
+        try {
+            $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
+            if (!$tanam) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan.'], 404);
+
+            $ket_baru = "[DITOLAK] Alasan: " . $alasan . "\n" . $tanam->keterangan_tanam;
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'valid_oleh' => null,
+                'tgl_valid'  => null,
+                'keterangan_tanam' => $ket_baru,
+            ]);
+
+            $recipient_id = $tanam->id_anggota ?? DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->value('edit_oleh');
+            if ($recipient_id) {
+                $penolak = $user->nama_anggota ?? 'Operator Polres';
+                $lahan = DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->first();
+                $alamat = $lahan ? ($lahan->alamat_lahan ?? '-') : '-';
+                DB::table('pesans')->insert([
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $recipient_id,
+                    'judul'        => '❌ Penolakan Validasi Data Tanam #' . $id,
+                    'isi_pesan'    => "Data tanam yang Anda laporkan telah **DITOLAK** oleh {$penolak}.\n\n📍 **Lokasi Lahan:** {$alamat}\n🆔 **ID Lahan:** #{$tanam->id_lahan}\n\n📝 **Alasan Penolakan:**\n{$alasan}\n\nSilakan perbaiki data dan ajukan kembali.",
+                    'is_read'      => false,
+                ]);
+            }
+            return response()->json(['success' => true, 'message' => 'Validasi tanam berhasil ditolak dan notifikasi telah dikirim.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function tolakValidasiPanen(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres yang bisa menolak validasi.'], 403);
+        }
+        $request->validate(['alasan' => 'required|string|max:1000']);
+        $alasan = $request->alasan;
+
+        try {
+            $panen = DB::table('panen')->where('id_panen', $id)->first();
+            if (!$panen) return response()->json(['success' => false, 'message' => 'Data Panen tidak ditemukan.'], 404);
+
+            $ket_baru = "[DITOLAK] Alasan: " . $alasan . "\n" . $panen->ket_panen;
+            DB::table('panen')->where('id_panen', $id)->update([
+                'valid_oleh' => null,
+                'tgl_valid'  => null,
+                'ket_panen'  => $ket_baru,
+            ]);
+
+            $recipient_id = $panen->id_anggota ?? DB::table('lahan')->where('id_lahan', $panen->id_lahan)->value('edit_oleh');
+            if ($recipient_id) {
+                $penolak = $user->nama_anggota ?? 'Operator Polres';
+                $lahan = DB::table('lahan')->where('id_lahan', $panen->id_lahan)->first();
+                $alamat = $lahan ? ($lahan->alamat_lahan ?? '-') : '-';
+                DB::table('pesans')->insert([
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $recipient_id,
+                    'judul'        => '❌ Penolakan Validasi Data Panen #' . $id,
+                    'isi_pesan'    => "Data panen yang Anda laporkan telah **DITOLAK** oleh {$penolak}.\n\n📍 **Lokasi Lahan:** {$alamat}\n🆔 **ID Lahan:** #{$panen->id_lahan}\n\n📝 **Alasan Penolakan:**\n{$alasan}\n\nSilakan perbaiki data dan ajukan kembali.",
+                    'is_read'      => false,
+                ]);
+            }
+            return response()->json(['success' => true, 'message' => 'Validasi panen berhasil ditolak dan notifikasi telah dikirim.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function tolakValidasiSerapan(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres yang bisa menolak validasi.'], 403);
+        }
+        $request->validate(['alasan' => 'required|string|max:1000']);
+        $alasan = $request->alasan;
+
+        try {
+            $serapan = DB::table('distribusi')->where('id_distribusi', $id)->first();
+            if (!$serapan) return response()->json(['success' => false, 'message' => 'Data Serapan tidak ditemukan.'], 404);
+
+            $ket_baru = "[DITOLAK] Alasan: " . $alasan . "\n" . $serapan->keterangan_distribusi;
+            DB::table('distribusi')->where('id_distribusi', $id)->update([
+                'valid_oleh' => null,
+                'tgl_valid'  => null,
+                'keterangan_distribusi' => $ket_baru,
+            ]);
+
+            $recipient_id = $serapan->id_anggota ?? DB::table('lahan')->where('id_lahan', $serapan->id_lahan)->value('edit_oleh');
+            if ($recipient_id) {
+                $penolak = $user->nama_anggota ?? 'Operator Polres';
+                $lahan = DB::table('lahan')->where('id_lahan', $serapan->id_lahan)->first();
+                $alamat = $lahan ? ($lahan->alamat_lahan ?? '-') : '-';
+                DB::table('pesans')->insert([
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $recipient_id,
+                    'judul'        => '❌ Penolakan Validasi Data Serapan #' . $id,
+                    'isi_pesan'    => "Data serapan yang Anda laporkan telah **DITOLAK** oleh {$penolak}.\n\n📍 **Lokasi Lahan:** {$alamat}\n🆔 **ID Lahan:** #{$serapan->id_lahan}\n\n📝 **Alasan Penolakan:**\n{$alasan}\n\nSilakan perbaiki data dan ajukan kembali.",
+                    'is_read'      => false,
+                ]);
+            }
+            return response()->json(['success' => true, 'message' => 'Validasi serapan berhasil ditolak dan notifikasi telah dikirim.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
     }
 
@@ -839,11 +999,53 @@ class KelolaLahanController extends Controller
         $hasActive = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->exists();
 
         return response()->json([
-            'lahan' => $data,
-            'tanam' => $tanam,
-            'panen' => $panen,
-            'serapan' => $serapan,
+            'lahan'      => $data,
+            'tanam'      => $tanam,
+            'panen'      => $panen,
+            'serapan'    => $serapan,
             'has_active' => $hasActive
         ]);
+    }
+
+    public function validasiLahan(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return back()->with('error', 'Anda tidak memiliki izin untuk melakukan validasi keseluruhan.');
+        }
+
+        try {
+            $activeTanams = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->get();
+
+            if ($activeTanams->isEmpty()) {
+                return back()->with('error', 'Tidak ada data siklus berjalan yang bisa divalidasi keseluruhan.');
+            }
+
+            foreach ($activeTanams as $t) {
+                if (is_null($t->valid_oleh)) {
+                    return back()->with('error', 'Masih ada data Tanam yang belum divalidasi.');
+                }
+                $panen = DB::table('panen')->where('id_tanam', $t->id_tanam)->first();
+                if (!$panen) {
+                    return back()->with('error', 'Siklus belum selesai. Ada Tanam yang belum dicatat Panen-nya.');
+                }
+                if (is_null($panen->valid_oleh)) {
+                    return back()->with('error', 'Masih ada data Panen yang belum divalidasi.');
+                }
+                $serapan = DB::table('distribusi')->where('id_tanam', $t->id_tanam)->first();
+                if (!$serapan) {
+                    return back()->with('error', 'Siklus belum selesai. Ada Tanam yang belum dicatat Serapan-nya.');
+                }
+                if (is_null($serapan->valid_oleh)) {
+                    return back()->with('error', 'Masih ada data Serapan yang belum divalidasi.');
+                }
+            }
+
+            DB::table('tanam')->where('id_lahan', $id)->update(['is_active' => 0]);
+
+            return back()->with('success', 'Siklus kelola lahan selesai dan telah diarsipkan.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
+        }
     }
 }

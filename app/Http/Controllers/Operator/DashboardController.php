@@ -54,6 +54,7 @@ class DashboardController extends Controller
             ->where('tanam.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('tanam.valid_oleh')
+            ->where('tanam.valid_oleh', '!=', '')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
         $tanamQuery = $applyScope($tanamQuery, 'lahan.id_tingkat');
 
@@ -62,6 +63,7 @@ class DashboardController extends Controller
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereYear('panen.tgl_panen', $yearFilter);
         $panenQuery = $applyScope($panenQuery, 'lahan.id_tingkat');
         
@@ -112,6 +114,7 @@ class DashboardController extends Controller
             ->where('tanam.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('tanam.valid_oleh')
+            ->where('tanam.valid_oleh', '!=', '')
             ->whereYear('tanam.tgl_tanam', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -125,6 +128,7 @@ class DashboardController extends Controller
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereYear('panen.tgl_panen', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -139,6 +143,7 @@ class DashboardController extends Controller
             ->where('distribusi.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('distribusi.valid_oleh')
+            ->where('distribusi.valid_oleh', '!=', '')
             ->whereYear('distribusi.tgl_distribusi', $yearFilter);
 
         if ($quarterFilter != 'all') {
@@ -161,6 +166,7 @@ class DashboardController extends Controller
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereYear('panen.tgl_panen', $yearFilter);
             
         if ($quarterFilter != 'all') {
@@ -210,6 +216,7 @@ class DashboardController extends Controller
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereNotNull('panen.tgl_panen')
             ->whereYear('panen.tgl_panen', $yearFilter)
             ->groupBy('q', 'lahan.id_jenis_lahan');
@@ -288,7 +295,7 @@ class DashboardController extends Controller
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', 'lahan.luas_lahan', 'lahan.datetransaction', 'lahan.id_jenis_lahan')
             ->where('lahan.deletestatus', '!=', '0')
-            ->whereNull('lahan.valid_oleh');
+            ->where(function($q) { $q->whereNull('lahan.valid_oleh')->orWhere('lahan.valid_oleh', '')->orWhere('lahan.valid_oleh', '0'); });
 
         if ($pendingSearch) {
             $qPotensi->where(function($q) use ($pendingSearch) {
@@ -312,7 +319,7 @@ class DashboardController extends Controller
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
             ->where('tanam.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
-            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', '0'); });
+            ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', '')->orWhere('tanam.valid_oleh', '0'); });
 
         if ($pendingSearch) {
             $qTanam->where(function($q) use ($pendingSearch) {
@@ -333,7 +340,7 @@ class DashboardController extends Controller
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
             ->where('panen.deletestatus', '1')
             ->where('lahan.deletestatus', '!=', '0')
-            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', '0'); });
+            ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', '')->orWhere('panen.valid_oleh', '0'); });
 
         if ($pendingSearch) {
             $qPanen->where(function($q) use ($pendingSearch) {
@@ -360,6 +367,7 @@ class DashboardController extends Controller
             ->select(DB::raw('YEAR(panen.tgl_panen) as year'), DB::raw('SUM(panen.luas_panen) as total'))
             ->where('panen.deletestatus', '1')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereNotNull('panen.tgl_panen')
             ->groupBy('year')
             ->orderBy('year', 'asc');
@@ -381,6 +389,7 @@ class DashboardController extends Controller
             ->select(DB::raw('MONTH(panen.tgl_panen) as month'), DB::raw('SUM(panen.luas_panen) as total'))
             ->where('panen.deletestatus', '1')
             ->whereNotNull('panen.valid_oleh')
+            ->where('panen.valid_oleh', '!=', '')
             ->whereNotNull('panen.tgl_panen')
             ->whereYear('panen.tgl_panen', $chartYear);
 

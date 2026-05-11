@@ -33,7 +33,7 @@ class KelolaLahanController extends Controller
     }
 
     // ─── index ───────────────────────────────────────────────────────────────
-    public function index(Request $request)
+    private function getIndexData(Request $request, $mode = 'active')
     {
         [$scope, $applyScope, $applyTingkatScope] = $this->makeScope();
 
@@ -62,7 +62,11 @@ class KelolaLahanController extends Controller
         ];
 
         // 3. Sub-queries for latest cycle data
-        $latestTanam     = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
+        if ($mode === 'history') {
+            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+        } else {
+            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
+        }
         $latestPanen     = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
         $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
 
@@ -145,7 +149,7 @@ class KelolaLahanController extends Controller
                     'tingkat.nama_tingkat', 'wilayah.nama_wilayah',
                     'anggota.nama_anggota', 'komoditi.nama_komoditi', 'komoditi.jenis_komoditi',
                     't.id_tanam', 't.luas_tanam', 't.tgl_tanam', 't.est_awal_panen', 't.est_akhir_panen',
-                    'p.id_panen', 'p.total_panen', 'p.tgl_panen', 'p.status_panen',
+                    'p.id_panen', 'p.total_panen', 'p.tgl_panen', 'p.status_panen', 'p.luas_panen',
                     'd.id_distribusi', 'd.total_distribusi', 'd.tgl_distribusi', 'd.distribusi_ke',
                     'd.valid_oleh as serapan_valid_oleh'
                 )
@@ -271,6 +275,7 @@ class KelolaLahanController extends Controller
             'lahan.id_tingkat'
         );
         $panenTotal   = (clone $panenStats)->sum('panen.luas_panen') ?? 0;
+        $panenTonTotal   = (clone $panenStats)->sum('panen.total_panen') ?? 0;
         $panenDetails = (clone $panenStats)
             ->selectRaw('lahan.id_jenis_lahan, SUM(panen.luas_panen) as total_luas, COUNT(lahan.id_lahan) as total_lokasi')
             ->whereNotNull('lahan.id_jenis_lahan')->groupBy('lahan.id_jenis_lahan')
@@ -300,17 +305,29 @@ class KelolaLahanController extends Controller
             'potensi'         => number_format($potensiTotal, 2),
             'tanam'           => number_format($tanamTotal, 2),
             'panen'           => number_format($panenTotal, 2),
+            'panen_ton'       => number_format($panenTonTotal, 2),
             'serapan'         => number_format($serapanTotal, 2),
             'potensi_details' => $potensiDetails,
             'tanam_details'   => $tanamDetails,
             'panen_details'   => $panenDetails,
             'serapan_details' => $serapanDetails,
             'jenis_lahan_list'=> $jenisLahanList,
+            'mode'            => $mode,
         ];
 
-        return view('view.kelola-lahan.view_potensi.view_kelola', compact(
+        return compact(
             'polresList', 'polsekList', 'komoditiList', 'filters', 'stats', 'data', 'lahanStagesMap'
-        ));
+        );
+    }
+
+    public function index(Request $request)
+    {
+        return view('view.kelola-lahan.view_potensi.view_kelola', $this->getIndexData($request, 'active'));
+    }
+
+    public function riwayatIndex(Request $request)
+    {
+        return view('view.kelola-lahan.view_riwayat.index', $this->getIndexData($request, 'history'));
     }
 
     // ─── potensi index ────────────────────────────────────────────────────────

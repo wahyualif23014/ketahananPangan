@@ -25,38 +25,30 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'id_anggota' => ['required', 'integer', 'unique:anggota,id_anggota'],
-            'id_jabatan' => ['required', 'exists:jabatan,id_jabatan'],
-<<<<<<< Updated upstream
-            'nama_anggota' => ['required', 'string', 'max:100'],
-            'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
+            'id_anggota'      => ['required', 'integer', 'unique:anggota,id_anggota'],
+            'id_jabatan'      => ['required', 'exists:jabatan,id_jabatan'],
+            'nama_anggota'    => ['required', 'string', 'max:100'],
+            'username'        => ['required', 'string', 'max:255', 'unique:anggota,username'],
             'no_telp_anggota' => ['nullable', 'string', 'max:15'],
-            'id_tugas' => ['nullable', 'string', 'max:13'],
-=======
-            'nama_anggota' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:anggota,username'],
->>>>>>> Stashed changes
-            'role' => ['required', 'in:view,admin,operator'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'id_tugas'        => ['nullable', 'string', 'max:13'],
+            'role'            => ['required', 'in:view,admin,operator'],
+            'password'        => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         // Ambil ID terakhir dari id_pengguna untuk increment manual
-        $lastUser = DB::table('anggota')->max('id_pengguna');
+        $lastUser     = DB::table('anggota')->max('id_pengguna');
         $newIdPengguna = $lastUser ? $lastUser + 1 : 1;
 
         $user = User::create([
-            'id_anggota' => $request->id_anggota,
-            'id_jabatan' => $request->id_jabatan,
-<<<<<<< Updated upstream
-=======
-            'id_pengguna' => $newIdPengguna,
->>>>>>> Stashed changes
-            'id_tugas' => $request->id_tugas ?? '0',
-            'nama_anggota' => $request->nama_anggota,
-            'username' => $request->username,
+            'id_anggota'      => $request->id_anggota,
+            'id_jabatan'      => $request->id_jabatan,
+            'id_pengguna'     => $newIdPengguna,
+            'id_tugas'        => $request->id_tugas ?? '0',
+            'nama_anggota'    => $request->nama_anggota,
+            'username'        => $request->username,
             'no_telp_anggota' => $request->no_telp_anggota,
-            'role' => $request->role,
-            'password' => Hash::make($request->password),
+            'role'            => $request->role,
+            'password'        => Hash::make($request->password),
         ]);
 
         event(new Registered($user));
@@ -65,3 +57,4 @@ class RegisteredUserController extends Controller
         return redirect(RouteServiceProvider::HOME);
     }
 }
+

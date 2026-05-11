@@ -74,10 +74,12 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
                 Route::put('/verify/{id}', [PotensiLahanController::class, 'verify'])->name('verify');
                 Route::put('/validasi/{id}', [PotensiLahanController::class, 'validasi'])->name('validasi');
                 Route::put('/unvalidasi/{id}', [PotensiLahanController::class, 'unvalidasi'])->name('unvalidasi');
+                Route::put('/tolak/{id}', [PotensiLahanController::class, 'tolakValidasi'])->name('tolak');
                 Route::put('/update/{id}', [PotensiLahanController::class, 'update'])->name('update');
                 Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
             });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
+            Route::get('/riwayat', [KelolaLahanController::class, 'riwayatIndex'])->name('riwayat.index');
             Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
             Route::put('/tanam/{id}', [KelolaLahanController::class, 'updateTanam'])->name('tanam.update');
             Route::delete('/tanam/{id}', [KelolaLahanController::class, 'destroyTanam'])->name('tanam.destroy');
@@ -95,6 +97,9 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::put('/serapan/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
             Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/lahan/{id}/validasi', [KelolaLahanController::class, 'validasiLahan'])->name('lahan.validasi');
+            Route::put('/tanam/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiTanam'])->name('tanam.tolak');
+            Route::put('/panen/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiPanen'])->name('panen.tolak');
+            Route::put('/serapan/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiSerapan'])->name('serapan.tolak');
         });
 
         // Rekapitulasi
@@ -128,10 +133,12 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
                 Route::put('/update/{id}', [OperatorPotensiLahan::class, 'update'])->name('update');
                 Route::put('/validasi/{id}', [OperatorPotensiLahan::class, 'validasi'])->name('validasi');
                 Route::put('/unvalidasi/{id}', [OperatorPotensiLahan::class, 'unvalidasi'])->name('unvalidasi');
+                Route::put('/tolak/{id}', [OperatorPotensiLahan::class, 'tolakValidasi'])->name('tolak');
                 Route::delete('/destroy/{id}', [OperatorPotensiLahan::class, 'destroy'])->name('destroy');
             });
 
             Route::get('/daftar', [OperatorKelolaLahan::class, 'index'])->name('daftar.index');
+            Route::get('/riwayat', [OperatorKelolaLahan::class, 'riwayatIndex'])->name('riwayat.index');
             Route::post('/tanam', [OperatorKelolaLahan::class, 'storeTanam'])->name('tanam.store');
             Route::put('/tanam/{id}', [OperatorKelolaLahan::class, 'updateTanam'])->name('tanam.update');
             Route::delete('/tanam/{id}', [OperatorKelolaLahan::class, 'destroyTanam'])->name('tanam.destroy');
@@ -147,8 +154,12 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::put('/tanam/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiTanam'])->name('tanam.unvalidasi');
             Route::put('/panen/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiPanen'])->name('panen.unvalidasi');
             Route::put('/serapan/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
+            Route::put('/tanam/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiTanam'])->name('tanam.tolak');
+            Route::put('/panen/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiPanen'])->name('panen.tolak');
+            Route::put('/serapan/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiSerapan'])->name('serapan.tolak');
             Route::get('/lahan/{id}/validasi-data', [OperatorKelolaLahan::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/lahan/{id}/validasi', [OperatorKelolaLahan::class, 'validasiLahan'])->name('lahan.validasi');
+
         });
 
         Route::get('/rekapitulasi', [OperatorRekapitulasi::class, 'index'])->name('rekapitulasi.index');
@@ -175,6 +186,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
                 Route::get('/', [ViewKelolaLahan::class, 'potensiIndex'])->name('index');
             });
 
+            Route::get('/riwayat', [ViewKelolaLahan::class, 'riwayatIndex'])->name('riwayat.index');
             Route::get('/', [ViewKelolaLahan::class, 'index'])->name('index');
         });
 

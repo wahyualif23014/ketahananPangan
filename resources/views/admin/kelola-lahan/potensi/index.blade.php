@@ -538,7 +538,12 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 w-36">
-                                    @if(!$item['valid_oleh'])
+                                    @if($item['status_lahan'] == '2')
+                                    <span class="inline-flex items-center gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg shadow-sm">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> DITOLAK
+                                    </span>
+                                    <div class="text-[8px] text-rose-400 mt-1 italic line-clamp-2">Menunggu perbaikan dari operator</div>
+                                    @elseif(!$item['valid_oleh'])
                                     <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg shadow-sm">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Belum Divalidasi
                                     </span>
@@ -560,18 +565,28 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 w-72">
-                                    <div class="flex items-center justify-end gap-1.5">
+                                    <div class="flex items-center justify-end gap-1.5 flex-wrap">
                                         <button onclick='openViewModal(@json($item))'
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1.5 rounded-lg hover:bg-sky-500 hover:text-white transition-all">
                                             Detail
                                         </button>
-                                        @if(!$item['valid_oleh'])
-                                        <form action="{{ route('admin.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="inline m-0">
-                                            @csrf @method('PUT')
-                                            <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
-                                                Validasi
+                                        @if($item['status_lahan'] == '2')
+                                        {{-- Ditolak: Sembunyikan validasi, tampilkan pesan menunggu perbaikan --}}
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg">
+                                            Menunggu Perbaikan
+                                        </span>
+                                        @elseif(!$item['valid_oleh'])
+                                        <div class="flex flex-col gap-1 w-full">
+                                            <form action="{{ route('admin.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="w-full m-0">
+                                                @csrf @method('PUT')
+                                                <button type="submit" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                                                    Validasi
+                                                </button>
+                                            </form>
+                                            <button onclick='openTolakModal(@json($item))' type="button" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                                                Tolak
                                             </button>
-                                        </form>
+                                        </div>
                                         @else
                                         <form action="{{ route('admin.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
                                             @csrf @method('PUT')
@@ -650,10 +665,98 @@
                 }));
             }
 
+            function openTolakModal(item) {
+                window.dispatchEvent(new CustomEvent('open-tolak-modal', {
+                    detail: item
+                }));
+            }
+
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     window.dispatchEvent(new CustomEvent('close-all-modals'));
                 }
+            });
+        </script>
+
+        {{-- Modal Tolak Validasi --}}
+        <div x-data="tolakModal()"
+             @open-tolak-modal.window="show = true; id = $event.detail.id_lahan; alasan = '';"
+             @close-all-modals.window="show = false"
+             x-show="show" x-cloak
+             class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+             
+             <div x-show="show" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="show = false"></div>
+             
+             <div x-show="show" x-transition.scale.origin.bottom class="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden z-10">
+                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                     <h3 class="text-lg font-black text-slate-800 tracking-tight">Tolak Validasi Lahan</h3>
+                     <button @click="show = false" class="text-slate-400 hover:text-rose-500 transition-colors">
+                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                     </button>
+                 </div>
+                 <form @submit.prevent="submitTolak" class="p-6 space-y-4">
+                     <div>
+                         <label class="block text-xs font-bold text-slate-700 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                         <textarea name="alasan" x-model="alasan" rows="4" required placeholder="Masukkan alasan mengapa data lahan ini ditolak..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"></textarea>
+                         <p class="text-[10px] text-slate-400 mt-1">Pesan ini akan otomatis dikirim ke operator pembuat laporan.</p>
+                     </div>
+                     <div class="flex justify-end gap-2 pt-2">
+                         <button type="button" @click="show = false" class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold text-xs rounded-lg transition-colors">Batal</button>
+                         <button type="submit" :disabled="loading" class="px-4 py-2 bg-rose-500 text-white hover:bg-rose-600 font-bold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                             <span x-show="!loading"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span>
+                             <span x-text="loading ? 'Memproses...' : 'Tolak Lahan'"></span>
+                         </button>
+                     </div>
+                 </form>
+             </div>
+        </div>
+
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('tolakModal', () => ({
+                    show: false,
+                    id: null,
+                    alasan: '',
+                    loading: false,
+                    async submitTolak() {
+                        this.loading = true;
+                        try {
+                            const response = await fetch(`/admin/kelola-lahan/potensi/tolak/${this.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({ alasan_penolakan: this.alasan })
+                            });
+                            const result = await response.json();
+                            if (response.ok && result.success) {
+                                if (typeof $notify !== 'undefined') {
+                                    $notify('success', 'Berhasil', result.message);
+                                } else {
+                                    alert(result.message);
+                                }
+                                this.show = false;
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else {
+                                if (typeof $notify !== 'undefined') {
+                                    $notify('error', 'Gagal', result.message || 'Terjadi kesalahan.');
+                                } else {
+                                    alert(result.message || 'Terjadi kesalahan.');
+                                }
+                            }
+                        } catch (e) {
+                            if (typeof $notify !== 'undefined') {
+                                $notify('error', 'Error', 'Terjadi kesalahan jaringan.');
+                            } else {
+                                alert('Terjadi kesalahan jaringan.');
+                            }
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }));
             });
         </script>
 

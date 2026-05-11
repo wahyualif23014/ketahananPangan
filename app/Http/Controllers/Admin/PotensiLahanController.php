@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AktivitasLog;
 use App\Models\PotensiLahan;
+use App\Models\Pesan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class PotensiLahanController extends Controller
@@ -370,6 +372,72 @@ class PotensiLahanController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
+    }
+
+    public function tolakValidasi(Request $request, $id)
+    {
+        if (auth()->user() && auth()->user()->role === 'view') {
+            abort(403, 'Anda tidak memiliki izin untuk menolak validasi.');
+        }
+
+        $request->validate([
+            'alasan_penolakan' => 'required|string|max:1000',
+        ], [
+            'alasan_penolakan.required' => 'Alasan penolakan harus diisi.',
+        ]);
+
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+        if (!$lahan) {
+            return response()->json(['success' => false, 'message' => 'Data lahan tidak ditemukan.'], 404);
+        }
+
+        $user    = auth()->user();
+        $alasan  = $request->input('alasan_penolakan');
+        $penolak = $user->nama_anggota ?? $user->username ?? 'Admin';
+
+        // Update status lahan menjadi '2' (Ditolak)
+        DB::table('lahan')->where('id_lahan', $id)->update([
+            'status_lahan' => '2',
+            'valid_oleh'   => null,
+            'tgl_valid'    => null,
+            'ket_polisi'   => '[DITOLAK] ' . $alasan,
+            'tgl_edit'     => Carbon::now(),
+        ]);
+
+        // Kirim pesan otomatis ke pembuat laporan (edit_oleh)
+        $pembuatId = $lahan->edit_oleh;
+        if ($pembuatId) {
+            // Cari id_anggota dari username jika edit_oleh menyimpan username
+            $pembuat = DB::table('anggota')
+                ->where('id_anggota', $pembuatId)
+                ->orWhere('username', $pembuatId)
+                ->first();
+
+            if ($pembuat) {
+                $alamat = $lahan->alamat_lahan ?? 'Lahan #' . $id;
+                Pesan::create([
+                    'id_pesan'     => Str::uuid(),
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $pembuat->id_anggota,
+                    'judul'        => '❌ Penolakan Validasi Potensi Lahan #' . $id,
+                    'isi_pesan'    =>
+                        "Potensi lahan yang Anda laporkan telah **DITOLAK** oleh {$penolak}.\n\n" .
+                        "📍 **Lokasi Lahan:** {$alamat}\n" .
+                        "🆔 **ID Lahan:** #{$id}\n\n" .
+                        "📝 **Alasan Penolakan:**\n{$alasan}\n\n" .
+                        "Silakan perbaiki data dan ajukan kembali laporan potensi lahan Anda.",
+                    'is_read'      => false,
+                ]);
+            }
+        }
+
+        AktivitasLog::catat('tolak_validasi', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id,
+            'keterangan'  => 'Tolak validasi potensi lahan #' . $id . '. Alasan: ' . $alasan,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Validasi lahan berhasil ditolak dan notifikasi telah dikirim.']);
     }
 
     public function validasi(Request $request, $id) {

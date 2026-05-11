@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Models\AktivitasLog;
+use App\Models\Pesan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class PotensiLahanController extends Controller
@@ -418,9 +421,121 @@ class PotensiLahanController extends Controller
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
         }
 
+        $wasDitolak = $lahan->status_lahan == '2';
+
         DB::table('lahan')->where('id_lahan', $id)->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Data berhasil diperbarui']);
+        // Jika sebelumnya ditolak, kirim notifikasi ke Polres bahwa data sudah diperbaiki
+        if ($wasDitolak) {
+            $idTingkatLahan = $lahan->id_tingkat ?? '';
+            // Cari Polres dari prefix id_tingkat (misal: "1.12.01" → polres "1.12")
+            $parts = explode('.', $idTingkatLahan);
+            $polresId = count($parts) >= 2 ? $parts[0] . '.' . $parts[1] : $idTingkatLahan;
+
+            // Cari operator Polres (role = 'operator' dengan id_tugas = polresId)
+            $polresOperator = DB::table('anggota')
+                ->where('id_tugas', $polresId)
+                ->where('role', 'operator')
+                ->first();
+
+            if ($polresOperator) {
+                $namaPengirim = $user->nama_anggota ?? $user->username ?? 'Operator';
+                $alamat       = $request->alamat_lahan ?? $lahan->alamat_lahan ?? 'Lahan #' . $id;
+
+                Pesan::create([
+                    'id_pesan'     => Str::uuid(),
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $polresOperator->id_anggota,
+                    'judul'        => '🔄 Data Lahan Telah Diperbaiki - Mohon Validasi Ulang #' . $id,
+                    'isi_pesan'    =>
+                        "Data potensi lahan yang sebelumnya **DITOLAK** telah **DIPERBAIKI** oleh {$namaPengirim}.\n\n" .
+                        "📍 **Lokasi Lahan:** {$alamat}\n" .
+                        "🆔 **ID Lahan:** #{$id}\n\n" .
+                        "Silakan tinjau kembali data tersebut dan lakukan validasi jika sudah sesuai.",
+                    'is_read'      => false,
+                ]);
+            }
+
+            AktivitasLog::catat('perbaiki_data', 'potensi_lahan', [
+                'record_id'   => $id,
+                'label_modul' => 'Lahan #' . $id,
+                'keterangan'  => 'Perbaikan data potensi lahan #' . $id . ' setelah penolakan.',
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => $wasDitolak ? 'Data berhasil diperbaiki. Operator Polres telah diberitahu untuk validasi ulang.' : 'Data berhasil diperbarui']);
+    }
+
+    public function tolakValidasi(Request $request, $id)
+    {
+        $user  = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+        $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
+
+        // Scope check
+        if (!$lahan || ($scope && $scope != '0' && (
+            (string)$lahan->id_tingkat !== (string)$scope &&
+            !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')
+        ))) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        // Hanya Polres yang bisa menolak
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Penolakan hanya dapat dilakukan oleh tingkat Polres.'], 403);
+        }
+
+        $request->validate([
+            'alasan_penolakan' => 'required|string|max:1000',
+        ], [
+            'alasan_penolakan.required' => 'Alasan penolakan harus diisi.',
+        ]);
+
+        $alasan  = $request->input('alasan_penolakan');
+        $penolak = $user->nama_anggota ?? $user->username ?? 'Operator';
+
+        // Update status lahan menjadi '2' (Ditolak)
+        DB::table('lahan')->where('id_lahan', $id)->update([
+            'status_lahan' => '2',
+            'valid_oleh'   => null,
+            'tgl_valid'    => null,
+            'ket_polisi'   => '[DITOLAK] ' . $alasan,
+            'tgl_edit'     => Carbon::now(),
+        ]);
+
+        // Kirim pesan otomatis ke pembuat laporan
+        $pembuatId = $lahan->edit_oleh;
+        if ($pembuatId) {
+            $pembuat = DB::table('anggota')
+                ->where('id_anggota', $pembuatId)
+                ->orWhere('username', $pembuatId)
+                ->first();
+
+            if ($pembuat) {
+                $alamat = $lahan->alamat_lahan ?? 'Lahan #' . $id;
+                Pesan::create([
+                    'id_pesan'     => Str::uuid(),
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $pembuat->id_anggota,
+                    'judul'        => '❌ Penolakan Validasi Potensi Lahan #' . $id,
+                    'isi_pesan'    =>
+                        "Potensi lahan yang Anda laporkan telah **DITOLAK** oleh {$penolak}.\n\n" .
+                        "📍 **Lokasi Lahan:** {$alamat}\n" .
+                        "🆔 **ID Lahan:** #{$id}\n\n" .
+                        "📝 **Alasan Penolakan:**\n{$alasan}\n\n" .
+                        "Silakan perbaiki data dan ajukan kembali laporan potensi lahan Anda.",
+                    'is_read'      => false,
+                ]);
+            }
+        }
+
+        AktivitasLog::catat('tolak_validasi', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id,
+            'keterangan'  => 'Tolak validasi potensi lahan #' . $id . '. Alasan: ' . $alasan,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Validasi lahan berhasil ditolak dan notifikasi telah dikirim.']);
     }
 
     public function validasi($id)

@@ -215,16 +215,20 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
             <div x-show="open && sidebarExpanded" x-collapse.duration.300ms class="mt-1">
                 <div class="pl-11 pr-2 space-y-0.5 border-l border-[#1F2937] ml-4 py-1">
                     @if($userRole === 'view')
-                    <a href="{{ route('view.kelola-lahan.index') }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs('view.kelola-lahan.*') ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Data Kelola</a>
+                    <a href="{{ route('view.kelola-lahan.index') }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs('view.kelola-lahan.index') ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Data Kelola</a>
+                    <a href="{{ route('view.kelola-lahan.riwayat.index') }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs('view.kelola-lahan.riwayat.*') ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Riwayat Lahan</a>
                     @else
                     @php
                     $potensiRoute = $userRole === 'operator' ? 'operator.kelola-lahan.potensi.index' : 'admin.kelola-lahan.potensi.index';
                     $daftarRoute = $userRole === 'operator' ? 'operator.kelola-lahan.daftar.index' : 'admin.kelola-lahan.daftar.index';
+                    $riwayatRoute = $userRole === 'operator' ? 'operator.kelola-lahan.riwayat.index' : 'admin.kelola-lahan.riwayat.index';
                     $potensiActive = $userRole === 'operator' ? 'operator.kelola-lahan.potensi.*' : 'admin.kelola-lahan.potensi.*';
                     $daftarActive = $userRole === 'operator' ? 'operator.kelola-lahan.daftar.*' : 'admin.kelola-lahan.daftar.*';
+                    $riwayatActive = $userRole === 'operator' ? 'operator.kelola-lahan.riwayat.*' : 'admin.kelola-lahan.riwayat.*';
                     @endphp
-                    <a href="{{ route($potensiRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($potensiActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Data Potensi</a>
-                    <a href="{{ route($daftarRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($daftarActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Daftar Kelola</a>
+                    <a href="{{ route($potensiRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($potensiActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Kelola Potensi</a>
+                    <a href="{{ route($daftarRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($daftarActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Kelola Lahan</a>
+                    <a href="{{ route($riwayatRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($riwayatActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Riwayat Lahan</a>
                     @endif
                 </div>
             </div>
