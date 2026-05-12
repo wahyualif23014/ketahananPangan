@@ -475,7 +475,7 @@
                                                         @csrf @method('PUT')
                                                         <button class="px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
                                                     </form>
-                                                    <button onclick='openTolakModal(@json($row), "tanam")' type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                    <button @click="openTolakModal('{{ $row->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
                                                 </div>
                                                 @endif
                                                 @else
@@ -510,7 +510,7 @@
                                                         @csrf @method('PUT')
                                                         <button class="px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
                                                     </form>
-                                                    <button onclick='openTolakModal(@json($row), "panen")' type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                    <button @click="openTolakModal('{{ $row->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
                                                 </div>
                                                 @endif
                                                 @else
@@ -542,7 +542,7 @@
                                                         @csrf @method('PUT')
                                                         <button class="px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
                                                     </form>
-                                                    <button onclick='openTolakModal(@json($row), "serapan")' type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                    <button @click="openTolakModal('{{ $row->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
                                                 </div>
                                                 @endif
                                                 @else
@@ -683,7 +683,8 @@
                                                     <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                                     </div>
-                                                    Riwayat Tanam & Siklus Produksi
+                                                    Kelola Lahan Aktif
+                                                    <span class="text-[9px] font-black text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wide">Siklus Berjalan</span>
                                                 </h4>
                                                 @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
                                                 <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 0)' class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2">
@@ -693,13 +694,20 @@
                                                 @endif
                                             </div>
                                             
-                                            @if($row->history_tanam->isEmpty())
+                                            @php
+                                                $activeTanamList = $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1);
+                                            @endphp
+                                            @if($activeTanamList->isEmpty())
                                                 <div class="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Belum ada riwayat produksi</p>
+                                                    <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    </div>
+                                                    <p class="text-xs font-black text-emerald-600 uppercase tracking-widest">Semua Siklus Sudah Selesai</p>
+                                                    <p class="text-[10px] font-bold text-slate-400 mt-1">Tidak ada siklus aktif. Data telah dipindah ke Riwayat Lahan.</p>
                                                 </div>
                                             @else
                                                 <div class="space-y-6">
-                                                    @foreach($row->history_tanam as $tanam)
+                                                    @foreach($activeTanamList as $tanam)
                                                         <div class="relative pl-6 border-l-2 border-emerald-200 pb-2">
                                                             <div class="absolute w-4 h-4 bg-emerald-500 rounded-full -left-[9px] top-0 border-4 border-white shadow-sm"></div>
                                                             <div class="bg-slate-50/50 rounded-xl border border-slate-100 p-5 hover:border-emerald-200 transition-colors">
@@ -714,10 +722,17 @@
                                                                     <div class="flex gap-2">
                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                             @if(is_null($tanam->valid_oleh))
+                                                                                @if(str_starts_with($tanam->keterangan_tanam ?? '', '[DITOLAK]'))
+                                                                                    <div class="flex flex-col gap-1 group relative">
+                                                                                        <span class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center cursor-help">❌ Ditolak</span>
+                                                                                        <div class="absolute bottom-full left-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $tanam->keterangan_tanam)[0]) }}</div>
+                                                                                    </div>
+                                                                                @endif
                                                                                 <form action="{{ route('admin.kelola-lahan.tanam.validasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Validasi</button></form>
-                                                                                <button @click='openTolakModal(@json(array_merge((array)$row, (array)$tanam)), "tanam")' type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Tolak</button>
+                                                                                <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Tolak</button>
                                                                             @else
-                                                                                <form action="{{ route('admin.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 transition-all shadow-sm">Unvalidasi</button></form>
+                                                                                <form action="{{ route('admin.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-emerald-600 transition-all shadow-sm">Unvalidasi</button></form>
+                                                                                <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-600 transition-all shadow-sm">Tolak</button>
                                                                             @endif
                                                                         @endif
                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
@@ -751,10 +766,17 @@
                                                                                     <div class="flex flex-col gap-1">
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                                         @if(is_null($panen->valid_oleh))
+                                                                                            @if(str_starts_with($panen->ket_panen ?? '', '[DITOLAK]'))
+                                                                                                <div class="group relative w-full mb-1">
+                                                                                                    <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $panen->ket_panen)[0]) }}</div>
+                                                                                                </div>
+                                                                                            @endif
                                                                                             <form action="{{ route('admin.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                            <button @click='openTolakModal(@json(array_merge((array)$row, (array)$tanam, (array)$panen)), "panen")' type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                                                                            <button @click="openTolakModal('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                         @else
-                                                                                            <form action="{{ route('admin.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
+                                                                                            <form action="{{ route('admin.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-amber-600 transition-colors">Unvalidasi</button></form>
+                                                                                            <button @click="openTolakModal('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-500 border border-rose-600 text-white rounded text-[8px] font-black uppercase hover:bg-rose-600 transition-colors mt-1">Tolak</button>
                                                                                         @endif
                                                                                         @endif
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
@@ -789,10 +811,17 @@
                                                                                     <div class="flex flex-col gap-1">
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                                         @if(is_null($distribusi->valid_oleh))
+                                                                                            @if(str_starts_with($distribusi->keterangan_distribusi ?? '', '[DITOLAK]'))
+                                                                                                <div class="group relative w-full mb-1">
+                                                                                                    <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $distribusi->keterangan_distribusi)[0]) }}</div>
+                                                                                                </div>
+                                                                                            @endif
                                                                                             <form action="{{ route('admin.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                            <button @click='openTolakModal(@json(array_merge((array)$row, (array)$tanam, (array)$distribusi)), "serapan")' type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                                                                            <button @click="openTolakModal('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                         @else
-                                                                                            <form action="{{ route('admin.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
+                                                                                            <form action="{{ route('admin.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors">Unvalidasi</button></form>
+                                                                                            <button @click="openTolakModal('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-500 border border-rose-600 text-white rounded text-[8px] font-black uppercase hover:bg-rose-600 transition-colors mt-1">Tolak</button>
                                                                                         @endif
                                                                                         @endif
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
@@ -943,48 +972,46 @@
                 @endforeach
             },
 
-            openTolakModal(rowData, type) {
+            openTolakModal(id, type, label) {
                 this.tolakModalData.type = type;
-                this.tolakModalData.lahanInfo = rowData;
+                this.tolakModalData.lahanInfo = { nama_wilayah: label };
                 this.tolakModalData.alasan = '';
-                if (type === 'tanam') this.tolakModalData.id = rowData.id_tanam;
-                else if (type === 'panen') this.tolakModalData.id = rowData.id_panen;
-                else if (type === 'serapan') this.tolakModalData.id = rowData.id_distribusi;
+                this.tolakModalData.id = id;
                 this.tolakModalData.isOpen = true;
             },
 
-            submitTolak() {
+            async submitTolak() {
                 if (!this.tolakModalData.alasan.trim()) {
-                    alert('Harap masukkan alasan penolakan!');
+                    $notify('error', 'Alasan Wajib Diisi', 'Harap masukkan alasan penolakan sebelum melanjutkan!');
                     return;
                 }
-                
+
                 const url = `/admin/kelola-lahan/${this.tolakModalData.type}/${this.tolakModalData.id}/tolak`;
-                
-                fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        alasan: this.tolakModalData.alasan
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            alasan: this.tolakModalData.alasan
+                        })
+                    });
+                    const data = await response.json();
                     if (data.success) {
-                        alert('Berhasil: ' + data.message);
-                        window.location.reload();
+                        this.tolakModalData.isOpen = false;
+                        $notify('success', 'Validasi Ditolak', data.message);
+                        setTimeout(() => window.location.reload(), 1500);
                     } else {
-                        alert('Gagal: ' + data.message);
+                        $notify('error', 'Gagal Menolak', data.message || 'Terjadi kesalahan.');
                     }
-                })
-                .catch(err => {
+                } catch (err) {
                     console.error(err);
-                    alert('Terjadi kesalahan saat memproses permintaan.');
-                });
+                    $notify('error', 'Kesalahan Koneksi', 'Terjadi kesalahan saat memproses permintaan.');
+                }
             },
 
             openStageModal(id_lahan, rowData, forcedStage = null, targetTanamId = null) {
@@ -1610,7 +1637,7 @@
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-emerald-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-emerald-600">Validasi</button>
                                 </form>
-                                <button type="button" @click='openTolakModal(Object.assign({}, activeLahan, t), "tanam")' class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                <button type="button" @click="openTolakModal(t.id_tanam, 'tanam', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                             </div>
                         </div>
                     </template>
@@ -1636,7 +1663,7 @@
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-amber-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-amber-600">Validasi</button>
                                 </form>
-                                <button type="button" @click='openTolakModal(Object.assign({}, activeLahan, p), "panen")' class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                <button type="button" @click="openTolakModal(p.id_panen, 'panen', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                             </div>
                         </div>
                     </template>
@@ -1659,7 +1686,7 @@
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-blue-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-blue-600">Validasi</button>
                                 </form>
-                                <button type="button" @click='openTolakModal(Object.assign({}, activeLahan, s), "serapan")' class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                <button type="button" @click="openTolakModal(s.id_distribusi, 'serapan', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                             </div>
                         </div>
                     </template>

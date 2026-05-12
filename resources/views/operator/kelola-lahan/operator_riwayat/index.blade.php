@@ -372,6 +372,249 @@
         @endforeach
     </div>
 
+    {{-- ═══════════════════════════════════════════════════════════════════
+         ANALYTICS ROW: Serapan Distribution + Upcoming Harvest Filter
+    ═══════════════════════════════════════════════════════════════════ --}}
+    <div class="mx-4 grid grid-cols-1 xl:grid-cols-5 gap-6 mt-6">
+
+        {{-- ── PESEBARAN SERAPAN CHART ────────────────────────────────── --}}
+        <div class="xl:col-span-2 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden">
+            <div class="px-7 py-5 bg-gradient-to-r from-indigo-900 to-indigo-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-2xl bg-indigo-500/30 flex items-center justify-center text-indigo-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">Pesebaran Serapan</h3>
+                        <p class="text-[9px] font-bold text-indigo-300 uppercase tracking-wider mt-0.5">Distribusi Output Produksi</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest">TON</span>
+            </div>
+
+            <div class="p-7">
+                @php
+                    $totalSerapanAll = collect($serapanChartData)->sum('total');
+                    $chartColors = [
+                        1 => ['bar' => 'bg-emerald-500', 'badge' => 'bg-emerald-100 text-emerald-700 border-emerald-200', 'dot' => 'bg-emerald-500'],
+                        2 => ['bar' => 'bg-amber-500',   'badge' => 'bg-amber-100 text-amber-700 border-amber-200',   'dot' => 'bg-amber-500'],
+                        3 => ['bar' => 'bg-rose-500',    'badge' => 'bg-rose-100 text-rose-700 border-rose-200',    'dot' => 'bg-rose-500'],
+                        4 => ['bar' => 'bg-blue-500',    'badge' => 'bg-blue-100 text-blue-700 border-blue-200',    'dot' => 'bg-blue-500'],
+                    ];
+                @endphp
+
+                @if($totalSerapanAll <= 0)
+                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Belum Ada Data Serapan</p>
+                        <p class="text-[10px] font-bold text-slate-300 mt-1">Data akan tampil setelah validasi serapan</p>
+                    </div>
+                @else
+                    {{-- Donut Chart via CSS --}}
+                    <div class="flex items-center justify-center mb-6">
+                        <div class="relative w-40 h-40" id="serapan-donut-wrapper">
+                            <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90" id="serapan-donut-svg">
+                                @php
+                                    $radius = 38; $circumference = 2 * M_PI * $radius;
+                                    $strokeColors = [1=>'#10b981', 2=>'#f59e0b', 3=>'#ef4444', 4=>'#3b82f6'];
+                                    $offset = 0;
+                                @endphp
+                                @foreach($serapanChartData as $seg)
+                                    @if($seg['total'] > 0)
+                                        @php
+                                            $pct = $totalSerapanAll > 0 ? $seg['total'] / $totalSerapanAll : 0;
+                                            $dashArr = $pct * $circumference;
+                                            $dashOff = $circumference - $offset * $circumference;
+                                            $offset += $pct;
+                                        @endphp
+                                        <circle cx="50" cy="50" r="{{ $radius }}"
+                                            fill="none"
+                                            stroke="{{ $strokeColors[$seg['id']] }}"
+                                            stroke-width="22"
+                                            stroke-dasharray="{{ number_format($dashArr, 2) }} {{ number_format($circumference - $dashArr, 2) }}"
+                                            stroke-dashoffset="{{ number_format($dashOff, 2) }}"
+                                            class="transition-all duration-700"/>
+                                    @endif
+                                @endforeach
+                                {{-- Center hole --}}
+                                <circle cx="50" cy="50" r="27" fill="white"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-lg font-black text-slate-800">{{ number_format($totalSerapanAll, 0) }}</span>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">TON TOTAL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Legend + Bars --}}
+                    <div class="space-y-3">
+                        @foreach($serapanChartData as $seg)
+                            @php
+                                $pct = $totalSerapanAll > 0 ? round($seg['total'] / $totalSerapanAll * 100, 1) : 0;
+                                $c = $chartColors[$seg['id']];
+                            @endphp
+                            <div class="group">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full {{ $c['dot'] }} flex-shrink-0"></span>
+                                        <span class="text-[10px] font-black text-slate-700 uppercase tracking-wide">{{ $seg['label'] }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-black text-slate-800">{{ number_format($seg['total'], 1) }} TON</span>
+                                        <span class="text-[9px] font-black px-2 py-0.5 rounded-full border {{ $c['badge'] }}">{{ $pct }}%</span>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full {{ $c['bar'] }} rounded-full transition-all duration-1000 ease-out"
+                                         style="width: {{ $pct }}%; animation: growBar 1.2s ease-out both;"
+                                         x-data x-init="$el.style.width='0%'; setTimeout(()=>$el.style.width='{{ $pct }}%', 300)"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- ── FILTER PANEN MENDATANG ─────────────────────────────────── --}}
+        <div class="xl:col-span-3 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden">
+            <div class="px-7 py-5 bg-gradient-to-r from-amber-900 to-amber-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-2xl bg-amber-500/30 flex items-center justify-center text-amber-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-[11px] font-black text-white uppercase tracking-[0.2em] leading-none">Jadwal Panen Mendatang</h3>
+                        <p class="text-[9px] font-bold text-amber-300 uppercase tracking-wider mt-0.5">Filter berdasarkan wilayah & waktu</p>
+                    </div>
+                </div>
+                <span class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest">
+                    <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
+                    {{ count($upcomingHarvests) }} Data
+                </span>
+            </div>
+
+            {{-- Harvest Filter Form --}}
+            <form method="GET" action="{{ route('operator.kelola-lahan.riwayat.index') }}" class="px-7 py-4 bg-amber-50/50 border-b border-amber-100 flex flex-wrap items-end gap-3">
+                {{-- Preserve other filters --}}
+                @foreach(request()->except(['panen_bulan','panen_tahun','panen_resor']) as $k => $v)
+                    @if($v)<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif
+                @endforeach
+
+                <div class="flex-1 min-w-[110px]">
+                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">WILAYAH / POLRES</label>
+                    <select name="panen_resor" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all uppercase cursor-pointer shadow-sm">
+                        <option value="">SEMUA WILAYAH</option>
+                        @foreach($polresForHarvest as $pr)
+                            <option value="{{ $pr->id_tingkat }}" {{ ($harvestFilters['resor'] ?? '') == $pr->id_tingkat ? 'selected' : '' }}>
+                                {{ $pr->nama_tingkat }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-28">
+                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">BULAN</label>
+                    <select name="panen_bulan" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
+                        <option value="">SEMUA</option>
+                        @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $mi => $mn)
+                            <option value="{{ $mi+1 }}" {{ ($harvestFilters['bulan'] ?? '') == $mi+1 ? 'selected' : '' }}>{{ $mn }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="w-24">
+                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">TAHUN</label>
+                    <select name="panen_tahun" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
+                        @for($y = date('Y')+1; $y >= date('Y')-3; $y--)
+                            <option value="{{ $y }}" {{ ($harvestFilters['tahun'] ?? date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+
+                <button type="submit" class="h-10 px-5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 flex-shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filter
+                </button>
+            </form>
+
+            {{-- Harvest Table --}}
+            <div class="overflow-auto custom-scrollbar max-h-80">
+                @if($upcomingHarvests->isEmpty())
+                    <div class="flex flex-col items-center justify-center py-14 text-center px-6">
+                        <div class="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 border border-amber-100">
+                            <svg class="w-8 h-8 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Tidak Ada Jadwal Panen</p>
+                        <p class="text-[10px] font-bold text-slate-300 mt-1">Coba ubah filter wilayah / bulan / tahun</p>
+                    </div>
+                @else
+                    <table class="w-full text-left min-w-[500px]">
+                        <thead class="sticky top-0 z-10">
+                            <tr class="bg-amber-50 border-b border-amber-100">
+                                <th class="px-5 py-3 text-[9px] font-black text-amber-700 uppercase tracking-[0.2em]">WILAYAH / POLSEK</th>
+                                <th class="px-4 py-3 text-[9px] font-black text-amber-700 uppercase tracking-[0.2em]">LAHAN / POKTAN</th>
+                                <th class="px-4 py-3 text-[9px] font-black text-amber-700 uppercase tracking-[0.2em]">LUAS TANAM</th>
+                                <th class="px-4 py-3 text-[9px] font-black text-amber-700 uppercase tracking-[0.2em]">EST. PANEN</th>
+                                <th class="px-4 py-3 text-[9px] font-black text-amber-700 uppercase tracking-[0.2em]">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-amber-50">
+                            @foreach($upcomingHarvests as $harvest)
+                                @php
+                                    $estAwal  = \Carbon\Carbon::parse($harvest->est_awal_panen);
+                                    $estAkhir = \Carbon\Carbon::parse($harvest->est_akhir_panen ?? $harvest->est_awal_panen);
+                                    $now      = \Carbon\Carbon::now();
+                                    $daysLeft = $now->diffInDays($estAwal, false);
+                                    if ($daysLeft > 30)      { $urgencyClass = 'text-slate-400'; $urgencyBg = 'bg-slate-50 border-slate-100'; $urgencyLabel = 'Jauh'; }
+                                    elseif ($daysLeft > 7)   { $urgencyClass = 'text-amber-600'; $urgencyBg = 'bg-amber-50 border-amber-100'; $urgencyLabel = $daysLeft . ' Hari'; }
+                                    elseif ($daysLeft >= 0)  { $urgencyClass = 'text-rose-600';  $urgencyBg = 'bg-rose-50 border-rose-100';  $urgencyLabel = $daysLeft . ' Hari!'; }
+                                    else                     { $urgencyClass = 'text-emerald-600'; $urgencyBg = 'bg-emerald-50 border-emerald-100'; $urgencyLabel = 'Melewati Est.'; }
+                                @endphp
+                                <tr class="hover:bg-amber-50/70 transition-colors group">
+                                    <td class="px-5 py-3.5">
+                                        <p class="text-[10px] font-black text-slate-800 uppercase tracking-tight">{{ $harvest->nama_wilayah ?? '-' }}</p>
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase">{{ str_replace('POLSEK ', '', $harvest->nama_tingkat) }}</p>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <p class="text-[10px] font-black text-slate-700 uppercase">{{ $harvest->poktan ?? $harvest->alamat_lahan ?? '-' }}</p>
+                                        <p class="text-[9px] font-bold text-slate-400">ID: {{ $harvest->id_lahan }}</p>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <span class="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                                            {{ number_format($harvest->luas_tanam, 2) }} HA
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <p class="text-[10px] font-black text-slate-700">{{ $estAwal->format('d M') }} – {{ $estAkhir->format('d M Y') }}</p>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <span class="px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase {{ $urgencyBg }} {{ $urgencyClass }}">
+                                            {{ $urgencyLabel }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div class="mx-4 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-300/30 overflow-hidden relative z-20 mt-8">
 
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
@@ -630,49 +873,13 @@
 
                                 </div>
 
-                                {{-- === ACTION BUTTONS === --}}
-                                <div class="flex flex-col gap-1.5 mt-2">
-                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 0)'
-                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white active:scale-95 transition-all shadow-sm">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Tanam
-                                    </button>
-                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1)'
-                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white active:scale-95 transition-all shadow-sm">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Panen
-                                    </button>
-                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2)'
-                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white active:scale-95 transition-all shadow-sm">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Serapan
-                                    </button>
-                                </div>
+                                {{-- Action buttons removed from Riwayat --}}
 
                             </div>
                         </td>
                         <td class="px-4 py-6 text-right">
                             <div class="flex flex-col items-end gap-1.5">
-                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
-                                @if($row->id_tanam && $row->id_distribusi && $row->serapan_valid_oleh && $row->tanam_valid_oleh && $row->panen_valid_oleh)
-                                    <form action="{{ route('operator.kelola-lahan.lahan.validasi', $row->id_lahan) }}" method="POST" class="m-0" onsubmit="return confirm('Selesaikan siklus lahan ini? Data kelola lahan akan dikosongkan dan dipindah ke riwayat.');">
-                                        @csrf @method('PUT')
-                                        <button type="submit" title="Selesai Siklus & Pindah ke Riwayat" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                        </button>
-                                    </form>
-                                @else
-                                    <button type="button" onclick="alert('Peringatan: Tidak bisa menyelesaikan siklus!\n\nSyarat Selesai Siklus:\n1. Harus ada data Tanam, Panen, dan Serapan.\n2. Seluruh data (Tanam, Panen, Serapan) HARUS sudah divalidasi melalui tombol \'Riwayat & Kelola Siklus\'.')" title="Validasi Lahan (Belum Memenuhi Syarat)" class="p-2 bg-slate-50 text-slate-400 cursor-not-allowed rounded-lg transition-all shadow-sm">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    </button>
-                                @endif
-                                @endif
+                                {{-- Selesai Siklus button moved to Kelola Lahan --}}
                                 <button onclick="window.location.href='{{ route('operator.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -701,12 +908,7 @@
                                         </div>
                                         Riwayat Tanam & Siklus Produksi
                                     </h4>
-                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 0)' class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Tambah Tanam Baru
-                                    </button>
+
                                 </div>
 
                                 @if($row->history_tanam->isEmpty())
@@ -730,15 +932,31 @@
                                                 <div class="flex gap-2">
                                                     @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                                         @if(is_null($tanam->valid_oleh))
+                                                            @if(str_starts_with($tanam->keterangan_tanam ?? '', '[DITOLAK]'))
+                                                                <div class="flex flex-col gap-1 group relative">
+                                                                    <span class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center cursor-help">❌ Ditolak</span>
+                                                                    <div class="absolute bottom-full left-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $tanam->keterangan_tanam)[0]) }}</div>
+                                                                </div>
+                                                            @endif
                                                             <form action="{{ route('operator.kelola-lahan.tanam.validasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-white border border-emerald-500 text-emerald-600 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Validasi</button></form>
                                                         @else
                                                             <form action="{{ route('operator.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 transition-all shadow-sm">Unvalidasi</button></form>
                                                         @endif
+                                                    @else
+                                                        @if(is_null($tanam->valid_oleh))
+                                                            @if(str_starts_with($tanam->keterangan_tanam ?? '', '[DITOLAK]'))
+                                                                <div class="flex flex-col gap-1 group relative">
+                                                                    <span class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center cursor-help">❌ Ditolak</span>
+                                                                    <div class="absolute bottom-full left-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $tanam->keterangan_tanam)[0]) }}</div>
+                                                                </div>
+                                                            @else
+                                                                <span class="px-2.5 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center">Belum Validasi</span>
+                                                            @endif
+                                                        @else
+                                                            <span class="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center">✅ Tervalidasi</span>
+                                                        @endif
                                                     @endif
-                                                    <button @click='editTanam("{{ $tanam->id_tanam }}", @json(array_merge((array)$row, (array)$tanam)))' class="px-2.5 py-1.5 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Edit</button>
-                                                    <button @click='deleteTanam("{{ $tanam->id_tanam }}")' class="px-2.5 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Hapus</button>
-                                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20 ml-2">+ Panen</button>
-                                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20">+ Serapan</button>
+
                                                 </div>
                                             </div>
 
@@ -764,13 +982,31 @@
                                                             <div class="flex flex-col gap-1">
                                                                 @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                                                     @if(is_null($panen->valid_oleh))
+                                                                        @if(str_starts_with($panen->ket_panen ?? '', '[DITOLAK]'))
+                                                                            <div class="group relative w-full mb-1">
+                                                                                <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $panen->ket_panen)[0]) }}</div>
+                                                                            </div>
+                                                                        @endif
                                                                         <form action="{{ route('operator.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-50 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
                                                                     @else
                                                                         <form action="{{ route('operator.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
                                                                     @endif
+                                                                @else
+                                                                    @if(is_null($panen->valid_oleh))
+                                                                        @if(str_starts_with($panen->ket_panen ?? '', '[DITOLAK]'))
+                                                                            <div class="group relative w-full">
+                                                                                <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $panen->ket_panen)[0]) }}</div>
+                                                                            </div>
+                                                                        @else
+                                                                            <span class="w-full px-2 py-1 bg-slate-100 text-slate-500 rounded text-[8px] font-black uppercase text-center">Belum Validasi</span>
+                                                                        @endif
+                                                                    @else
+                                                                        <span class="w-full px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase text-center">✅ Tervalidasi</span>
+                                                                    @endif
                                                                 @endif
-                                                                <button @click='editPanen("{{ $panen->id_panen }}", @json(array_merge((array)$row, (array)$tanam, (array)$panen)))' class="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Edit</button>
-                                                                <button @click='deletePanen("{{ $panen->id_panen }}")' class="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Del</button>
+
                                                             </div>
                                                         </div>
                                                         @endforeach
@@ -799,13 +1035,31 @@
                                                             <div class="flex flex-col gap-1">
                                                                 @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                                                     @if(is_null($distribusi->valid_oleh))
+                                                                        @if(str_starts_with($distribusi->keterangan_distribusi ?? '', '[DITOLAK]'))
+                                                                            <div class="group relative w-full mb-1">
+                                                                                <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $distribusi->keterangan_distribusi)[0]) }}</div>
+                                                                            </div>
+                                                                        @endif
                                                                         <form action="{{ route('operator.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
                                                                     @else
                                                                         <form action="{{ route('operator.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
                                                                     @endif
+                                                                @else
+                                                                    @if(is_null($distribusi->valid_oleh))
+                                                                        @if(str_starts_with($distribusi->keterangan_distribusi ?? '', '[DITOLAK]'))
+                                                                            <div class="group relative w-full">
+                                                                                <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
+                                                                                <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $distribusi->keterangan_distribusi)[0]) }}</div>
+                                                                            </div>
+                                                                        @else
+                                                                            <span class="w-full px-2 py-1 bg-slate-100 text-slate-500 rounded text-[8px] font-black uppercase text-center">Belum Validasi</span>
+                                                                        @endif
+                                                                    @else
+                                                                        <span class="w-full px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase text-center">✅ Tervalidasi</span>
+                                                                    @endif
                                                                 @endif
-                                                                <button @click='editSerapan("{{ $distribusi->id_distribusi }}", @json(array_merge((array)$row, (array)$tanam, (array)$distribusi)))' class="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Edit</button>
-                                                                <button @click='deleteSerapan("{{ $distribusi->id_distribusi }}")' class="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Del</button>
+
                                                             </div>
                                                         </div>
                                                         @endforeach

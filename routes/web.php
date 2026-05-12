@@ -97,6 +97,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::put('/serapan/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
             Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/lahan/{id}/validasi', [KelolaLahanController::class, 'validasiLahan'])->name('lahan.validasi');
+            Route::put('/lahan/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiLahan'])->name('lahan.unvalidasi');
             Route::put('/tanam/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiTanam'])->name('tanam.tolak');
             Route::put('/panen/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiPanen'])->name('panen.tolak');
             Route::put('/serapan/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiSerapan'])->name('serapan.tolak');
