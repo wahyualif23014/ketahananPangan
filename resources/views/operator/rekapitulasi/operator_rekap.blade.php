@@ -1,18 +1,20 @@
 @extends('layouts.app')
 
 @php
-    $routeName = request()->route()->getName();
-    $routePrefix = explode('.', $routeName)[0] ?? 'admin';
-
-    // OPTIMASI: Grouping data dilakukan satu kali di awal untuk mempercepat rendering (Desktop & Mobile)
-    $allItems = collect($dataRekap->items() ?? []);
-    $groupedByPolres = $allItems->groupBy('nama_polres');
+$routeName = request()->route()->getName();
+$routePrefix = explode('.', $routeName)[0] ?? 'admin';
+$allItems = collect($dataRekap->items() ?? []);
+$groupedByPolres = $allItems->groupBy('nama_polres');
 @endphp
 
 @section('header', 'Laporan Rekapitulasi Produksi')
 
 @section('content')
-<style>[x-cloak] { display: none !important; }</style>
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
 
 <div class="space-y-8 pb-20 antialiased text-slate-900" style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
 
@@ -43,7 +45,7 @@
                         class="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm shadow-sm transition-all outline-none focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500/40">
                 </div>
                 @foreach(request()->except('search') as $key => $value)
-                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                 @endforeach
             </form>
 
@@ -86,8 +88,9 @@
 
         <div x-show="open" x-collapse x-cloak class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {{-- Kategori Lokasi --}}
-                <div class="space-y-4" x-data="{
+                @if($userLevel < 3)
+                    {{-- Kategori Lokasi --}}
+                    <div class="space-y-4" x-data="{
                     formEl: null,
                     polresOpen: false, polresSearch: '', polresHighlight: -1,
                     polresValue: '{{ request('polres', '') }}',
@@ -121,254 +124,269 @@
                 }" x-init="formEl = $el.closest('form')">
                     <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kategori Lokasi</h4>
                     <div class="space-y-3">
-                        <div class="relative">
+                        @if($userLevel < 2)
+                            <div class="relative">
                             <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Polres / Satwil</label>
                             <input type="hidden" name="polres" :value="polresValue">
                             <div class="relative">
-                                <input type="text" x-show="!polresLabel || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="Cari polres..."
+                                <input type="text" x-ref="polresInput" x-show="!polresLabel || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="Cari polres..."
                                     class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
-                                <div x-show="polresLabel && !polresOpen" @click="polresOpen = true" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
+                                <div x-show="polresLabel && !polresOpen" @click="polresOpen = true; $nextTick(() => $refs.polresInput.focus())" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
                                     <span class="truncate text-slate-800 font-medium" x-text="polresLabel"></span>
                                 </div>
-                                <button type="button" x-show="polresValue" @click="polresValue=''; polresLabel=''; polsekValue=''; polsekLabel='';" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                <button type="button" x-show="polresValue" @click="polresValue=''; polresLabel=''; polsekValue=''; polsekLabel='';" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg></button>
                             </div>
                             <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
                                 <template x-for="item in polresFiltered" :key="item.value">
                                     <div @mousedown.prevent="selectPolres(item)" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
                                 </template>
                             </div>
-                        </div>
+                    </div>
+                    @endif
 
+                    <div class="relative">
+                        <label class="block text-xs font-semibold mb-1.5 ml-1" :class="polresValue || {{ $userLevel == 2 ? 'true' : 'false' }} ? 'text-slate-600' : 'text-slate-400'">Polsek / Sektor</label>
+                        <input type="hidden" name="polsek" :value="polsekValue">
                         <div class="relative">
-                            <label class="block text-xs font-semibold mb-1.5 ml-1" :class="polresValue ? 'text-slate-600' : 'text-slate-400'">Polsek / Sektor</label>
-                            <input type="hidden" name="polsek" :value="polsekValue">
-                            <div class="relative">
-                                <input type="text" x-show="polresValue && (!polsekLabel || polsekOpen)" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" :disabled="polsekLoading || !polresValue" placeholder="Cari polsek..."
-                                    class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
-                                <div x-show="polsekLabel && !polsekOpen" @click="polsekOpen = true" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
-                                    <span class="truncate text-slate-800 font-medium" x-text="polsekLabel"></span>
-                                </div>
+                            <input type="text" x-ref="polsekInput" x-show="(polresValue || {{ $userLevel == 2 ? 'true' : 'false' }}) && (!polsekLabel || polsekOpen)" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" :disabled="polsekLoading || !(polresValue || {{ $userLevel == 2 ? 'true' : 'false' }})" placeholder="Cari polsek..."
+                                class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
+                            <div x-show="polsekLabel && !polsekOpen" @click="polsekOpen = true; $nextTick(() => $refs.polsekInput.focus())" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
+                                <span class="truncate text-slate-800 font-medium" x-text="polsekLabel"></span>
                             </div>
-                            <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
-                                <template x-for="item in polsekFiltered" :key="item.value">
-                                    <div @mousedown.prevent="polsekValue = item.value; polsekLabel = item.label; polsekOpen = false; $nextTick(() => formEl.submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
-                                </template>
-                            </div>
+                        </div>
+                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
+                            <template x-for="item in polsekFiltered" :key="item.value">
+                                <div @mousedown.prevent="polsekValue = item.value; polsekLabel = item.label; polsekOpen = false; $nextTick(() => formEl.submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
+                            </template>
                         </div>
                     </div>
-                </div>
+            </div>
+        </div>
+        @endif
 
-                {{-- Spesifikasi Lahan --}}
-                <div class="space-y-4">
-                    <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Spesifikasi Lahan</h4>
-                    <div class="space-y-3">
-                        @php
-                            $specs = [
-                                ['label' => 'Jenis Lahan', 'name' => 'jenis_lahan', 'items' => $jenisLahanList->map(fn($i) => ['value' => $i->id_jenis_lahan, 'label' => $i->nama_jenis_lahan]), 'req' => 'jenis_lahan'],
-                                ['label' => 'Komoditi', 'name' => 'komoditi', 'items' => $komoditiList->map(fn($i) => ['value' => $i->id_komoditi, 'label' => $i->nama_komoditi]), 'req' => 'komoditi'],
-                            ];
-                        @endphp
-                        @foreach($specs as $spec)
-                        <div x-data="{
+        {{-- Spesifikasi Lahan --}}
+        <div class="space-y-4">
+            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Spesifikasi Lahan</h4>
+            <div class="space-y-3">
+                @php
+                $specs = [
+                ['label' => 'Jenis Lahan', 'name' => 'jenis_lahan', 'items' => $jenisLahanList->map(fn($i) => ['value' => $i->id_jenis_lahan, 'label' => $i->nama_jenis_lahan]), 'req' => 'jenis_lahan'],
+                ['label' => 'Komoditi', 'name' => 'komoditi', 'items' => $komoditiList->map(fn($i) => ['value' => $i->id_komoditi, 'label' => $i->nama_komoditi]), 'req' => 'komoditi'],
+                ];
+                @endphp
+                @foreach($specs as $spec)
+                <div x-data="{
                             isOpen: false, search: '', selectedValue: '{{ request($spec['req'], '') }}',
                             selectedLabel: '{{ request($spec['req']) ? optional($spec['items']->firstWhere('value', request($spec['req'])))['label'] : '' }}',
                             items: @js($spec['items']),
                             get filtered() { return this.search === '' ? this.items : this.items.filter(i => i.label.toLowerCase().includes(this.search.toLowerCase())) }
                         }" class="relative">
-                            <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">{{ $spec['label'] }}</label>
-                            <input type="hidden" name="{{ $spec['name'] }}" :value="selectedValue">
-                            <div class="relative">
-                                <input type="text" x-show="!selectedLabel || isOpen" x-model="search" @focus="isOpen = true" @click.away="isOpen = false" placeholder="Cari..."
-                                    class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
-                                <div x-show="selectedLabel && !isOpen" @click="isOpen = true" class="w-full h-10 pl-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
-                                    <span class="truncate text-slate-800 font-medium" x-text="selectedLabel"></span>
-                                </div>
-                            </div>
-                            <div x-show="isOpen && filtered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
-                                <template x-for="item in filtered" :key="item.value">
-                                    <div @mousedown.prevent="selectedValue = item.value; selectedLabel = item.label; isOpen = false; $nextTick(() => $el.closest('form').submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
-                                </template>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Periode Laporan --}}
-                <div class="space-y-4" x-data="{ filterType: '{{ request('periode', 'tahun') }}' }">
-                    <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Periode Laporan</h4>
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
-                        <div class="flex items-center gap-4">
-                            @foreach(['tahun', 'kwartal', 'tanggal'] as $p)
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="radio" name="periode" value="{{ $p }}" x-model="filterType" onchange="this.form.submit()" class="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500 transition-all">
-                                <span :class="filterType === '{{ $p }}' ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'" class="text-xs uppercase">{{ $p }}</span>
-                            </label>
-                            @endforeach
-                        </div>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div x-show="filterType === 'tahun' || filterType === 'kwartal'" class="grid grid-cols-2 gap-3" x-cloak>
-                                <input type="number" name="tahun" value="{{ request('tahun', date('Y')) }}" onchange="this.form.submit()" class="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
-                                <select name="{{ request('periode') === 'kwartal' ? 'kwartal' : 'bulan' }}" onchange="this.form.submit()" class="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
-                                    @if(request('periode') === 'kwartal')
-                                        <option value="">PILIH KWARTAL</option>
-                                        @foreach(['KWARTAL I (Jan-Mar)', 'KWARTAL II (Apr-Jun)', 'KWARTAL III (Jul-Sep)', 'KWARTAL IV (Okt-Des)'] as $kw)
-                                            <option value="{{ $kw }}" {{ request('kwartal') == $kw ? 'selected' : '' }}>{{ $kw }}</option>
-                                        @endforeach
-                                    @else
-                                        <option value="">SEMUA BULAN</option>
-                                        @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $bln)
-                                            <option value="{{ $bln }}" {{ request('bulan') == $bln ? 'selected' : '' }}>{{ $bln }}</option>
-                                        @endforeach
-                                    @endif
-                                </select>
-                            </div>
-                            <div x-show="filterType === 'tanggal'" x-cloak>
-                                <input type="date" name="tanggal" value="{{ request('tanggal', date('Y-m-d')) }}" onchange="this.form.submit()" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
-                            </div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">{{ $spec['label'] }}</label>
+                    <input type="hidden" name="{{ $spec['name'] }}" :value="selectedValue">
+                    <div class="relative">
+                        <input type="text" x-ref="specInput{{ $loop->index }}" x-show="!selectedLabel || isOpen" x-model="search" @focus="isOpen = true" @click.away="isOpen = false" placeholder="Cari..."
+                            class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
+                        <div x-show="selectedLabel && !isOpen" @click="isOpen = true; $nextTick(() => $refs.specInput{{ $loop->index }}.focus())" class="w-full h-10 pl-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
+                            <span class="truncate text-slate-800 font-medium" x-text="selectedLabel"></span>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </form>
-
-    {{-- [SEC 4] - DATA TABLE --}}
-    <div class="mx-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <h3 class="font-semibold text-slate-800">Rincian Produksi Wilayah</h3>
-                <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full uppercase">{{ $dataRekap->total() }} baris data</span>
-            </div>
-            <span class="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded border border-emerald-100">Live Data</span>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-separate border-spacing-0">
-                <thead>
-                    <tr class="bg-slate-50/80 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        <th rowspan="2" class="px-8 py-4 border-b-2 border-slate-200 text-left font-bold">Wilayah / Satuan Kerja</th>
-                        <th rowspan="2" class="px-6 py-4 text-right border-b-2 border-slate-200">Potensi Lahan</th>
-                        <th rowspan="2" class="px-6 py-4 text-right border-b-2 border-slate-200">Aktual Tanam</th>
-                        <th colspan="2" class="px-6 py-2 text-center border-b border-l border-slate-200 bg-blue-50/50 text-blue-600">Hasil Produksi</th>
-                    </tr>
-                    <tr class="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <th class="px-6 py-3 text-right border-b-2 border-l border-slate-200">Panen Ha / Ton</th>
-                        <th class="px-6 py-3 text-right border-b-2 border-l border-slate-200">Serapan %</th>
-                    </tr>
-                </thead>
-
-                @forelse($groupedByPolres as $polresName => $polseksCollection)
-                <tbody x-data="{ openPolres: true, openPolsek: {} }" class="text-sm">
-                    @php
-                        $totalPolresHA = $polseksCollection->sum('kapasitas_lahan_ha');
-                        $polseksGrouped = $polseksCollection->groupBy('nama_polsek');
-                    @endphp
-                    <tr @click="openPolres = !openPolres" class="bg-gradient-to-r from-emerald-50 to-emerald-50/30 border-y-2 border-emerald-100 cursor-pointer hover:from-emerald-100/60 transition-all group">
-                        <td colspan="5" class="px-8 py-3.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" :class="openPolres ? 'animate-pulse' : ''"></div>
-                                    <span class="text-[11px] font-black text-emerald-900 uppercase tracking-[0.15em]">{{ $polresName ?: 'POLRES TIDAK DIKETAHUI' }}</span>
-                                    <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded-full">
-                                        {{ number_format($totalPolresHA, 2) }} HA &nbsp;·&nbsp; {{ $polseksCollection->count() }} entri
-                                    </span>
-                                </div>
-                                <svg :class="openPolres ? 'rotate-180' : ''" class="w-4 h-4 text-emerald-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                        </td>
-                    </tr>
-
-                    @foreach($polseksGrouped as $polsekName => $desaCollection)
-                    @php
-                        $psKey = 'ps_' . md5($polsekName . $polresName);
-                        $sHA = $desaCollection->sum('kapasitas_lahan_ha');
-                        $sTanam = $desaCollection->sum('aktual_tanam_ha');
-                        $sPanen = $desaCollection->sum('aktual_panen_ha');
-                        $sProd = $desaCollection->sum('total_produksi_panen');
-                        $sSerap = $sHA > 0 ? ($sTanam / $sHA) * 100 : 0;
-                    @endphp
-                    <tr x-show="openPolres" @click="openPolsek['{{ $psKey }}'] = !openPolsek['{{ $psKey }}']" class="bg-blue-50/40 border-b border-blue-100/70 cursor-pointer hover:bg-blue-100/40 transition-colors">
-                        <td class="px-8 py-3 pl-14">
-                            <div class="flex items-center gap-2">
-                                <svg :class="openPolsek['{{ $psKey }}'] ? '' : 'rotate-90'" class="w-3 h-3 text-blue-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
-                                <span class="text-[11px] font-bold text-blue-900 uppercase">{{ $polsekName ?: 'POLSEK TIDAK DIKETAHUI' }}</span>
-                                <span class="px-1.5 py-0.5 bg-blue-100/80 text-blue-600 text-[9px] font-bold rounded">{{ $desaCollection->count() }} desa</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-3 text-right"><span class="text-[11px] font-bold text-blue-700">{{ number_format($sHA, 2) }}</span> <span class="text-[9px] text-blue-400">HA</span></td>
-                        <td class="px-6 py-3 text-right"><span class="text-[11px] font-semibold text-slate-500">{{ number_format($sTanam, 2) }}</span> <span class="text-[9px] text-slate-400">HA</span></td>
-                        <td class="px-6 py-3 text-right border-l border-blue-100/50"><span class="text-[11px] font-semibold text-slate-500 italic">{{ number_format($sPanen, 2) }} / {{ number_format($sProd, 2) }}</span> <span class="text-[9px] text-slate-400">TON</span></td>
-                        <td class="px-6 py-3 text-right border-l border-blue-100/50"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {{ $sSerap >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ number_format($sSerap, 1) }}%</span></td>
-                    </tr>
-
-                    @foreach($desaCollection as $row)
-                    @php $hasData = ($row->total_titik_lahan ?? 0) > 0; @endphp
-                    <tr x-show="openPolres && !openPolsek['{{ $psKey }}']" class="border-b border-slate-50 {{ $hasData ? 'bg-white hover:bg-slate-50/60' : 'bg-slate-50/20 opacity-60' }}">
-                        <td class="px-8 py-3.5 pl-20">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-semibold capitalize {{ $hasData ? 'text-slate-800' : 'text-slate-400' }}">{{ strtolower($row->nama_desa) }}</span>
-                                <span class="text-[10px] text-slate-400 uppercase tracking-tight">{{ $row->nama_jenis_lahan }} &bull; {{ $row->nama_komoditi }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-3.5 text-right font-bold text-slate-900">{{ number_format($row->kapasitas_lahan_ha, 2) }}</td>
-                        <td class="px-6 py-3.5 text-right font-bold text-rose-500">{{ number_format($row->aktual_tanam_ha, 2) }}</td>
-                        <td class="px-6 py-3.5 text-right border-l border-slate-100/50 italic text-rose-500">{{ number_format($row->aktual_panen_ha, 2) }} / {{ number_format($row->total_produksi_panen, 2) }}</td>
-                        <td class="px-6 py-3.5 text-right border-l border-slate-100/50">
-                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold {{ $row->persentase_serapan >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600' }}">
-                                {{ number_format($row->persentase_serapan, 2) }}%
-                            </span>
-                        </td>
-                    </tr>
-                    @endforeach
-                    @endforeach
-                </tbody>
-                @empty
-                <tbody><tr><td colspan="5" class="px-8 py-16 text-center text-slate-400 font-bold">Tidak ada data ditemukan.</td></tr></tbody>
-                @endforelse
-            </table>
-        </div>
-
-        @if($dataRekap->hasPages())
-        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hal {{ $dataRekap->currentPage() }} dari {{ $dataRekap->lastPage() }} &bull; Total {{ number_format($dataRekap->total()) }} data</div>
-            <div class="flex items-center gap-2">{{ $dataRekap->links() }}</div>
-        </div>
-        @endif
-    </div>
-
-    {{-- [SEC 5] - MOBILE CARDS --}}
-    <div class="sm:hidden px-4 space-y-5">
-        @forelse($groupedByPolres as $polresName => $polseksCol)
-        <div x-data="{ openPolres: true, openPolsek: {} }" class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm" x-cloak>
-            <div @click="openPolres = !openPolres" class="px-4 py-3.5 bg-gradient-to-r from-emerald-50 to-white flex justify-between items-center cursor-pointer border-b border-emerald-100">
-                <h3 class="text-xs font-black text-emerald-800 uppercase tracking-widest">{{ $polresName ?: 'UNKNOWN' }}</h3>
-                <svg :class="{ 'rotate-180': openPolres }" class="w-4 h-4 text-emerald-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-            <div x-show="openPolres" class="divide-y divide-slate-100">
-                @foreach($polseksCol->groupBy('nama_polsek') as $polsekName => $desaRows)
-                <div @click="openPolsek['{{ $polsekName }}'] = !openPolsek['{{ $polsekName }}']" class="px-4 py-3 bg-blue-50/50 text-[11px] font-bold text-blue-800 uppercase flex justify-between cursor-pointer border-b border-blue-50">
-                    <span>{{ $polsekName ?: 'UNKNOWN' }}</span>
-                    <span class="bg-blue-100 px-1.5 rounded">{{ $desaRows->count() }}</span>
-                </div>
-                <div x-show="!openPolsek['{{ $polsekName }}']" class="p-3 space-y-2">
-                    @foreach($desaRows as $row)
-                    <div class="rounded-xl border border-slate-200 p-3 bg-white space-y-2 shadow-sm">
-                        <div class="flex justify-between font-black text-[13px] capitalize text-slate-800"><span>{{ strtolower($row->nama_desa) }}</span> <span class="text-[9px] px-1.5 rounded-full bg-emerald-100 text-emerald-700">AKTIF</span></div>
-                        <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
-                            <div class="bg-slate-50 p-1 rounded">Potensi<br><b>{{ number_format($row->kapasitas_lahan_ha, 1) }}</b></div>
-                            <div class="bg-slate-50 p-1 rounded">Tanam<br><b class="text-rose-500">{{ number_format($row->aktual_tanam_ha, 1) }}</b></div>
-                            <div class="bg-slate-50 p-1 rounded">Hasil<br><b class="text-emerald-600">{{ number_format($row->persentase_serapan, 1) }}%</b></div>
-                        </div>
+                    <div x-show="isOpen && filtered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
+                        <template x-for="item in filtered" :key="item.value">
+                            <div @mousedown.prevent="selectedValue = item.value; selectedLabel = item.label; isOpen = false; $nextTick(() => $el.closest('form').submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
+                        </template>
                     </div>
-                    @endforeach
                 </div>
                 @endforeach
             </div>
         </div>
-        @empty
-        <div class="text-center p-10 text-slate-400 font-bold">Data tidak ditemukan.</div>
-        @endforelse
+
+        {{-- Periode Laporan --}}
+        <div class="space-y-4" x-data="{ filterType: '{{ request('periode', 'tahun') }}' }">
+            <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Periode Laporan</h4>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
+                <div class="flex items-center gap-4">
+                    @foreach(['tahun', 'kwartal', 'tanggal'] as $p)
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="radio" name="periode" value="{{ $p }}" x-model="filterType" onchange="this.form.submit()" class="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500 transition-all">
+                        <span :class="filterType === '{{ $p }}' ? 'text-emerald-700 font-bold' : 'text-slate-500 font-medium'" class="text-xs uppercase">{{ $p }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                <div class="grid grid-cols-1 gap-3">
+                    <div x-show="filterType === 'tahun' || filterType === 'kwartal'" class="grid grid-cols-2 gap-3" x-cloak>
+                        <input type="number" name="tahun" value="{{ request('tahun', date('Y')) }}" onchange="this.form.submit()" class="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
+                        <select name="{{ request('periode') === 'kwartal' ? 'kwartal' : 'bulan' }}" onchange="this.form.submit()" class="h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
+                            @if(request('periode') === 'kwartal')
+                            <option value="">PILIH KWARTAL</option>
+                            @foreach(['KWARTAL I (Jan-Mar)', 'KWARTAL II (Apr-Jun)', 'KWARTAL III (Jul-Sep)', 'KWARTAL IV (Okt-Des)'] as $kw)
+                            <option value="{{ $kw }}" {{ request('kwartal') == $kw ? 'selected' : '' }}>{{ $kw }}</option>
+                            @endforeach
+                            @else
+                            <option value="">SEMUA BULAN</option>
+                            @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $bln)
+                            <option value="{{ $bln }}" {{ request('bulan') == $bln ? 'selected' : '' }}>{{ $bln }}</option>
+                            @endforeach
+                            @endif
+                        </select>
+                    </div>
+                    <div x-show="filterType === 'tanggal'" x-cloak>
+                        <input type="date" name="tanggal" value="{{ request('tanggal', date('Y-m-d')) }}" onchange="this.form.submit()" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm font-semibold outline-none focus:ring-4 focus:ring-emerald-500/5 transition-all">
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+</div>
+</form>
+
+{{-- [SEC 4] - DATA TABLE --}}
+<div class="mx-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <h3 class="font-semibold text-slate-800">Rincian Produksi Wilayah</h3>
+            <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded-full uppercase">{{ $dataRekap->total() }} baris data</span>
+        </div>
+        <span class="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded border border-emerald-100">Live Data</span>
     </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-separate border-spacing-0">
+            <thead>
+                <tr class="bg-slate-50/80 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <th rowspan="2" class="px-8 py-4 border-b-2 border-slate-200 text-left font-bold">Wilayah / Satuan Kerja</th>
+                    <th rowspan="2" class="px-6 py-4 text-right border-b-2 border-slate-200">Potensi Lahan</th>
+                    <th rowspan="2" class="px-6 py-4 text-right border-b-2 border-slate-200">Aktual Tanam</th>
+                    <th colspan="2" class="px-6 py-2 text-center border-b border-l border-slate-200 bg-blue-50/50 text-blue-600">Hasil Produksi</th>
+                </tr>
+                <tr class="bg-slate-50/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <th class="px-6 py-3 text-right border-b-2 border-l border-slate-200">Panen Ha / Ton</th>
+                    <th class="px-6 py-3 text-right border-b-2 border-l border-slate-200">Serapan %</th>
+                </tr>
+            </thead>
+
+            @forelse($groupedByPolres as $polresName => $polseksCollection)
+            <tbody x-data="{ openPolres: true, openPolsek: {} }" class="text-sm">
+                @php
+                $totalPolresHA = $polseksCollection->sum('kapasitas_lahan_ha');
+                $polseksGrouped = $polseksCollection->groupBy('nama_polsek');
+                @endphp
+                <tr @click="openPolres = !openPolres" class="bg-gradient-to-r from-emerald-50 to-emerald-50/30 border-y-2 border-emerald-100 cursor-pointer hover:from-emerald-100/60 transition-all group">
+                    <td colspan="5" class="px-8 py-3.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" :class="openPolres ? 'animate-pulse' : ''"></div>
+                                <span class="text-[11px] font-black text-emerald-900 uppercase tracking-[0.15em]">{{ $polresName ?: 'POLRES TIDAK DIKETAHUI' }}</span>
+                                <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded-full">
+                                    {{ number_format($totalPolresHA, 2) }} HA &nbsp;·&nbsp; {{ $polseksCollection->count() }} entri
+                                </span>
+                            </div>
+                            <svg :class="openPolres ? 'rotate-180' : ''" class="w-4 h-4 text-emerald-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </td>
+                </tr>
+
+                @foreach($polseksGrouped as $polsekName => $desaCollection)
+                @php
+                $psKey = 'ps_' . md5($polsekName . $polresName);
+                $sHA = $desaCollection->sum('kapasitas_lahan_ha');
+                $sTanam = $desaCollection->sum('aktual_tanam_ha');
+                $sPanen = $desaCollection->sum('aktual_panen_ha');
+                $sProd = $desaCollection->sum('total_produksi_panen');
+                $sSerap = $sHA > 0 ? ($sTanam / $sHA) * 100 : 0;
+                @endphp
+                <tr x-show="openPolres" @click="openPolsek['{{ $psKey }}'] = !openPolsek['{{ $psKey }}']" class="bg-blue-50/40 border-b border-blue-100/70 cursor-pointer hover:bg-blue-100/40 transition-colors">
+                    <td class="px-8 py-3 pl-14">
+                        <div class="flex items-center gap-2">
+                            <svg :class="openPolsek['{{ $psKey }}'] ? '' : 'rotate-90'" class="w-3 h-3 text-blue-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span class="text-[11px] font-bold text-blue-900 uppercase">{{ $polsekName ?: 'POLSEK TIDAK DIKETAHUI' }}</span>
+                            <span class="px-1.5 py-0.5 bg-blue-100/80 text-blue-600 text-[9px] font-bold rounded">{{ $desaCollection->count() }} desa</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-3 text-right"><span class="text-[11px] font-bold text-blue-700">{{ number_format($sHA, 2) }}</span> <span class="text-[9px] text-blue-400">HA</span></td>
+                    <td class="px-6 py-3 text-right"><span class="text-[11px] font-semibold text-slate-500">{{ number_format($sTanam, 2) }}</span> <span class="text-[9px] text-slate-400">HA</span></td>
+                    <td class="px-6 py-3 text-right border-l border-blue-100/50"><span class="text-[11px] font-semibold text-slate-500 italic">{{ number_format($sPanen, 2) }} / {{ number_format($sProd, 2) }}</span> <span class="text-[9px] text-slate-400">TON</span></td>
+                    <td class="px-6 py-3 text-right border-l border-blue-100/50"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {{ $sSerap >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ number_format($sSerap, 1) }}%</span></td>
+                </tr>
+
+                @foreach($desaCollection as $row)
+                @php $hasData = ($row->total_titik_lahan ?? 0) > 0; @endphp
+                <tr x-show="openPolres && !openPolsek['{{ $psKey }}']" class="border-b border-slate-50 {{ $hasData ? 'bg-white hover:bg-slate-50/60' : 'bg-slate-50/20 opacity-60' }}">
+                    <td class="px-8 py-3.5 pl-20">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold capitalize {{ $hasData ? 'text-slate-800' : 'text-slate-400' }}">{{ strtolower($row->nama_desa) }}</span>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-tight">{{ $row->nama_jenis_lahan }} &bull; {{ $row->nama_komoditi }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-3.5 text-right font-bold text-slate-900">{{ number_format($row->kapasitas_lahan_ha, 2) }}</td>
+                    <td class="px-6 py-3.5 text-right font-bold text-rose-500">{{ number_format($row->aktual_tanam_ha, 2) }}</td>
+                    <td class="px-6 py-3.5 text-right border-l border-slate-100/50 italic text-rose-500">{{ number_format($row->aktual_panen_ha, 2) }} / {{ number_format($row->total_produksi_panen, 2) }}</td>
+                    <td class="px-6 py-3.5 text-right border-l border-slate-100/50">
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold {{ $row->persentase_serapan >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600' }}">
+                            {{ number_format($row->persentase_serapan, 2) }}%
+                        </span>
+                    </td>
+                </tr>
+                @endforeach
+                @endforeach
+            </tbody>
+            @empty
+            <tbody>
+                <tr>
+                    <td colspan="5" class="px-8 py-16 text-center text-slate-400 font-bold">Tidak ada data ditemukan.</td>
+                </tr>
+            </tbody>
+            @endforelse
+        </table>
+    </div>
+
+    @if($dataRekap->hasPages())
+    <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hal {{ $dataRekap->currentPage() }} dari {{ $dataRekap->lastPage() }} &bull; Total {{ number_format($dataRekap->total()) }} data</div>
+        <div class="flex items-center gap-2">{{ $dataRekap->links() }}</div>
+    </div>
+    @endif
+</div>
+
+{{-- [SEC 5] - MOBILE CARDS --}}
+<div class="sm:hidden px-4 space-y-5">
+    @forelse($groupedByPolres as $polresName => $polseksCol)
+    <div x-data="{ openPolres: true, openPolsek: {} }" class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm" x-cloak>
+        <div @click="openPolres = !openPolres" class="px-4 py-3.5 bg-gradient-to-r from-emerald-50 to-white flex justify-between items-center cursor-pointer border-b border-emerald-100">
+            <h3 class="text-xs font-black text-emerald-800 uppercase tracking-widest">{{ $polresName ?: 'UNKNOWN' }}</h3>
+            <svg :class="{ 'rotate-180': openPolres }" class="w-4 h-4 text-emerald-500 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </div>
+        <div x-show="openPolres" class="divide-y divide-slate-100">
+            @foreach($polseksCol->groupBy('nama_polsek') as $polsekName => $desaRows)
+            <div @click="openPolsek['{{ $polsekName }}'] = !openPolsek['{{ $polsekName }}']" class="px-4 py-3 bg-blue-50/50 text-[11px] font-bold text-blue-800 uppercase flex justify-between cursor-pointer border-b border-blue-50">
+                <span>{{ $polsekName ?: 'UNKNOWN' }}</span>
+                <span class="bg-blue-100 px-1.5 rounded">{{ $desaRows->count() }}</span>
+            </div>
+            <div x-show="!openPolsek['{{ $polsekName }}']" class="p-3 space-y-2">
+                @foreach($desaRows as $row)
+                <div class="rounded-xl border border-slate-200 p-3 bg-white space-y-2 shadow-sm">
+                    <div class="flex justify-between font-black text-[13px] capitalize text-slate-800"><span>{{ strtolower($row->nama_desa) }}</span> <span class="text-[9px] px-1.5 rounded-full bg-emerald-100 text-emerald-700">AKTIF</span></div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                        <div class="bg-slate-50 p-1 rounded">Potensi<br><b>{{ number_format($row->kapasitas_lahan_ha, 1) }}</b></div>
+                        <div class="bg-slate-50 p-1 rounded">Tanam<br><b class="text-rose-500">{{ number_format($row->aktual_tanam_ha, 1) }}</b></div>
+                        <div class="bg-slate-50 p-1 rounded">Hasil<br><b class="text-emerald-600">{{ number_format($row->persentase_serapan, 1) }}%</b></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @empty
+    <div class="text-center p-10 text-slate-400 font-bold">Data tidak ditemukan.</div>
+    @endforelse
+</div>
 </div>
 
 <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
