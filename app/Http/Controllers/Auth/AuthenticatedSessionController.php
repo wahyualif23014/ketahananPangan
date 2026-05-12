@@ -16,17 +16,11 @@ class AuthenticatedSessionController extends Controller
     {
         return view('auth.login');
     }
-
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
-
-        // Ambil data user yang baru login
         $user = Auth::user();
-
-        // Redirect berdasarkan role manual di tabel anggota
         if ($user->role === 'admin') {
             return redirect()->intended('/admin/dashboard');
         } elseif ($user->role === 'operator') {

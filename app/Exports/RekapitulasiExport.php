@@ -59,8 +59,6 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
     public function collection()
     {
         $lines = new Collection();
-
-        // Apply jurisdictional scope first (null-safe: if no scope, no restriction)
         $baseQuery = RekapitulasiLahan::query();
         if ($this->scope) {
             ($this->scope)($baseQuery);
@@ -70,12 +68,17 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
             $data = (clone $baseQuery)->filter($this->filters)
                 ->select(
                     'nama_polres',
+                    'id_polres',
                     DB::raw('SUM(total_titik_lahan) as total_titik_lahan'),
                     DB::raw('SUM(kapasitas_lahan_ha) as kapasitas_lahan_ha'),
                     DB::raw('SUM(aktual_tanam_ha) as aktual_tanam_ha'),
-                    DB::raw('SUM(total_produksi_panen) as total_produksi_panen')
+                    DB::raw('SUM(total_produksi_panen) as total_produksi_panen'),
+                    DB::raw($this->getSerapanSubquery(1, 'polres') . ' as serapan_bulog'),
+                    DB::raw($this->getSerapanSubquery(2, 'polres') . ' as serapan_pabrik'),
+                    DB::raw($this->getSerapanSubquery(3, 'polres') . ' as serapan_tengkulak'),
+                    DB::raw($this->getSerapanSubquery(4, 'polres') . ' as serapan_konsumsi')
                 )
-                ->groupBy('nama_polres')
+                ->groupBy('nama_polres', 'id_polres')
                 ->orderBy('nama_polres')
                 ->get();
 
@@ -90,7 +93,11 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                 'Total Luas Tanam (Ha)',
                 'Persentase (%)',
                 'Total Produksi (Ton)',
-                'Total Serapan Bulog (Ton)'
+                'Serapan Bulog (Ton)',
+                'Serapan Pabrik (Ton)',
+                'Serapan Tengkulak (Ton)',
+                'Konsumsi (Ton)',
+                'Total Serapan (Ton)'
             ]);
 
             $no = 1;
@@ -102,6 +109,12 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                 $titikPotensi = (int) $r->total_titik_lahan;
                 $titikTanam = $tanam > 0 ? $titikPotensi : 0;
 
+                $bulog = (float)$r->serapan_bulog;
+                $pabrik = (float)$r->serapan_pabrik;
+                $tengkulak = (float)$r->serapan_tengkulak;
+                $konsumsi = (float)$r->serapan_konsumsi;
+                $totalSerapan = $bulog + $pabrik + $tengkulak + $konsumsi;
+
                 $lines->push([
                     $no++,
                     $r->nama_polres ?? '-',
@@ -111,11 +124,22 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                     $this->fmt($tanam),
                     $this->fmt($persentase) . '%',
                     $this->fmt($r->total_produksi_panen),
-                    '0.00',
+                    $this->fmt($bulog),
+                    $this->fmt($pabrik),
+                    $this->fmt($tengkulak),
+                    $this->fmt($konsumsi),
+                    $this->fmt($totalSerapan),
                 ]);
             }
         } else {
             $data = (clone $baseQuery)->filter($this->filters)
+                ->select('*')
+                ->addSelect([
+                    'serapan_bulog' => DB::raw($this->getSerapanSubquery(1, 'desa')),
+                    'serapan_pabrik' => DB::raw($this->getSerapanSubquery(2, 'desa')),
+                    'serapan_tengkulak' => DB::raw($this->getSerapanSubquery(3, 'desa')),
+                    'serapan_konsumsi' => DB::raw($this->getSerapanSubquery(4, 'desa')),
+                ])
                 ->orderBy('nama_polres')
                 ->orderBy('nama_polsek')
                 ->orderBy('nama_desa')
@@ -134,13 +158,23 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                 'Total Luas Tanam (Ha)',
                 'Persentase (%)',
                 'Total Produksi (Ton)',
-                'Total Serapan Bulog (Ton)'
+                'Serapan Bulog (Ton)',
+                'Serapan Pabrik (Ton)',
+                'Serapan Tengkulak (Ton)',
+                'Konsumsi (Ton)',
+                'Total Serapan (Ton)'
             ]);
 
             $no = 1;
             foreach ($data as $r) {
                 $titikPotensi = (int) $r->total_titik_lahan;
                 $titikTanam = $r->aktual_tanam_ha > 0 ? $titikPotensi : 0;
+
+                $bulog = (float)$r->serapan_bulog;
+                $pabrik = (float)$r->serapan_pabrik;
+                $tengkulak = (float)$r->serapan_tengkulak;
+                $konsumsi = (float)$r->serapan_konsumsi;
+                $totalSerapan = $bulog + $pabrik + $tengkulak + $konsumsi;
 
                 $lines->push([
                     $no++,
@@ -153,7 +187,11 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                     $this->fmt($r->aktual_tanam_ha),
                     $this->fmt($r->persentase_serapan) . '%',
                     $this->fmt($r->total_produksi_panen),
-                    '0.00',
+                    $this->fmt($bulog),
+                    $this->fmt($pabrik),
+                    $this->fmt($tengkulak),
+                    $this->fmt($konsumsi),
+                    $this->fmt($totalSerapan),
                 ]);
             }
         }
@@ -166,6 +204,43 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
         return number_format((float)$val, 2, '.', '');
     }
 
+    private function getSerapanSubquery($distribusiKe, $level)
+    {
+        $filterSql = "d.deletestatus = 0 AND d.distribusi_ke = " . (int)$distribusiKe;
+
+        if (!empty($this->filters['tahun'])) {
+            $filterSql .= " AND YEAR(d.tgl_distribusi) = " . (int)$this->filters['tahun'];
+        }
+
+        if (!empty($this->filters['bulan']) && $this->filters['bulan'] !== 'SEMUA BULAN') {
+            $bulanIndo = ['Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4, 'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8, 'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12];
+            if (isset($bulanIndo[$this->filters['bulan']])) {
+                $filterSql .= " AND MONTH(d.tgl_distribusi) = " . $bulanIndo[$this->filters['bulan']];
+            }
+        }
+
+        if (!empty($this->filters['kwartal'])) {
+            $kwartalMap = ['KWARTAL I' => 1, 'KWARTAL II' => 2, 'KWARTAL III' => 3, 'KWARTAL IV' => 4];
+            $q = $kwartalMap[strtoupper($this->filters['kwartal'])] ?? null;
+            if ($q) {
+                $filterSql .= " AND QUARTER(d.tgl_distribusi) = " . (int)$q;
+            }
+        }
+
+        if (!empty($this->filters['jenis_lahan'])) {
+            $filterSql .= " AND l.id_jenis_lahan = " . (int)$this->filters['jenis_lahan'];
+        }
+        if (!empty($this->filters['komoditi'])) {
+            $filterSql .= " AND l.id_komoditi = " . (int)$this->filters['komoditi'];
+        }
+
+        if ($level === 'polres') {
+            return "(SELECT SUM(d.total_distribusi) FROM distribusi d JOIN lahan l ON d.id_lahan = l.id_lahan WHERE l.id_tingkat LIKE CONCAT(view_rekapitulasi_lahan.id_polres, '%') AND $filterSql)";
+        } else {
+            return "(SELECT SUM(d.total_distribusi) FROM distribusi d JOIN lahan l ON d.id_lahan = l.id_lahan WHERE l.id_tingkat = view_rekapitulasi_lahan.id_wilayah AND $filterSql)";
+        }
+    }
+
     public function registerEvents(): array
     {
         return [
@@ -175,7 +250,7 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
 
                 $headerBg   = '10B981';
                 $headerFont = 'FFFFFF';
-                $lastCol    = $this->type === 'polres' ? 'I' : 'K';
+                $lastCol    = $this->type === 'polres' ? 'M' : 'O';
 
                 $sheet->mergeCells("A1:{$lastCol}1");
                 $sheet->getStyle('A1')->applyFromArray([
@@ -200,9 +275,11 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                     if ($this->type === 'polres') {
                         $sheet->getStyle("C4:D{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         $sheet->getStyle("G4:G{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("I4:M{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     } else {
                         $sheet->getStyle("E4:F{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         $sheet->getStyle("I4:I{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("K4:O{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                         // Vertical Merge Logic for Polres and Polsek
                         $currentPolres = null;
@@ -272,7 +349,11 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
                 'F' => 22,
                 'G' => 16,
                 'H' => 22,
-                'I' => 24,
+                'I' => 18,
+                'J' => 18,
+                'K' => 18,
+                'L' => 18,
+                'M' => 22,
             ];
         }
 
@@ -287,7 +368,11 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
             'H' => 22,
             'I' => 16,
             'J' => 22,
-            'K' => 24,
+            'K' => 18,
+            'L' => 18,
+            'M' => 18,
+            'N' => 18,
+            'O' => 22,
         ];
     }
 }
