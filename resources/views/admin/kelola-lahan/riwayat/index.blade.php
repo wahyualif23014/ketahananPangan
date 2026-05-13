@@ -827,14 +827,7 @@
                                     </td>
                                     <td class="px-4 py-6 text-right">
                                         <div class="flex flex-col items-end gap-1.5">
-                                            @if(auth()->user()->role === 'admin' && isset($row->is_active) && $row->is_active == 0)
-                                                <form action="{{ route('admin.kelola-lahan.lahan.unvalidasi', $row->id_lahan) }}" method="POST" class="m-0" onsubmit="return confirm('Batalkan validasi keseluruhan? Data siklus ini akan dikembalikan menjadi aktif (Kelola Lahan).');">
-                                                    @csrf @method('PUT')
-                                                    <button type="submit" title="Unvalidasi Siklus (Kembalikan ke Kelola)" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white rounded-lg transition-all shadow-sm">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
-                                                    </button>
-                                                </form>
-                                            @endif
+
                                             <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </button>
@@ -892,7 +885,15 @@
                                                                         <p class="text-sm font-black text-slate-800">{{ number_format($tanam->luas_tanam, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Est Panen: {{ \Carbon\Carbon::parse($tanam->est_awal_panen)->format('M Y') }}</span></p>
                                                                     </div>
                                                                     <div class="flex gap-2">
-                                                                        {{-- READ-ONLY: no edit/delete/validasi buttons --}}
+                                                                        @if(auth()->user()->role === 'admin' && $tanam->is_active == 0)
+                                                                            <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $tanam->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Aktifkan kembali siklus ini? Data akan dikembalikan ke Kelola Lahan Aktif.');">
+                                                                                @csrf @method('PUT')
+                                                                                <button type="submit" class="px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-700 transition-all shadow-sm flex items-center gap-1">
+                                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                                                                                    Buka Siklus
+                                                                                </button>
+                                                                            </form>
+                                                                        @endif
                                                                     </div>
                                                                 </div>
 

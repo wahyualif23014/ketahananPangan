@@ -645,20 +645,7 @@
                                     </td>
                                     <td class="px-4 py-6 text-right">
                                         <div class="flex flex-col items-end gap-1.5">
-                                            @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
-                                                @if($row->id_tanam && $row->id_distribusi && $row->serapan_valid_oleh && $row->tanam_valid_oleh && $row->panen_valid_oleh)
-                                                    <form action="{{ route('admin.kelola-lahan.lahan.validasi', $row->id_lahan) }}" method="POST" class="m-0" onsubmit="return confirm('Selesaikan siklus lahan ini? Data kelola lahan akan dikosongkan dan dipindah ke riwayat.');">
-                                                        @csrf @method('PUT')
-                                                        <button type="submit" title="Selesai Siklus & Pindah ke Riwayat" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
-                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <button type="button" onclick="alert('Peringatan: Tidak bisa menyelesaikan siklus!\n\nSyarat Selesai Siklus:\n1. Harus ada data Tanam, Panen, dan Serapan.\n2. Seluruh data (Tanam, Panen, Serapan) HARUS sudah divalidasi melalui tombol \'Riwayat & Kelola Siklus\'.')" title="Validasi Lahan (Belum Memenuhi Syarat)" class="p-2 bg-slate-50 text-slate-400 cursor-not-allowed rounded-lg transition-all shadow-sm">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                    </button>
-                                                @endif
-                                            @endif
+
                                             <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </button>
@@ -720,26 +707,44 @@
                                                                         <p class="text-sm font-black text-slate-800">{{ number_format($tanam->luas_tanam, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Est Panen: {{ \Carbon\Carbon::parse($tanam->est_awal_panen)->format('M Y') }}</span></p>
                                                                     </div>
                                                                     <div class="flex gap-2">
+                                                                        @php
+                                                                            $canSelesai = !is_null($tanam->valid_oleh) && 
+                                                                                          $tanam->panens->count() > 0 && 
+                                                                                          $tanam->panens->every(fn($p) => !is_null($p->valid_oleh)) && 
+                                                                                          $tanam->distribusis->count() > 0 && 
+                                                                                          $tanam->distribusis->every(fn($s) => !is_null($s->valid_oleh));
+                                                                        @endphp
+                                                                        @if(in_array(auth()->user()->role, ['admin']) && $canSelesai)
+                                                                        <form action="{{ route('admin.kelola-lahan.tanam.selesai', $tanam->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Selesaikan siklus ini? Data akan diarsipkan ke Riwayat Lahan.');">
+                                                                            @csrf @method('PUT')
+                                                                            <button type="submit" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Selesai Siklus</button>
+                                                                        </form>
+                                                                        @endif
                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                             @if(is_null($tanam->valid_oleh))
                                                                                 @if(str_starts_with($tanam->keterangan_tanam ?? '', '[DITOLAK]'))
+                                                                                    {{-- DITOLAK: badge + info hover saja, tidak ada tombol validasi/tolak --}}
                                                                                     <div class="flex flex-col gap-1 group relative">
                                                                                         <span class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center cursor-help">❌ Ditolak</span>
-                                                                                        <div class="absolute bottom-full left-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $tanam->keterangan_tanam)[0]) }}</div>
+                                                                                        <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $tanam->keterangan_tanam)[0]) }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                                                                     </div>
+                                                                                @else
+                                                                                    {{-- BELUM VALIDASI: tombol Validasi + Tolak --}}
+                                                                                    <form action="{{ route('admin.kelola-lahan.tanam.validasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Validasi</button></form>
+                                                                                    <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Tolak</button>
                                                                                 @endif
-                                                                                <form action="{{ route('admin.kelola-lahan.tanam.validasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Validasi</button></form>
-                                                                                <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Tolak</button>
                                                                             @else
-                                                                                <form action="{{ route('admin.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-emerald-600 transition-all shadow-sm">Unvalidasi</button></form>
-                                                                                <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-600 transition-all shadow-sm">Tolak</button>
+                                                                                {{-- TERVALIDASI: tombol Unvalidasi saja, tidak ada Tolak --}}
+                                                                                <form action="{{ route('admin.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-emerald-600 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Unvalidasi</button></form>
                                                                             @endif
                                                                         @endif
                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
                                                                         <button @click='editTanam("{{ $tanam->id_tanam }}", @json(array_merge((array)$row, (array)$tanam)))' class="px-2.5 py-1.5 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Edit</button>
                                                                         <button @click='deleteTanam("{{ $tanam->id_tanam }}")' class="px-2.5 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Hapus</button>
+                                                                        @if(!is_null($tanam->valid_oleh))
                                                                         <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20 ml-2">+ Panen</button>
                                                                         <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20">+ Serapan</button>
+                                                                        @endif
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -767,16 +772,19 @@
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                                         @if(is_null($panen->valid_oleh))
                                                                                             @if(str_starts_with($panen->ket_panen ?? '', '[DITOLAK]'))
+                                                                                                {{-- DITOLAK: badge saja --}}
                                                                                                 <div class="group relative w-full mb-1">
                                                                                                     <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
-                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $panen->ket_panen)[0]) }}</div>
+                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $panen->ket_panen)[0]) }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
                                                                                                 </div>
+                                                                                            @else
+                                                                                                {{-- BELUM VALIDASI: Validasi + Tolak --}}
+                                                                                                <form action="{{ route('admin.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
+                                                                                                <button @click="openTolakModal('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                             @endif
-                                                                                            <form action="{{ route('admin.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                            <button @click="openTolakModal('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                         @else
-                                                                                            <form action="{{ route('admin.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-amber-600 transition-colors">Unvalidasi</button></form>
-                                                                                            <button @click="openTolakModal('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-500 border border-rose-600 text-white rounded text-[8px] font-black uppercase hover:bg-rose-600 transition-colors mt-1">Tolak</button>
+                                                                                            {{-- TERVALIDASI: Unvalidasi saja --}}
+                                                                                            <form action="{{ route('admin.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-amber-600 transition-colors flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Unvalidasi</button></form>
                                                                                         @endif
                                                                                         @endif
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
@@ -812,16 +820,19 @@
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polres']))
                                                                                         @if(is_null($distribusi->valid_oleh))
                                                                                             @if(str_starts_with($distribusi->keterangan_distribusi ?? '', '[DITOLAK]'))
+                                                                                                {{-- DITOLAK: badge saja --}}
                                                                                                 <div class="group relative w-full mb-1">
                                                                                                     <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
-                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $distribusi->keterangan_distribusi)[0]) }}</div>
+                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ str_replace('[DITOLAK] Alasan: ', '', explode("\n", $distribusi->keterangan_distribusi)[0]) }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
                                                                                                 </div>
+                                                                                            @else
+                                                                                                {{-- BELUM VALIDASI: Validasi + Tolak --}}
+                                                                                                <form action="{{ route('admin.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
+                                                                                                <button @click="openTolakModal('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                             @endif
-                                                                                            <form action="{{ route('admin.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                            <button @click="openTolakModal('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                                                                         @else
-                                                                                            <form action="{{ route('admin.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors">Unvalidasi</button></form>
-                                                                                            <button @click="openTolakModal('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="w-full px-2 py-1 bg-rose-500 border border-rose-600 text-white rounded text-[8px] font-black uppercase hover:bg-rose-600 transition-colors mt-1">Tolak</button>
+                                                                                            {{-- TERVALIDASI: Unvalidasi saja --}}
+                                                                                            <form action="{{ route('admin.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Unvalidasi</button></form>
                                                                                         @endif
                                                                                         @endif
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
@@ -874,6 +885,9 @@
         </div>
     </div>
 
+{{-- ========================================== --}}
+{{-- MODALS SECTION - PRODUCTION FLOW --}}
+{{-- ========================================== --}}
 
 <style>
     .premium-pagination .pagination {
@@ -1333,9 +1347,7 @@
         };
     }
 </script>
-{{-- ========================================== --}}
-{{-- MODALS SECTION - PRODUCTION FLOW --}}
-{{-- ========================================== --}}
+
 
 <!-- MODAL PROSES TANAM -->
 <div x-show="modalTanam" 
@@ -1701,11 +1713,10 @@
     </div>
 </div>
 
-<!-- MODAL TOLAK VALIDASI (TELEPORT KE BODY) -->
-<template x-teleport="body">
-    <div x-show="tolakModalData.isOpen" 
-         class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-         x-cloak x-transition.opacity>
+<!-- MODAL TOLAK VALIDASI -->
+<div x-show="tolakModalData.isOpen"
+     class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+     x-cloak x-transition.opacity>
         <div @click.outside="tolakModalData.isOpen = false" class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col">
             <div class="px-8 py-6 bg-rose-600 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -1737,7 +1748,8 @@
                 <button @click="submitTolak()" :disabled="tolakModalData.alasan.length < 10" :class="tolakModalData.alasan.length < 10 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 active:scale-95'" class="flex-[2] px-4 py-3 bg-rose-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">Konfirmasi Tolak</button>
             </div>
         </div>
-    </div>
-</template>
+</div>
+
+</div>{{-- END x-data="kelolaLahan()" --}}
 
 @endsection
