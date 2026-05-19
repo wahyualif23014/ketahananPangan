@@ -376,7 +376,7 @@
             <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-400 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em]">Tanam Lahan</p>
-                    <h3 class="text-xl font-black text-white mt-0.5">242.74 <span class="text-xs font-bold text-blue-200">Ha</span></h3>
+                    <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($tanamTotal, 2) }} <span class="text-xs font-bold text-blue-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-blue-400/30 text-white text-[10px] font-black rounded-lg border border-blue-300/50 uppercase tracking-widest">Musim {{ $yearFilter }}</span>
             </div>
@@ -406,7 +406,7 @@
             <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-emerald-500 border-b border-emerald-400 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em]">Panen Lahan</p>
-                    <h3 class="text-xl font-black text-white mt-0.5">243.72 <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
+                    <h3 class="text-xl font-black text-white mt-0.5">{{ number_format($panenTotal, 2) }} <span class="text-xs font-bold text-emerald-200">Ha</span></h3>
                 </div>
                 <span class="px-2.5 py-1.5 bg-emerald-400/30 text-white text-[10px] font-black rounded-lg border border-emerald-300/50 uppercase tracking-widest">Realisasi {{ $yearFilter }}</span>
             </div>
@@ -567,7 +567,7 @@
                 <div class="relative w-40 h-40 z-10">
                     <canvas id="totalTitikChart"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-2xl font-black text-slate-800">5,528</span>
+                        <span class="text-2xl font-black text-slate-800">{{ number_format($totalTitikLahan) }}</span>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Lahan</span>
                     </div>
                 </div>
@@ -583,7 +583,7 @@
                 <div class="relative w-40 h-40 z-10">
                     <canvas id="pengelolaanPolsekChart"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span class="text-2xl font-black text-slate-800">659</span>
+                        <span class="text-2xl font-black text-slate-800">{{ number_format($totalPolsek) }}</span>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Polsek</span>
                     </div>
                 </div>
