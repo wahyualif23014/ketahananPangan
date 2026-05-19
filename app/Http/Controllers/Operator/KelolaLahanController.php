@@ -4,11 +4,57 @@ namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
 use App\Models\Komoditi;
+use App\Models\Pesan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class KelolaLahanController extends Controller
 {
+    /**
+     * Kirim notifikasi ke semua Operator Polres di wilayah lahan
+     * ketika Operator Polsek memperbaiki data yang ditolak.
+     */
+    private function notifikasiPerbaikkanKePolres($lahan, string $tahap, $idLahan): void
+    {
+        if (!$lahan) return;
+
+        $editor = auth()->user();
+        $namaEditor = $editor->nama_anggota ?? $editor->username ?? 'Operator';
+        $alamat = $lahan->alamat_lahan ?? '-';
+
+        // Cari semua Operator Polres di wilayah induk lahan
+        // id_tugas Polsek = X.XX.YY → Polresnya = X.XX
+        $tingkat = $lahan->id_tingkat ?? '';
+        $parts = explode('.', $tingkat);
+        $polresTugas = count($parts) >= 3
+            ? $parts[0] . '.' . $parts[1]
+            : $tingkat;
+
+        $recipients = DB::table('anggota')
+            ->where('id_tugas', $polresTugas)
+            ->where('role', 'operator')
+            ->pluck('id_anggota')
+            ->toArray();
+
+        $judul   = '✅ Data ' . $tahap . ' Diperbaiki - Perlu Validasi';
+        $isiPesan = "Operator Polsek **{$namaEditor}** telah memperbaiki data **{$tahap}** yang sebelumnya ditolak.\n\n" .
+                    "📍 **Lokasi Lahan:** {$alamat}\n" .
+                    "🆔 **ID Lahan:** #{$idLahan}\n\n" .
+                    "Silakan cek dan lakukan validasi data tersebut.";
+
+        foreach ($recipients as $recipientId) {
+            Pesan::create([
+                'id_pesan'     => Str::uuid(),
+                'sender_id'    => $editor->id_anggota ?? 0,
+                'recipient_id' => $recipientId,
+                'judul'        => $judul,
+                'isi_pesan'    => $isiPesan,
+                'is_read'      => false,
+            ]);
+        }
+    }
+
     private function getIndexData(Request $request, $mode = 'active')
     {
         $user = auth()->user();
@@ -437,17 +483,28 @@ class KelolaLahanController extends Controller
 
     public function index(Request $request)
     {
-        return view('operator.kelola-lahan.operator_kelola.operator_kelola_index', $this->getIndexData($request, 'active'));
+        return view('admin.kelola-lahan.lahan.index', $this->getIndexData($request, 'active'));
     }
 
     public function riwayatIndex(Request $request)
     {
         $baseData = $this->getIndexData($request, 'history');
 
-        $user   = auth()->user();
-        $scope  = $user->id_tugas ?? '0';
+        return view('admin.kelola-lahan.riwayat.index', array_merge($baseData, [
+            'pagetitle' => 'Riwayat Lahan'
+        ]));
+    }
 
-        $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
+    private function getScope()
+    {
+        $user   = auth()->user();
+        return $user->id_tugas ?? '0';
+    }
+
+    private function getApplyScope()
+    {
+        $scope = $this->getScope();
+        return function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($column, $scope) {
                     $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%');
@@ -761,19 +818,31 @@ class KelolaLahanController extends Controller
         }
 
         try {
+            // Cek apakah data sebelumnya ditolak
+            $oldTanam = DB::table('tanam')->where('id_tanam', $id)->first();
+            $wasTolak = $oldTanam && !empty($oldTanam->alasan_tolak);
+
             DB::table('tanam')->where('id_tanam', $id)->update([
-                'tgl_tanam' => $request->tgl_tanam,
-                'luas_tanam' => $request->luas_tanam,
-                'nama_bibit' => $request->jenis_bibit,
-                'kebutuhan_bibit' => $request->kebutuhan_bibit,
-                'est_awal_panen' => $request->est_awal_panen,
-                'est_akhir_panen' => $request->est_akhir_panen,
+                'tgl_tanam'        => $request->tgl_tanam,
+                'luas_tanam'       => $request->luas_tanam,
+                'nama_bibit'       => $request->jenis_bibit,
+                'kebutuhan_bibit'  => $request->kebutuhan_bibit,
+                'est_awal_panen'   => $request->est_awal_panen,
+                'est_akhir_panen'  => $request->est_akhir_panen,
                 'keterangan_tanam' => preg_replace('/^\[DITOLAK\].*?\n/s', '', $request->keterangan_tanam),
-                'edit_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_edit' => now(),
-                'valid_oleh' => null,
-                'tgl_valid' => null,
+                'edit_oleh'        => auth()->user()->username ?? 'operator',
+                'tgl_edit'         => now(),
+                'valid_oleh'       => null,
+                'tgl_valid'        => null,
+                'alasan_tolak'     => null, // Hapus alasan tolak saat diperbaiki
             ]);
+
+            // Kirim notifikasi ke Polres jika data sebelumnya ditolak
+            if ($wasTolak) {
+                $lahan = DB::table('lahan')->where('id_lahan', $oldTanam->id_lahan)->first();
+                $this->notifikasiPerbaikkanKePOlres($lahan, 'Tanam', $oldTanam->id_lahan);
+            }
+
             return response()->json(['success' => true, 'message' => 'Data Tanam berhasil diperbarui']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
@@ -798,17 +867,29 @@ class KelolaLahanController extends Controller
         }
 
         try {
+            // Cek apakah data sebelumnya ditolak
+            $oldPanen = DB::table('panen')->where('id_panen', $id)->first();
+            $wasTolak = $oldPanen && !empty($oldPanen->alasan_tolak);
+
             DB::table('panen')->where('id_panen', $id)->update([
-                'tgl_panen' => $request->tgl_panen,
-                'luas_panen' => $request->luas_panen,
-                'total_panen' => $request->total_panen,
+                'tgl_panen'    => $request->tgl_panen,
+                'luas_panen'   => $request->luas_panen,
+                'total_panen'  => $request->total_panen,
                 'status_panen' => $request->status_panen,
-                'ket_panen' => preg_replace('/^\[DITOLAK\].*?\n/s', '', $request->keterangan_panen),
-                'edit_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_edit' => now(),
-                'valid_oleh' => null,
-                'tgl_valid' => null,
+                'ket_panen'    => preg_replace('/^\[DITOLAK\].*?\n/s', '', $request->keterangan_panen),
+                'edit_oleh'    => auth()->user()->username ?? 'operator',
+                'tgl_edit'     => now(),
+                'valid_oleh'   => null,
+                'tgl_valid'    => null,
+                'alasan_tolak' => null, // Hapus alasan tolak saat diperbaiki
             ]);
+
+            // Kirim notifikasi ke Polres jika data sebelumnya ditolak
+            if ($wasTolak) {
+                $lahan = DB::table('lahan')->where('id_lahan', $oldPanen->id_lahan)->first();
+                $this->notifikasiPerbaikkanKePOlres($lahan, 'Panen', $oldPanen->id_lahan);
+            }
+
             return response()->json(['success' => true, 'message' => 'Data Panen berhasil diperbarui']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);
@@ -832,16 +913,28 @@ class KelolaLahanController extends Controller
         }
 
         try {
+            // Cek apakah data sebelumnya ditolak
+            $oldSerapan = DB::table('distribusi')->where('id_distribusi', $id)->first();
+            $wasTolak = $oldSerapan && !empty($oldSerapan->alasan_tolak);
+
             DB::table('distribusi')->where('id_distribusi', $id)->update([
-                'tgl_distribusi' => $request->tgl_distribusi,
-                'total_distribusi' => $request->total_distribusi,
-                'distribusi_ke' => $request->distribusi_ke,
-                'keterangan_distribusi' => preg_replace('/^\[DITOLAK\].*?\n/s', '', $request->keterangan_serapan),
-                'edit_oleh' => auth()->user()->username ?? 'operator',
-                'tgl_edit' => now(),
-                'valid_oleh' => null,
-                'tgl_valid' => null,
+                'tgl_distribusi'       => $request->tgl_distribusi,
+                'total_distribusi'     => $request->total_distribusi,
+                'distribusi_ke'        => $request->distribusi_ke,
+                'keterangan_distribusi'=> preg_replace('/^\[DITOLAK\].*?\n/s', '', $request->keterangan_serapan),
+                'edit_oleh'            => auth()->user()->username ?? 'operator',
+                'tgl_edit'             => now(),
+                'valid_oleh'           => null,
+                'tgl_valid'            => null,
+                'alasan_tolak'         => null, // Hapus alasan tolak saat diperbaiki
             ]);
+
+            // Kirim notifikasi ke Polres jika data sebelumnya ditolak
+            if ($wasTolak) {
+                $lahan = DB::table('lahan')->where('id_lahan', $oldSerapan->id_lahan)->first();
+                $this->notifikasiPerbaikkanKePOlres($lahan, 'Serapan', $oldSerapan->id_lahan);
+            }
+
             return response()->json(['success' => true, 'message' => 'Data Serapan berhasil diperbarui']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memperbarui: ' . $e->getMessage()], 500);

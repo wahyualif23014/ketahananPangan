@@ -483,11 +483,15 @@ class PotensiLahanController extends Controller
     public function destroy(Request $request, $id)
     {
         $old = DB::table('lahan')->where('id_lahan', $id)->first();
-        DB::table('lahan')->where('id_lahan', $id)->update([
-            'deletestatus' => '0',
-            'edit_oleh'    => auth()->user() ? auth()->user()->id : null,
-            'tgl_edit'     => Carbon::now(),
-        ]);
+        DB::transaction(function () use ($id) {
+            $tanamIds = DB::table('tanam')->where('id_lahan', $id)->pluck('id_tanam');
+            if ($tanamIds->isNotEmpty()) {
+                DB::table('distribusi')->whereIn('id_tanam', $tanamIds)->delete();
+                DB::table('panen')->whereIn('id_tanam', $tanamIds)->delete();
+                DB::table('tanam')->where('id_lahan', $id)->delete();
+            }
+            DB::table('lahan')->where('id_lahan', $id)->delete();
+        });
 
         AktivitasLog::catat('delete', 'potensi_lahan', [
             'record_id'   => $id,

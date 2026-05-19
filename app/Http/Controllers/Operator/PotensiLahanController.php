@@ -206,9 +206,32 @@ class PotensiLahanController extends Controller
         $komoditiList  = DB::table('komoditi')->where('deletestatus', '!=', '0')->get();
 
         $wilayahSemua  = DB::table('wilayah')->get();
-        $kabupatenList = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 1)->values();
+        $kabupatenList = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 1);
         $kecamatanList = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 2)->values();
         $desaList      = $wilayahSemua->filter(fn($w) => substr_count($w->id_wilayah, '.') == 3)->values();
+
+        if ($scope && $scope != '0') {
+            $allowedWilayahIds = DB::table('tingkatwilayah')
+                ->where('id_tingkat', 'LIKE', $scope . '%')
+                ->pluck('id_wilayah')
+                ->toArray();
+                
+            $allowedKabupatenIds = [];
+            foreach ($allowedWilayahIds as $idW) {
+                $parts = explode('.', $idW);
+                if (count($parts) >= 2) {
+                    $allowedKabupatenIds[] = $parts[0] . '.' . $parts[1];
+                }
+            }
+            $allowedKabupatenIds = array_unique($allowedKabupatenIds);
+            
+            if (!empty($allowedKabupatenIds)) {
+                $kabupatenList = $kabupatenList->filter(function($k) use ($allowedKabupatenIds) {
+                    return in_array($k->id_wilayah, $allowedKabupatenIds);
+                });
+            }
+        }
+        $kabupatenList = $kabupatenList->values();
 
         $anggotaList   = DB::table('anggota')
             ->where('deletestatus', '!=', '0')
@@ -218,12 +241,12 @@ class PotensiLahanController extends Controller
         // ──────────────────────────────────────────
         // Statistics — scoped to operator's jurisdiction
         // ──────────────────────────────────────────
-        $allLahanScoped = $applyScope(DB::table('lahan')->where('deletestatus', '!=', '0'))->get();
+        $allLahanData = $applyScope(DB::table('lahan')->where('deletestatus', '!=', '0'))->get();
 
         $totalLuasLahan    = 0;
         $luasBelumValidasi = 0;
         $countBelumValidasi = 0;
-        $totalCount         = count($allLahanScoped);
+        $totalCount         = count($allLahanData);
         $unikLokasi         = [];
 
         $breakdownByJenis = [];
@@ -236,7 +259,7 @@ class PotensiLahanController extends Controller
         $distinctKecamatan = [];
         $distinctDesa      = [];
 
-        foreach ($allLahanScoped as $lahan) {
+        foreach ($allLahanData as $lahan) {
             // Distribusi tingkatan dari id_tingkat
             $idT = (string) ($lahan->id_tingkat ?? '');
             if (mb_substr_count($idT, '.') >= 2) {
@@ -278,7 +301,7 @@ class PotensiLahanController extends Controller
             'DESA'      => count($distinctDesa),
         ];
 
-        return view('operator.kelola-lahan.operator_potensi.operator_kelola_index', compact(
+        return view('admin.kelola-lahan.potensi.index', compact(
             'lahanList',
             'filters',
             'polresList',
@@ -294,7 +317,8 @@ class PotensiLahanController extends Controller
             'breakdownByJenis',
             'submissionByKategori',
             'persenBelumValidasi',
-            'luasBelumValidasi'
+            'luasBelumValidasi',
+            'allLahanData'
         ));
     }
 
@@ -592,8 +616,20 @@ class PotensiLahanController extends Controller
             return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
         }
 
-        DB::table('lahan')->where('id_lahan', $id)->update([
-            'deletestatus' => '0',
+        DB::transaction(function () use ($id) {
+            $tanamIds = DB::table('tanam')->where('id_lahan', $id)->pluck('id_tanam');
+            if ($tanamIds->isNotEmpty()) {
+                DB::table('distribusi')->whereIn('id_tanam', $tanamIds)->delete();
+                DB::table('panen')->whereIn('id_tanam', $tanamIds)->delete();
+                DB::table('tanam')->where('id_lahan', $id)->delete();
+            }
+            DB::table('lahan')->where('id_lahan', $id)->delete();
+        });
+        
+        AktivitasLog::catat('delete', 'potensi_lahan', [
+            'record_id'   => $id,
+            'label_modul' => 'Lahan #' . $id,
+            'keterangan'  => 'Hapus potensi lahan #' . $id . ' beserta siklus tanam terkait',
         ]);
         return back()->with('success', 'Data berhasil dihapus');
     }

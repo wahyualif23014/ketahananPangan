@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Pesan extends Model
 {
     use HasFactory;
-
+    protected $table = 'pesans';
     protected $guarded = ['id'];
 
     public function sender()

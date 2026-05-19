@@ -505,23 +505,14 @@
                     </select>
                 </div>
 
-                <div class="w-28">
-                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">BULAN</label>
-                    <select name="panen_bulan" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
-                        <option value="">SEMUA</option>
-                        @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $mi => $mn)
-                            <option value="{{ $mi+1 }}" {{ ($harvestFilters['bulan'] ?? '') == $mi+1 ? 'selected' : '' }}>{{ $mn }}</option>
-                        @endforeach
-                    </select>
+                <div class="w-32">
+                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">MULAI</label>
+                    <input type="date" name="panen_start" value="{{ $harvestFilters['panen_start'] ?? '' }}" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
                 </div>
 
-                <div class="w-24">
-                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">TAHUN</label>
-                    <select name="panen_tahun" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
-                        @for($y = date('Y')+1; $y >= date('Y')-3; $y--)
-                            <option value="{{ $y }}" {{ ($harvestFilters['tahun'] ?? date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                    </select>
+                <div class="w-32">
+                    <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">SAMPAI</label>
+                    <input type="date" name="panen_end" value="{{ $harvestFilters['panen_end'] ?? '' }}" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
                 </div>
 
                 <button type="submit" class="h-10 px-5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 flex-shrink-0">

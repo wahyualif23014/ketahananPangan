@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tanam', function (Blueprint $table) {
-            $table->tinyInteger('is_active')->default(1)->after('id_lahan')->comment('1: aktif, 0: selesai/arsip');
+            if (!Schema::hasColumn('tanam', 'is_active')) {
+                $table->tinyInteger('is_active')->default(1)->after('id_lahan')->comment('1: aktif, 0: selesai/arsip');
+            }
         });
     }
 
