@@ -134,6 +134,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
                 Route::put('/update/{id}', [OperatorPotensiLahan::class, 'update'])->name('update');
                 Route::put('/validasi/{id}', [OperatorPotensiLahan::class, 'validasi'])->name('validasi');
                 Route::put('/unvalidasi/{id}', [OperatorPotensiLahan::class, 'unvalidasi'])->name('unvalidasi');
+                Route::put('/tolak/{id}', [OperatorPotensiLahan::class, 'tolakValidasi'])->name('tolak');
                 Route::delete('/destroy/{id}', [OperatorPotensiLahan::class, 'destroy'])->name('destroy');
             });
 
@@ -154,6 +155,9 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::put('/tanam/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiTanam'])->name('tanam.unvalidasi');
             Route::put('/panen/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiPanen'])->name('panen.unvalidasi');
             Route::put('/serapan/{id}/unvalidasi', [OperatorKelolaLahan::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
+            Route::put('/tanam/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiTanam'])->name('tanam.tolak');
+            Route::put('/panen/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiPanen'])->name('panen.tolak');
+            Route::put('/serapan/{id}/tolak', [OperatorKelolaLahan::class, 'tolakValidasiSerapan'])->name('serapan.tolak');
             Route::get('/lahan/{id}/validasi-data', [OperatorKelolaLahan::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/tanam/{id}/selesai', [OperatorKelolaLahan::class, 'selesaiSiklusTanam'])->name('tanam.selesai');
 

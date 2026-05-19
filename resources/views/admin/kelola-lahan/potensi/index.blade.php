@@ -3,6 +3,11 @@
 @section('header', 'Data Potensi Lahan')
 
 @section('content')
+@php
+    $user = auth()->user();
+    $rolePrefix = $user->role === 'admin' ? 'admin' : 'operator';
+    $canValidate = $user->role === 'admin' || ($user->role === 'operator' && substr_count((string)$user->id_tugas, '.') < 2);
+@endphp
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -70,7 +75,7 @@
                         </svg>
                         "{{ request('search') }}"
                     </span>
-                    <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
+                    <a href="{{ route($rolePrefix . '.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
                         BATAL
                     </a>
                 </div>
@@ -223,7 +228,7 @@
                         </div>
                     </div>
                     <div class="flex items-end mt-4 lg:mt-0">
-                        <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all text-[10px] font-black uppercase tracking-widest border border-rose-100 shadow-sm">
+                        <a href="{{ route($rolePrefix . '.kelola-lahan.potensi.index') }}" class="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all text-[10px] font-black uppercase tracking-widest border border-rose-100 shadow-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
@@ -461,7 +466,7 @@
                         </svg>
                         "{{ request('search') }}"
                     </span>
-                    <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
+                    <a href="{{ route($rolePrefix . '.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-300 bg-rose-500/20 px-2 py-1 rounded-lg border border-rose-400/30 hover:bg-rose-500/40 transition-colors">
                         ✕ Hapus Filter
                     </a>
                     @endif
@@ -576,30 +581,38 @@
                                             Menunggu Perbaikan
                                         </span>
                                         @elseif(!$item['valid_oleh'])
-                                        <div class="flex flex-col gap-1 w-full">
-                                            <form action="{{ route('admin.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="w-full m-0">
+                                            @if($canValidate)
+                                            <div class="flex flex-col gap-1 w-full">
+                                                <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="w-full m-0">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                                                        Validasi
+                                                    </button>
+                                                </form>
+                                                <button onclick='openTolakModal(@json($item))' type="button" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                                                    Tolak
+                                                </button>
+                                            </div>
+                                            @else
+                                            <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1.5 rounded-lg">
+                                                Menunggu Validasi
+                                            </span>
+                                            @endif
+                                        @else
+                                            @if($canValidate)
+                                            <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
                                                 @csrf @method('PUT')
-                                                <button type="submit" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
-                                                    Validasi
+                                                <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
+                                                    Batal Validasi
                                                 </button>
                                             </form>
-                                            <button onclick='openTolakModal(@json($item))' type="button" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                                                Tolak
-                                            </button>
-                                        </div>
-                                        @else
-                                        <form action="{{ route('admin.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
-                                            @csrf @method('PUT')
-                                            <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
-                                                Batal Validasi
-                                            </button>
-                                        </form>
+                                            @endif
                                         @endif
                                         <button onclick='openEditModal(@json($item))'
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit
                                         </button>
-                                        <form action="{{ route('admin.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Hapus Data Lahan?', 'Data ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.', 'danger')">
+                                        <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Hapus Data Lahan?', 'Data ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.', 'danger')">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
                                                 Hapus
@@ -721,7 +734,7 @@
                     async submitTolak() {
                         this.loading = true;
                         try {
-                            const response = await fetch(`/admin/kelola-lahan/potensi/tolak/${this.id}`, {
+                            const response = await fetch(`/{{ $rolePrefix }}/kelola-lahan/potensi/tolak/${this.id}`, {
                                 method: 'PUT',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -1089,7 +1102,7 @@
                         </svg>
                     </button>
                 </div>
-                <form :action="`/admin/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
+                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
                     @csrf @method('PUT')
                     <div class="p-8 space-y-6">
 
@@ -1151,7 +1164,7 @@
                 <h3 class="text-xl font-black text-slate-800 mb-2 uppercase">Hapus Data?</h3>
                 <p class="text-xs text-slate-500 font-medium mb-8">Data lahan seluas <strong class="text-rose-500" x-text="activeData?.luas_lahan + ' HA'"></strong> milik <strong class="text-slate-700 uppercase" x-text="activeData?.cp_lahan"></strong> akan dihapus sementara dari sistem.</p>
 
-                <form :action="`/admin/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
+                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
                     @csrf @method('DELETE')
                     <button type="button" @click="isDeleteOpen = false" class="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl transition-all">Batal</button>
                     <button type="submit" class="flex-1 bg-rose-500 text-white hover:bg-rose-600 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95">Ya, Hapus</button>
@@ -1262,7 +1275,6 @@
                                             <select x-model="formData.id_sektor"
                                                 class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-600 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat">
                                                 <option value="">PILIH KEPOLISIAN SEKTOR</option>
-                                                <option value="MILIK_POLRES">MILIK POLRES</option>
                                                 <template x-for="p in filteredPolsek" :key="p.id_tingkat">
                                                     <option :value="p.id_tingkat" x-text="`${p.id_tingkat} - ${p.nama_tingkat}`"></option>
                                                 </template>
@@ -1272,8 +1284,8 @@
                                     <div class="space-y-1.5">
                                         <label class="text-xs font-semibold text-slate-600 ml-1">Jenis Lahan</label>
                                         <select x-model="formData.id_jenis_lahan"
-                                            :disabled="formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor"
-                                            :class="(formData.id_sektor === 'MILIK_POLRES' || !formData.id_sektor) ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'bg-white focus:border-emerald-600'"
+                                            :disabled="!formData.id_sektor"
+                                            :class="(!formData.id_sektor) ? 'bg-slate-100 cursor-not-allowed text-slate-500' : 'bg-white focus:border-emerald-600'"
                                             class="w-full h-11 px-4 border border-emerald-200 rounded-xl text-sm font-bold text-emerald-800 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23059669%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat shadow-sm">
                                             <option value="">PILIH JENIS LAHAN</option>
                                             @foreach($kategoriMapping as $k => $v)
@@ -1348,21 +1360,11 @@
                                             Penanggung Jawab Lahan
                                         </h5>
                                         <div class="grid grid-cols-12 gap-4">
-                                            <div class="col-span-12 md:col-span-7 space-y-1.5" x-data="searchAnggota('pj')">
+                                            <div class="col-span-12 md:col-span-7 space-y-1.5">
                                                 <label class="text-xs font-medium text-slate-500 ml-1">Nama Penanggung Jawab</label>
-                                                <div class="relative">
-                                                    <input type="text" x-model="query" @input="onInput()" @focus="showDropdown = true" @click.outside="showDropdown = false"
-                                                        class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
-                                                        placeholder="Ketik nama penanggung jawab...">
-                                                    <div x-show="showDropdown && filtered.length > 0" class="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
-                                                        <template x-for="a in filtered" :key="a.id_anggota">
-                                                            <div @click="select(a)" class="px-4 py-2.5 text-sm hover:bg-emerald-50 cursor-pointer flex items-center gap-2">
-                                                                <span class="w-6 h-6 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black flex items-center justify-center flex-shrink-0" x-text="a.id_anggota"></span>
-                                                                <span x-text="a.nama_anggota" class="font-medium text-slate-800"></span>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </div>
+                                                <input type="text" x-model="formData.pj_lahan"
+                                                    class="w-full h-10 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all"
+                                                    placeholder="Ketik nama penanggung jawab...">
                                             </div>
                                             <div class="col-span-12 md:col-span-5 space-y-1.5">
                                                 <label class="text-xs font-medium text-slate-500 ml-1">Kontak Person</label>
@@ -1674,6 +1676,9 @@
     <script id="data-anggota" type="application/json">
         <?php echo json_encode($anggotaList ?? []); ?>
     </script>
+    <script id="data-tingkat-wilayah" type="application/json">
+        <?php echo json_encode($tingkatWilayahList ?? []); ?>
+    </script>
     <script id="data-desa" type="application/json">
         <?php echo json_encode($desaList ?? []); ?>
     </script>
@@ -1751,6 +1756,7 @@
             };
         }
         const desaData = JSON.parse(document.getElementById('data-desa').textContent);
+        const tingkatWilayahData = JSON.parse(document.getElementById('data-tingkat-wilayah').textContent);
 
         function potensiLahanManager() {
             return {
@@ -1759,13 +1765,28 @@
                 kabupatenList: kabupatenData,
                 kecamatanList: kecamatanData,
                 desaList: desaData,
+                tingkatWilayahList: tingkatWilayahData,
                 get filteredPolsek() {
                     if (!this.formData.id_resor) return [];
                     return this.polsekList.filter(p => p.id_tingkat.startsWith(this.formData.id_resor + '.'));
                 },
                 get filteredKecamatan() {
-                    if (!this.formData.id_kabupaten) return [];
-                    return this.kecamatanList.filter(k => k.id_wilayah.startsWith(this.formData.id_kabupaten + '.'));
+                    let availableKecamatan = this.kecamatanList;
+                    if (this.formData.id_kabupaten) {
+                        availableKecamatan = availableKecamatan.filter(k => k.id_wilayah.startsWith(this.formData.id_kabupaten + '.'));
+                    } else {
+                        return [];
+                    }
+                    if (this.formData.id_sektor) {
+                        const allowedWilayahIds = this.tingkatWilayahList
+                            .filter(tw => tw.id_tingkat === this.formData.id_sektor)
+                            .map(tw => tw.id_wilayah);
+                        
+                        if (allowedWilayahIds.length > 0) {
+                            availableKecamatan = availableKecamatan.filter(k => allowedWilayahIds.includes(k.id_wilayah));
+                        }
+                    }
+                    return availableKecamatan;
                 },
                 get filteredDesa() {
                     if (!this.formData.id_kecamatan) return [];
@@ -1814,6 +1835,8 @@
                 isOpen: false,
                 isEdit: false,
                 isDetailOpen: false,
+                isEditOpen: false,
+                isDeleteOpen: false,
                 activeDetailData: null,
                 activeTab: 'personel',
                 isLoading: false,
@@ -1825,7 +1848,7 @@
                     id: null,
                     id_resor: '',
                     id_sektor: '',
-                    id_jenis_lahan: '',
+                    id_jenis_lahan: '5',
                     jenis_lahan: 'Produktif',
                     photoFile: null,
                     id_kabupaten: '',
@@ -2051,14 +2074,14 @@
                 resetForm() {
                     this.formData = {
                         id: null,
-                        id_resor: '',
-                        id_sektor: '',
-                        id_jenis_lahan: '',
+                        id_resor: this.polresList.length === 1 ? this.polresList[0].id_tingkat : '',
+                        id_sektor: this.polsekList.length === 1 ? this.polsekList[0].id_tingkat : '',
+                        id_jenis_lahan: '5',
                         jenis_lahan: 'Produktif',
                         photoFile: null,
-                        id_kabupaten: '',
-                        id_kecamatan: '',
-                        id_desa: '',
+                        id_kabupaten: this.kabupatenList.length === 1 ? this.kabupatenList[0].id_wilayah : '',
+                        id_kecamatan: this.kecamatanList.length === 1 ? this.kecamatanList[0].id_wilayah : '',
+                        id_desa: this.desaList.length === 1 ? this.desaList[0].id_wilayah : '',
                         luas: '',
                         nama_personel: '',
                         pj_lahan: '',
@@ -2109,15 +2132,15 @@
 
                     const method = 'POST';
                     const urlStore = this.isEdit ?
-                        `/admin/kelola-lahan/potensi/update/${this.formData.id}` :
-                        `/admin/kelola-lahan/potensi/store`;
+                        `/{{ $rolePrefix }}/kelola-lahan/potensi/update/${this.formData.id}` :
+                        `/{{ $rolePrefix }}/kelola-lahan/potensi/store`;
 
                     try {
                         const fd = new FormData();
                         if (this.isEdit) fd.append('_method', 'PUT');
 
                         fd.append('id_resor', this.formData.id_resor);
-                        fd.append('id_sektor', this.formData.id_sektor === 'MILIK_POLRES' ? '' : this.formData.id_sektor);
+                        fd.append('id_sektor', this.formData.id_sektor);
                         fd.append('id_jenis_lahan', this.formData.id_jenis_lahan || 1);
                         fd.append('id_desa', this.formData.id_desa);
                         fd.append('latitude', this.formData.lat);
@@ -2127,7 +2150,7 @@
                         fd.append('no_cp_polisi', this.formData.hp_personel);
                         fd.append('cp_lahan', this.formData.pj_lahan);
                         fd.append('no_cp_lahan', this.formData.hp_pj);
-                        fd.append('id_anggota', this.formData.id_pj_anggota);
+                        fd.append('id_anggota', this.formData.id_pj_anggota || '');
                         fd.append('ket_pj', this.formData.ket_pj);
                         fd.append('alamat_lahan', this.formData.alamat);
                         fd.append('keterangan_lain', this.formData.keterangan_lain);
@@ -2142,6 +2165,7 @@
                         const response = await fetch(urlStore, {
                             method: method,
                             headers: {
+                                'Accept': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                             },
                             body: fd
@@ -2154,7 +2178,14 @@
                             this.closeModal();
                             setTimeout(() => window.location.reload(), 1500);
                         } else {
-                            $notify('error', 'Gagal Menyimpan', result.message || 'Terjadi kesalahan pada server. Coba lagi.');
+                            let errorMsg = result.message || 'Terjadi kesalahan pada server. Coba lagi.';
+                            if (result.errors) {
+                                const errs = Object.values(result.errors).flat();
+                                if (errs.length > 0) {
+                                    errorMsg = errs.join('\n');
+                                }
+                            }
+                            $notify('error', 'Gagal Menyimpan', errorMsg);
                         }
                     } catch (e) {
                         $notify('error', 'Kesalahan Koneksi', 'Tidak dapat menghubungi server. Periksa koneksi Anda.');
@@ -2175,14 +2206,25 @@
                     });
                 },
                 init() {
+                    this.$watch('formData.id_kabupaten', (val) => {
+                        if (this.filteredKecamatan.length === 1 && val && !this.formData.id_kecamatan) {
+                            this.formData.id_kecamatan = this.filteredKecamatan[0].id_wilayah;
+                        }
+                    });
                     this.$watch('formData.id_sektor', (val) => {
-                        if (val === 'MILIK_POLRES') {
-                            this.formData.id_jenis_lahan = 5;
+                        if (!val && this.formData.id_resor) {
+                            this.formData.id_jenis_lahan = '5';
+                        }
+                        if (val && this.formData.id_kabupaten) {
+                            // Re-evaluate auto select if needed
+                            if (this.filteredKecamatan.length === 1) {
+                                this.formData.id_kecamatan = this.filteredKecamatan[0].id_wilayah;
+                            }
                         }
                     });
                     this.$watch('formData.id_resor', (val) => {
-                        if (val && this.formData.id_sektor === 'MILIK_POLRES') {
-                            this.formData.id_jenis_lahan = 5;
+                        if (val && !this.formData.id_sektor) {
+                            this.formData.id_jenis_lahan = '5';
                         }
                     });
                 }

@@ -238,6 +238,8 @@ class PotensiLahanController extends Controller
             ->select('id_anggota', 'nama_anggota', 'no_telp_anggota', 'id_tugas')
             ->get();
 
+        $tingkatWilayahList = DB::table('tingkatwilayah')->get();
+
         // ──────────────────────────────────────────
         // Statistics — scoped to operator's jurisdiction
         // ──────────────────────────────────────────
@@ -312,6 +314,7 @@ class PotensiLahanController extends Controller
             'kecamatanList',
             'desaList',
             'anggotaList',
+            'tingkatWilayahList',
             'totalLuasLahan',
             'totalLokasiLahan',
             'breakdownByJenis',
@@ -330,7 +333,7 @@ class PotensiLahanController extends Controller
             'id_desa'          => 'required|string',
             'id_jenis_lahan'   => 'required|integer',
             'luas_lahan'       => 'required|numeric|min:0',
-            'id_anggota'       => 'required|integer',
+            'id_anggota'       => 'nullable|integer',
             'cp_lahan'         => 'nullable|string|max:255',
             'no_cp_lahan'      => 'nullable|string|max:50',
             'cp_polisi'        => 'nullable|string|max:255',
@@ -390,7 +393,7 @@ class PotensiLahanController extends Controller
             'id_desa'          => 'required|string',
             'id_jenis_lahan'   => 'required|integer',
             'luas_lahan'       => 'required|numeric|min:0',
-            'id_anggota'       => 'required|integer',
+            'id_anggota'       => 'nullable|integer',
             'cp_lahan'         => 'nullable|string|max:255',
             'no_cp_lahan'      => 'nullable|string|max:50',
             'cp_polisi'        => 'nullable|string|max:255',

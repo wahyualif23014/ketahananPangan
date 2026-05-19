@@ -1494,7 +1494,6 @@
         </div>
         <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
             {{-- Gate: Tanam harus tervalidasi sebelum bisa input panen --}}
-            @if(!$row->tanam_valid_oleh ?? true)
             <div class="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-3" x-show="!activeLahan?.tanam_valid_oleh">
                 <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path></svg>
                 <div>
@@ -1502,7 +1501,6 @@
                     <p class="text-[10px] font-bold text-amber-600 mt-0.5">Data tanam untuk lahan ini belum divalidasi oleh Admin. Panen hanya bisa diinput setelah data tanam divalidasi.</p>
                 </div>
             </div>
-            @endif
             <div>
                 <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Jenis Panen</label>
                 <div class="grid grid-cols-2 gap-3">
