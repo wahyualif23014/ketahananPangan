@@ -110,7 +110,7 @@ class KelolaLahanController extends Controller
             $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
         }
         $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
-        $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_tanam)) as d');
+        $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_panen)) as d');
 
         // 3. Build Base Data Query (Applying Filters)
         $dataQuery = $applyScope(DB::table('lahan')->where('lahan.deletestatus', '!=', '0')->whereNotNull('lahan.valid_oleh'))
@@ -120,7 +120,7 @@ class KelolaLahanController extends Controller
             ->leftJoin('komoditi', 'lahan.id_komoditi', '=', 'komoditi.id_komoditi')
             ->leftJoin($latestTanam, 'lahan.id_lahan', '=', 't.id_lahan')
             ->leftJoin($latestPanen, 't.id_tanam', '=', 'p.id_tanam')
-            ->leftJoin($latestDistribusi, 't.id_tanam', '=', 'd.id_tanam');
+            ->leftJoin($latestDistribusi, 'p.id_panen', '=', 'd.id_panen');
 
         // Apply Common Filters
         if ($filters['sektor']) {
@@ -235,6 +235,7 @@ class KelolaLahanController extends Controller
                     't.est_akhir_panen',
                     't.keterangan_tanam',
                     't.valid_oleh as tanam_valid_oleh',
+                    't.alasan_tolak as tanam_alasan_tolak',
                     'p.id_panen',
                     'p.total_panen',
                     'p.tgl_panen',
@@ -242,12 +243,14 @@ class KelolaLahanController extends Controller
                     'p.luas_panen',
                     'p.ket_panen',
                     'p.valid_oleh as panen_valid_oleh',
+                    'p.alasan_tolak as panen_alasan_tolak',
                     'd.id_distribusi',
                     'd.total_distribusi',
                     'd.tgl_distribusi',
                     'd.distribusi_ke',
                     'd.keterangan_distribusi',
-                    'd.valid_oleh as serapan_valid_oleh'
+                    'd.valid_oleh as serapan_valid_oleh',
+                    'd.alasan_tolak as serapan_alasan_tolak'
                 )
                 ->where(function ($q) use ($resorIds) {
                     foreach ($resorIds as $id) {
@@ -279,11 +282,24 @@ class KelolaLahanController extends Controller
                 $allTanamIds = $allTanams->pluck('id_tanam')->unique()->toArray();
 
                 $allPanens = empty($allTanamIds) ? collect() : DB::table('panen')->whereIn('id_tanam', $allTanamIds)->get()->groupBy('id_tanam');
-                $allDistribusis = empty($allTanamIds) ? collect() : DB::table('distribusi')->whereIn('id_tanam', $allTanamIds)->get()->groupBy('id_tanam');
+                
+                $allPanenIds = collect();
+                foreach($allPanens as $panensForTanam) {
+                    $allPanenIds = $allPanenIds->merge($panensForTanam->pluck('id_panen'));
+                }
+                $allPanenIds = $allPanenIds->unique()->toArray();
+                
+                $allDistribusis = empty($allPanenIds) ? collect() : DB::table('distribusi')->whereIn('id_panen', $allPanenIds)->get()->groupBy('id_panen');
 
-                $allTanams->transform(function ($t) use ($allPanens, $allDistribusis) {
+                foreach($allPanens as $id_tanam => $panensForTanam) {
+                    $panensForTanam->transform(function($p) use ($allDistribusis) {
+                        $p->distribusis = $allDistribusis->get($p->id_panen, collect());
+                        return $p;
+                    });
+                }
+
+                $allTanams->transform(function ($t) use ($allPanens) {
                     $t->panens = $allPanens->get($t->id_tanam, collect());
-                    $t->distribusis = $allDistribusis->get($t->id_tanam, collect());
                     return $t;
                 });
 
@@ -341,8 +357,9 @@ class KelolaLahanController extends Controller
                     ->keyBy('id_tanam');
 
                 $distribusis = DB::table('distribusi')
-                    ->select('id_tanam', 'id_distribusi', 'valid_oleh')
-                    ->whereIn('id_tanam', $tanamIds)
+                    ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                    ->select('panen.id_tanam', 'distribusi.id_distribusi', 'distribusi.valid_oleh')
+                    ->whereIn('panen.id_tanam', $tanamIds)
                     ->get()
                     ->keyBy('id_tanam');
 
@@ -366,7 +383,7 @@ class KelolaLahanController extends Controller
                                 if (!$s->valid_oleh) {
                                     $lahanStagesMap[$idLahan] = 2; // Lock at Serapan until validated
                                 } else {
-                                    $lahanStagesMap[$idLahan] = 3; // Fully validated - wait for "Selesai Siklus"
+                                    $lahanStagesMap[$idLahan] = 3; // Fully validated
                                 }
                             }
                         }
@@ -428,7 +445,9 @@ class KelolaLahanController extends Controller
 
         // Serapan Stats — scoped
         $serapanQuery = $applyScope(
-            DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
+            DB::table('distribusi')
+                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->where('distribusi.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
@@ -470,53 +489,14 @@ class KelolaLahanController extends Controller
             'mode' => $mode
         ];
 
-        return compact(
-            'polresList',
-            'polsekList',
-            'komoditiList',
-            'filters',
-            'stats',
-            'data',
-            'lahanStagesMap'
-        );
-    }
-
-    public function index(Request $request)
-    {
-        return view('admin.kelola-lahan.lahan.index', $this->getIndexData($request, 'active'));
-    }
-
-    public function riwayatIndex(Request $request)
-    {
-        $baseData = $this->getIndexData($request, 'history');
-
-        return view('admin.kelola-lahan.riwayat.index', array_merge($baseData, [
-            'pagetitle' => 'Riwayat Lahan'
-        ]));
-    }
-
-    private function getScope()
-    {
-        $user   = auth()->user();
-        return $user->id_tugas ?? '0';
-    }
-
-    private function getApplyScope()
-    {
-        $scope = $this->getScope();
-        return function ($query, $column = 'lahan.id_tingkat') use ($scope) {
-            if ($scope && $scope != '0') {
-                return $query->where(function ($q) use ($column, $scope) {
-                    $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%');
-                });
-            }
-            return $query;
-        };
-
         // ── FILTER PANEN MENDATANG ──────────────────────────────────────
-        $filterBulan = $request->get('panen_bulan');
-        $filterTahun = $request->get('panen_tahun', date('Y'));
-        $filterResor = $request->get('panen_resor');
+        $harvestFilters = [
+            'panen_bulan' => $request->get('panen_bulan'),
+            'panen_tahun' => $request->get('panen_tahun', date('Y')),
+            'resor'       => $request->get('panen_resor'),
+            'panen_start' => $request->get('panen_start'),
+            'panen_end'   => $request->get('panen_end'),
+        ];
 
         $harvestQuery = $applyScope(
             DB::table('tanam')
@@ -530,14 +510,16 @@ class KelolaLahanController extends Controller
             'lahan.id_tingkat'
         );
 
-        if ($filterResor) {
-            $harvestQuery->where('lahan.id_tingkat', 'LIKE', $filterResor . '%');
+        if ($harvestFilters['resor']) {
+            $harvestQuery->where('lahan.id_tingkat', 'LIKE', $harvestFilters['resor'] . '%');
         }
-        if ($filterTahun) {
-            $harvestQuery->whereYear('tanam.est_awal_panen', $filterTahun);
-        }
-        if ($filterBulan) {
-            $harvestQuery->whereMonth('tanam.est_awal_panen', $filterBulan);
+        if ($harvestFilters['panen_start'] && $harvestFilters['panen_end']) {
+            $harvestQuery->whereBetween('tanam.est_awal_panen', [$harvestFilters['panen_start'], $harvestFilters['panen_end']]);
+        } elseif ($harvestFilters['panen_tahun']) {
+            $harvestQuery->whereYear('tanam.est_awal_panen', $harvestFilters['panen_tahun']);
+            if ($harvestFilters['panen_bulan']) {
+                $harvestQuery->whereMonth('tanam.est_awal_panen', $harvestFilters['panen_bulan']);
+            }
         }
 
         $upcomingHarvests = $harvestQuery
@@ -554,11 +536,50 @@ class KelolaLahanController extends Controller
             ->orderBy('tanam.est_awal_panen')
             ->limit(100)
             ->get();
+            
+        $polresForHarvest = DB::table('tingkat')
+            ->whereRaw("id_tingkat REGEXP '^[0-9]+\.[0-9]+$'")
+            ->orderBy('id_tingkat')
+            ->get();
+
+        return compact(
+            'polresList',
+            'polsekList',
+            'komoditiList',
+            'filters',
+            'stats',
+            'data',
+            'lahanStagesMap',
+            'upcomingHarvests',
+            'harvestFilters',
+            'polresForHarvest'
+        );
+    }
+
+    public function index(Request $request)
+    {
+        return view('admin.kelola-lahan.lahan.index', $this->getIndexData($request, 'active'));
+    }
+
+    public function riwayatIndex(Request $request)
+    {
+        $baseData = $this->getIndexData($request, 'history');
+
+        $scope = $this->getScope();
+        $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
+            if ($scope && $scope != '0') {
+                return $query->where(function ($q) use ($column, $scope) {
+                    $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%');
+                });
+            }
+            return $query;
+        };
 
         // ── SERAPAN DISTRIBUSI BREAKDOWN ────────────────────────────────
         $serapanBreakdown = $applyScope(
             DB::table('distribusi')
-                ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
+                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->whereNotNull('distribusi.valid_oleh')
                 ->where('distribusi.valid_oleh', '!=', '')
                 ->where('distribusi.deletestatus', '!=', '0')
@@ -579,31 +600,132 @@ class KelolaLahanController extends Controller
             ];
         }
 
-        // Available polres list for harvest filter
+        return view('operator.kelola-lahan.operator_riwayat.index', array_merge($baseData, [
+            'serapanChartData'  => $serapanChartData,
+        ]));
+    }
+
+    public function poktanIndex(Request $request)
+    {
+        $user = auth()->user();
+        $scope = $user->id_tugas ?? '0';
+
         $applyTingkatScope = function ($query) use ($scope) {
             if ($scope && $scope != '0') {
                 return $query->where(function ($q) use ($scope) {
                     $q->where(function($q) use ($scope) { $q->where('id_tingkat', $scope)->orWhere('id_tingkat', 'LIKE', $scope . '.%'); })
-                      ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
+                        ->orWhereRaw("? = id_tingkat OR ? LIKE CONCAT(id_tingkat, '.%')", [$scope, $scope]);
                 });
             }
             return $query;
         };
-        $polresForHarvest = $applyTingkatScope(DB::table('tingkat'))
-            ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'")
-            ->orderBy('id_tingkat')
-            ->get();
 
-        return view('operator.kelola-lahan.operator_riwayat.index', array_merge($baseData, [
-            'upcomingHarvests'  => $upcomingHarvests,
-            'serapanChartData'  => $serapanChartData,
-            'polresForHarvest'  => $polresForHarvest,
-            'harvestFilters'    => [
-                'bulan' => $filterBulan,
-                'tahun' => $filterTahun,
-                'resor' => $filterResor,
-            ],
-        ]));
+        $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
+            if ($scope && $scope != '0') {
+                return $query->where(function($q) use ($column, $scope) { $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%'); });
+            }
+            return $query;
+        };
+
+        $polresQuery = $applyTingkatScope(DB::table('tingkat'))->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'");
+        $polsekQuery = $applyTingkatScope(DB::table('tingkat'))->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
+
+        $polresList = $polresQuery->orderBy('id_tingkat')->get();
+        $polsekList = $polsekQuery->orderBy('id_tingkat')->get();
+
+        $filters = [
+            'resor'  => $request->resor,
+            'sektor' => $request->sektor,
+            'search' => $request->search
+        ];
+
+        $applyPoktanScope = function ($query) use ($scope) {
+            if ($scope && $scope != '0') {
+                return $query->where(function($q) use ($scope) {
+                    $q->where('lahan.id_tingkat', $scope)
+                      ->orWhere('lahan.id_tingkat', 'LIKE', $scope . '.%');
+                });
+            }
+            return $query;
+        };
+
+        $query = $applyPoktanScope(DB::table('lahan'))
+            ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('lahan.id_poktan')
+            ->whereNotNull('lahan.valid_oleh')
+            ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
+            ->select(
+                'poktan.nama_poktan',
+                DB::raw('MAX(poktan.id_polda) as id_polda'),
+                DB::raw('MAX(poktan.id_polres) as id_polres'),
+                DB::raw('MAX(poktan.id_polsek) as id_polsek'),
+                DB::raw('SUM(lahan.luas_lahan) as luas_lahan'),
+                DB::raw('MAX(lahan.latitude) as latitude'),
+                DB::raw('MAX(lahan.longitude) as longitude'),
+                DB::raw('COUNT(lahan.id_lahan) as jumlah_lokasi')
+            )
+            ->groupBy('poktan.nama_poktan');
+
+        if ($filters['sektor']) {
+            $query->where('lahan.id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $query->where('lahan.id_tingkat', 'LIKE', $filters['resor'] . '%');
+        }
+
+        if ($filters['search']) {
+            $query->where('poktan.nama_poktan', 'LIKE', '%' . $filters['search'] . '%');
+        }
+
+        $data = $query->orderBy('poktan.nama_poktan')->paginate(20)->withQueryString();
+
+        $displayedNames = $data->pluck('nama_poktan')->filter()->unique();
+        
+        $detailsQuery = DB::table('lahan')
+            ->whereIn('poktan.nama_poktan', $displayedNames)
+            ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('lahan.id_poktan')
+            ->whereNotNull('lahan.valid_oleh')
+            ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
+            ->select(
+                'lahan.id_lahan',
+                'lahan.luas_lahan',
+                'lahan.latitude',
+                'lahan.longitude',
+                'poktan.nama_poktan',
+                'poktan.id_polda',
+                'poktan.id_polres',
+                'poktan.id_polsek'
+            );
+        if ($filters['sektor']) {
+            $detailsQuery->where('lahan.id_tingkat', $filters['sektor']);
+        } elseif ($filters['resor']) {
+            $detailsQuery->where('lahan.id_tingkat', 'LIKE', $filters['resor'] . '%');
+        }
+        $details = $detailsQuery->get()->groupBy('nama_poktan');
+
+        $tingkatMap = DB::table('tingkat')->pluck('nama_tingkat', 'id_tingkat');
+
+        return view('admin.kelola-lahan.poktan.index', compact('data', 'polresList', 'polsekList', 'filters', 'tingkatMap'));
+    }
+
+    private function getScope()
+
+    {
+        $user   = auth()->user();
+        return $user->id_tugas ?? '0';
+    }
+
+    private function getApplyScope()
+    {
+        $scope = $this->getScope();
+        return function ($query, $column = 'lahan.id_tingkat') use ($scope) {
+            if ($scope && $scope != '0') {
+                return $query->where(function ($q) use ($column, $scope) {
+                    $q->where($column, $scope)->orWhere($column, 'LIKE', $scope . '.%');
+                });
+            }
+            return $query;
+        };
     }
 
     public function storeTanam(Request $request)
@@ -707,7 +829,7 @@ class KelolaLahanController extends Controller
                     // ── VALIDASI: Total luas panen tidak melebihi luas tanam ──
                     $luasTanam = (float)$tanam->luas_tanam;
                     $totalPanenSebelumnya = (float)DB::table('panen')->where('id_tanam', $idTanam)->sum('luas_panen');
-                    $luasPanenBaru = $request->status_panen == 2 ? 0 : (float)$request->luas_panen;
+                    $luasPanenBaru = (float)$request->luas_panen;
                     $sisaPanen = $luasTanam - $totalPanenSebelumnya;
 
                     if ($luasPanenBaru > $sisaPanen) {
@@ -723,7 +845,7 @@ class KelolaLahanController extends Controller
                 }
                 // ── AKHIR VALIDASI ──
 
-                $luasPanen = $request->status_panen == 2 ? 0 : $request->luas_panen;
+                $luasPanen = $request->luas_panen;
                 $totalPanen = $request->status_panen == 2 ? 0 : ($request->total_panen ?? 0);
 
                 DB::table('panen')->insert([
@@ -751,6 +873,7 @@ class KelolaLahanController extends Controller
     {
         $request->validate([
             'id_lahan' => 'required|integer',
+            'id_panen' => 'required|integer',
             'tgl_distribusi' => 'required|date',
             'total_distribusi' => 'required|numeric|min:0',
             'distribusi_ke' => 'required|integer',
@@ -768,20 +891,29 @@ class KelolaLahanController extends Controller
             DB::transaction(function () use ($request) {
                 $newId = DB::table('distribusi')->max('id_distribusi') + 1;
                 $idAnggota = auth()->id();
-                $idTanam = $request->id_tanam ?? DB::table('tanam')->where('id_lahan', $request->id_lahan)->where('is_active', 1)->orderByDesc('id_tanam')->value('id_tanam') ?? 0;
-                $latestPanen = DB::table('panen')->where('id_lahan', $request->id_lahan)->where('id_tanam', $idTanam)->orderByDesc('id_panen')->first();
+                $targetPanen = DB::table('panen')->where('id_panen', $request->id_panen)->first();
+
+                if (!$targetPanen) {
+                    throw new \Exception('Data panen tidak ditemukan.');
+                }
 
                 // ── VALIDASI: Panen harus sudah divalidasi oleh admin/polres ──
-                if (!$latestPanen || !$latestPanen->valid_oleh) {
-                    throw new \Exception('Data panen pada lahan ini belum divalidasi oleh admin/polres. Harap tunggu validasi panen terlebih dahulu sebelum menginput serapan.');
+                if (!$targetPanen->valid_oleh) {
+                    throw new \Exception('Data panen ini belum divalidasi oleh admin/polres. Harap tunggu validasi panen terlebih dahulu sebelum menginput serapan.');
+                }
+                
+                $totalSerapanSebelumnya = (float)DB::table('distribusi')->where('id_panen', $targetPanen->id_panen)->sum('total_distribusi');
+                $sisaTon = (float)$targetPanen->total_panen - $totalSerapanSebelumnya;
+                if ((float)$request->total_distribusi > $sisaTon) {
+                    throw new \Exception("Jumlah serapan melebihi hasil panen! Hasil panen: " . number_format($targetPanen->total_panen, 2) . " TON. Sisa yang belum diserap: " . number_format($sisaTon, 2) . " TON.");
                 }
                 // ── AKHIR VALIDASI ──
 
                 DB::table('distribusi')->insert([
                     'id_distribusi' => $newId,
                     'id_lahan' => $request->id_lahan,
-                    'id_panen' => $latestPanen ? $latestPanen->id_panen : 0,
-                    'id_tanam' => $idTanam,
+                    'id_panen' => $targetPanen->id_panen,
+                    'id_tanam' => $targetPanen->id_tanam,
                     'id_anggota' => $idAnggota,
                     'tgl_distribusi' => $request->tgl_distribusi,
                     'total_distribusi' => $request->total_distribusi,
@@ -907,7 +1039,7 @@ class KelolaLahanController extends Controller
 
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
@@ -916,6 +1048,20 @@ class KelolaLahanController extends Controller
             // Cek apakah data sebelumnya ditolak
             $oldSerapan = DB::table('distribusi')->where('id_distribusi', $id)->first();
             $wasTolak = $oldSerapan && !empty($oldSerapan->alasan_tolak);
+
+            if ($oldSerapan && $oldSerapan->id_panen) {
+                $panenForSerapan = DB::table('panen')->where('id_panen', $oldSerapan->id_panen)->first();
+                if ($panenForSerapan) {
+                    $totalSerapanSebelumnya = (float)DB::table('distribusi')
+                        ->where('id_panen', $oldSerapan->id_panen)
+                        ->where('id_distribusi', '!=', $id)
+                        ->sum('total_distribusi');
+                    $sisaTon = (float)$panenForSerapan->total_panen - $totalSerapanSebelumnya;
+                    if ((float)$request->total_distribusi > $sisaTon) {
+                        throw new \Exception("Jumlah serapan melebihi hasil panen! Hasil panen: " . number_format($panenForSerapan->total_panen, 2) . " TON. Sisa yang belum diserap: " . number_format($sisaTon, 2) . " TON.");
+                    }
+                }
+            }
 
             DB::table('distribusi')->where('id_distribusi', $id)->update([
                 'tgl_distribusi'       => $request->tgl_distribusi,
@@ -1028,7 +1174,7 @@ class KelolaLahanController extends Controller
         }
 
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
             return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
@@ -1058,7 +1204,10 @@ class KelolaLahanController extends Controller
 
         try {
             DB::transaction(function () use ($id) {
-                DB::table('distribusi')->where('id_tanam', $id)->delete();
+                $panenIds = DB::table('panen')->where('id_tanam', $id)->pluck('id_panen')->toArray();
+                if (!empty($panenIds)) {
+                    DB::table('distribusi')->whereIn('id_panen', $panenIds)->delete();
+                }
                 DB::table('panen')->where('id_tanam', $id)->delete();
                 DB::table('tanam')->where('id_tanam', $id)->delete();
             });
@@ -1092,7 +1241,7 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')->where('distribusi.id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.id_distribusi']);
+        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('distribusi.id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.id_distribusi']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
@@ -1112,12 +1261,7 @@ class KelolaLahanController extends Controller
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
         }
-        try {
-            $request->validate(['alasan' => 'required|string|min:5|max:1000']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Alasan penolakan wajib diisi (minimal 5 karakter).'], 422);
-        }
-        $alasan = $request->alasan;
+        $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
             $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
@@ -1129,6 +1273,7 @@ class KelolaLahanController extends Controller
 
             // Update: tandai sebagai ditolak, hapus validasi jika ada
             DB::table('tanam')->where('id_tanam', $id)->update([
+                'alasan_tolak'     => $alasan,
                 'keterangan_tanam' => '[DITOLAK] Alasan: ' . $alasan,
                 'valid_oleh'       => null,
                 'tgl_valid'        => null,
@@ -1175,12 +1320,7 @@ class KelolaLahanController extends Controller
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
         }
-        try {
-            $request->validate(['alasan' => 'required|string|min:5|max:1000']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Alasan penolakan wajib diisi (minimal 5 karakter).'], 422);
-        }
-        $alasan = $request->alasan;
+        $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
             $panen = DB::table('panen')->where('id_panen', $id)->first();
@@ -1192,10 +1332,11 @@ class KelolaLahanController extends Controller
 
             // Update: tandai sebagai ditolak, hapus validasi jika ada
             DB::table('panen')->where('id_panen', $id)->update([
-                'ket_panen'  => '[DITOLAK] Alasan: ' . $alasan,
-                'valid_oleh' => null,
-                'tgl_valid'  => null,
-                'tgl_edit'   => now(),
+                'alasan_tolak'     => $alasan,
+                'ket_panen'        => '[DITOLAK] Alasan: ' . $alasan,
+                'valid_oleh'       => null,
+                'tgl_valid'        => null,
+                'tgl_edit'         => now(),
             ]);
 
             // Kirim notifikasi ke operator pembuat data
@@ -1238,12 +1379,7 @@ class KelolaLahanController extends Controller
         if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
         }
-        try {
-            $request->validate(['alasan' => 'required|string|min:5|max:1000']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Alasan penolakan wajib diisi (minimal 5 karakter).'], 422);
-        }
-        $alasan = $request->alasan;
+        $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
             $serapan = DB::table('distribusi')->where('id_distribusi', $id)->first();
@@ -1255,6 +1391,7 @@ class KelolaLahanController extends Controller
 
             // Update: tandai sebagai ditolak, hapus validasi jika ada
             DB::table('distribusi')->where('id_distribusi', $id)->update([
+                'alasan_tolak'          => $alasan,
                 'keterangan_distribusi' => '[DITOLAK] Alasan: ' . $alasan,
                 'valid_oleh'            => null,
                 'tgl_valid'             => null,
@@ -1316,7 +1453,14 @@ class KelolaLahanController extends Controller
 
         $tanam = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->whereNull('valid_oleh')->get();
         $panen = DB::table('panen')->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')->where('panen.id_lahan', $id)->where('tanam.is_active', 1)->whereNull('panen.valid_oleh')->select('panen.*')->get();
-        $serapan = DB::table('distribusi')->join('tanam', 'distribusi.id_tanam', '=', 'tanam.id_tanam')->where('distribusi.id_lahan', $id)->where('tanam.is_active', 1)->whereNull('distribusi.valid_oleh')->select('distribusi.*')->get();
+        $serapan = DB::table('distribusi')
+            ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+            ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
+            ->where('panen.id_lahan', $id)
+            ->where('tanam.is_active', 1)
+            ->whereNull('distribusi.valid_oleh')
+            ->select('distribusi.*')
+            ->get();
         $hasActive = DB::table('tanam')->where('id_lahan', $id)->where('is_active', 1)->exists();
 
         return response()->json([
@@ -1354,7 +1498,11 @@ class KelolaLahanController extends Controller
                 return response()->json(['success' => false, 'message' => 'Data Panen belum divalidasi.'], 422);
             }
 
-            $serapan = DB::table('distribusi')->where('id_tanam', $id)->first();
+            $serapan = DB::table('distribusi')
+                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->where('panen.id_tanam', $id)
+                ->select('distribusi.*')
+                ->first();
             if (!$serapan) {
                 return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Serapan belum dicatat.'], 422);
             }

@@ -60,8 +60,10 @@ class PotensiLahanController extends Controller
         // Build lahan query with all filters
         // ──────────────────────────────────────────
         $lahanQuery = DB::table('lahan')
-            ->where('deletestatus', '!=', '0')
-            ->orderBy('id_wilayah');
+            ->leftJoin('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
+            ->select('lahan.*', 'poktan.nama_poktan')
+            ->where('lahan.deletestatus', '!=', '0')
+            ->orderBy('lahan.id_wilayah');
 
         // Jurisdictional scope (operator's wilayah)
         $lahanQuery = $applyScope($lahanQuery, 'id_tingkat');
@@ -164,7 +166,8 @@ class PotensiLahanController extends Controller
                 'longitude'         => $lahan->longitude,
                 'latitude'          => $lahan->latitude,
                 'luas_lahan'        => $lahan->luas_lahan,
-                'poktan'            => $lahan->poktan,
+                'id_poktan'         => $lahan->id_poktan,
+                'poktan'            => $lahan->nama_poktan,
                 'jml_petani'        => $lahan->jml_petani,
                 'id_jenis_lahan'    => $lahan->id_jenis_lahan,
                 'nama_komoditi'     => $namaKomoditi,
@@ -239,6 +242,7 @@ class PotensiLahanController extends Controller
             ->get();
 
         $tingkatWilayahList = DB::table('tingkatwilayah')->get();
+        $poktanList = \App\Models\Poktan::all();
 
         // ──────────────────────────────────────────
         // Statistics — scoped to operator's jurisdiction
@@ -321,8 +325,42 @@ class PotensiLahanController extends Controller
             'submissionByKategori',
             'persenBelumValidasi',
             'luasBelumValidasi',
-            'allLahanData'
+            'allLahanData',
+            'poktanList'
         ));
+    }
+
+    private function resolvePoktan(Request $request)
+    {
+        $idPoktan = $request->id_poktan;
+        $namaPoktan = $request->jml_poktan ? strtoupper($request->jml_poktan) : null;
+        
+        if (empty($idPoktan) || $idPoktan === 'new') {
+            if (!empty($namaPoktan)) {
+                $idSektor = $request->id_sektor;
+                $idResor = $request->id_resor;
+                $idPolda = null;
+                
+                if ($idResor) {
+                    $parts = explode('.', $idResor);
+                    if (count($parts) > 0) $idPolda = $parts[0];
+                }
+                
+                $newPoktan = \App\Models\Poktan::create([
+                    'id_polda' => $idPolda,
+                    'id_polres' => $idResor,
+                    'id_polsek' => $idSektor,
+                    'nama_poktan' => $namaPoktan,
+                    'luas_lahan' => $request->luas_lahan,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                ]);
+                return $newPoktan->id_poktan;
+            } else {
+                return null;
+            }
+        }
+        return $idPoktan;
     }
 
     public function store(Request $request)
@@ -347,7 +385,10 @@ class PotensiLahanController extends Controller
             'id_komoditi'      => 'nullable|integer',
             'keterangan_lain'  => 'nullable|string|max:1000',
             'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'id_poktan'        => 'nullable|string',
         ]);
+
+        $idPoktan = $this->resolvePoktan($request);
 
         $data = [
             'id_tingkat'       => $request->id_sektor ?: $request->id_resor,
@@ -363,7 +404,8 @@ class PotensiLahanController extends Controller
             'longitude'        => $request->longitude,
             'alamat_lahan'     => $request->alamat_lahan,
             'keterangan_lahan' => $request->ket_pj,
-            'poktan'           => $request->jml_poktan,
+            'poktan'           => 1,
+            'id_poktan'        => $idPoktan,
             'jml_petani'       => $request->jml_petani,
             'id_komoditi'      => $request->id_komoditi,
             'ket_polisi'       => $request->keterangan_lain,
@@ -407,6 +449,7 @@ class PotensiLahanController extends Controller
             'id_komoditi'      => 'nullable|integer',
             'keterangan_lain'  => 'nullable|string|max:1000',
             'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'id_poktan'        => 'nullable|string',
         ]);
 
         $user = auth()->user();
@@ -430,7 +473,8 @@ class PotensiLahanController extends Controller
             'longitude'        => $request->longitude,
             'alamat_lahan'     => $request->alamat_lahan,
             'keterangan_lahan' => $request->ket_pj,
-            'poktan'           => $request->jml_poktan,
+            'poktan'           => 1,
+            'id_poktan'        => $this->resolvePoktan($request),
             'jml_petani'       => $request->jml_petani,
             'id_komoditi'      => $request->id_komoditi,
             'ket_polisi'       => $request->keterangan_lain,
@@ -449,8 +493,17 @@ class PotensiLahanController extends Controller
         }
 
         $wasDitolak = $lahan->status_lahan == '2';
+        $oldIdPoktan = $lahan->id_poktan;
 
         DB::table('lahan')->where('id_lahan', $id)->update($data);
+
+        // Bersihkan poktan yatim jika id_poktan berubah
+        if ($oldIdPoktan && $oldIdPoktan != $idPoktan) {
+            $stillUsed = DB::table('lahan')->where('id_poktan', $oldIdPoktan)->where('deletestatus', '!=', '0')->exists();
+            if (!$stillUsed) {
+                DB::table('poktan')->where('id_poktan', $oldIdPoktan)->delete();
+            }
+        }
 
         // Jika sebelumnya ditolak, kirim notifikasi ke Polres bahwa data sudah diperbaiki
         if ($wasDitolak) {
@@ -619,14 +672,25 @@ class PotensiLahanController extends Controller
             return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
         }
 
-        DB::transaction(function () use ($id) {
+        DB::transaction(function () use ($id, $lahan) {
             $tanamIds = DB::table('tanam')->where('id_lahan', $id)->pluck('id_tanam');
             if ($tanamIds->isNotEmpty()) {
-                DB::table('distribusi')->whereIn('id_tanam', $tanamIds)->delete();
+                $panenIds = DB::table('panen')->whereIn('id_tanam', $tanamIds)->pluck('id_panen')->toArray();
+                if (!empty($panenIds)) {
+                    DB::table('distribusi')->whereIn('id_panen', $panenIds)->delete();
+                }
                 DB::table('panen')->whereIn('id_tanam', $tanamIds)->delete();
                 DB::table('tanam')->where('id_lahan', $id)->delete();
             }
             DB::table('lahan')->where('id_lahan', $id)->delete();
+
+            // Hapus poktan yatim jika tidak ada lahan lain yang menggunakannya
+            if ($lahan && $lahan->id_poktan) {
+                $stillUsed = DB::table('lahan')->where('id_poktan', $lahan->id_poktan)->where('deletestatus', '!=', '0')->exists();
+                if (!$stillUsed) {
+                    DB::table('poktan')->where('id_poktan', $lahan->id_poktan)->delete();
+                }
+            }
         });
         
         AktivitasLog::catat('delete', 'potensi_lahan', [

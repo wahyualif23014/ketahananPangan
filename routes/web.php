@@ -79,6 +79,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
                 Route::delete('/destroy/{id}', [PotensiLahanController::class, 'destroy'])->name('destroy');
             });
             Route::get('/daftar', [KelolaLahanController::class, 'index'])->name('daftar.index');
+            Route::get('/poktan', [KelolaLahanController::class, 'poktanIndex'])->name('poktan.index');
             Route::get('/riwayat', [KelolaLahanController::class, 'riwayatIndex'])->name('riwayat.index');
             Route::post('/tanam', [KelolaLahanController::class, 'storeTanam'])->name('tanam.store');
             Route::put('/tanam/{id}', [KelolaLahanController::class, 'updateTanam'])->name('tanam.update');
@@ -139,6 +140,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             });
 
             Route::get('/daftar', [OperatorKelolaLahan::class, 'index'])->name('daftar.index');
+            Route::get('/poktan', [OperatorKelolaLahan::class, 'poktanIndex'])->name('poktan.index');
             Route::get('/riwayat', [OperatorKelolaLahan::class, 'riwayatIndex'])->name('riwayat.index');
             Route::post('/tanam', [OperatorKelolaLahan::class, 'storeTanam'])->name('tanam.store');
             Route::put('/tanam/{id}', [OperatorKelolaLahan::class, 'updateTanam'])->name('tanam.update');

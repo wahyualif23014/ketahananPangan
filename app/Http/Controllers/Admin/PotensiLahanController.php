@@ -61,8 +61,10 @@ class PotensiLahanController extends Controller
 
         // 2. Ambil semua data lahan (aktif) dipaginasi dengan filter search
         $lahanQuery = DB::table('lahan')
-            ->where('deletestatus', '!=', '0')
-            ->orderBy('id_wilayah');
+            ->leftJoin('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
+            ->select('lahan.*', 'poktan.nama_poktan')
+            ->where('lahan.deletestatus', '!=', '0')
+            ->orderBy('lahan.id_wilayah');
 
         if ($search) {
             $lahanQuery->where(function ($q) use ($search, $wilayahMap) {
@@ -161,7 +163,8 @@ class PotensiLahanController extends Controller
                 'longitude'          => $lahan->longitude,
                 'latitude'           => $lahan->latitude,
                 'luas_lahan'         => $lahan->luas_lahan,
-                'poktan'             => $lahan->poktan,
+                'id_poktan'          => $lahan->id_poktan,
+                'poktan'             => $lahan->nama_poktan,
                 'jml_petani'         => $lahan->jml_petani,
                 'id_jenis_lahan'     => $lahan->id_jenis_lahan,
                 'nama_komoditi'      => $namaKomoditi,
@@ -225,6 +228,8 @@ class PotensiLahanController extends Controller
             ->select('id_anggota', 'nama_anggota', 'no_telp_anggota', 'id_tugas')
             ->get();
 
+        $poktanList = \App\Models\Poktan::all();
+
         $filters = [
             'search' => $search,
             'resor' => $resorFilter,
@@ -235,7 +240,40 @@ class PotensiLahanController extends Controller
             'end_date' => $endDate,
         ];
 
-        return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'filters', 'allLahanData');
+        return compact('summary', 'cats', 'lahanList', 'polresList', 'polsekList', 'kategoriMapping', 'komoditiList', 'kabupatenList', 'kecamatanList', 'desaList', 'anggotaList', 'poktanList', 'filters', 'allLahanData');
+    }
+
+    private function resolvePoktan(Request $request)
+    {
+        $idPoktan = $request->id_poktan;
+        $namaPoktan = $request->jml_poktan ? strtoupper($request->jml_poktan) : null;
+        
+        if (empty($idPoktan) || $idPoktan === 'new') {
+            if (!empty($namaPoktan)) {
+                $idSektor = $request->id_sektor;
+                $idResor = $request->id_resor;
+                $idPolda = null;
+                
+                if ($idResor) {
+                    $parts = explode('.', $idResor);
+                    if (count($parts) > 0) $idPolda = $parts[0];
+                }
+                
+                $newPoktan = \App\Models\Poktan::create([
+                    'id_polda' => $idPolda,
+                    'id_polres' => $idResor,
+                    'id_polsek' => $idSektor,
+                    'nama_poktan' => $namaPoktan,
+                    'luas_lahan' => $request->luas_lahan,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                ]);
+                return $newPoktan->id_poktan;
+            } else {
+                return null;
+            }
+        }
+        return $idPoktan;
     }
 
     public function store(Request $request)
@@ -256,11 +294,14 @@ class PotensiLahanController extends Controller
             'alamat_lahan'     => 'required|string|max:500',
             'ket_pj'           => 'nullable|string|max:1000',
             'jml_poktan'       => 'nullable|string|max:255',
+            'id_poktan'        => 'nullable|string',
             'jml_petani'       => 'nullable|integer|min:0',
             'id_komoditi'      => 'nullable|integer',
             'keterangan_lain'  => 'nullable|string|max:1000',
             'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
+
+        $idPoktan = $this->resolvePoktan($request);
 
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
@@ -276,7 +317,8 @@ class PotensiLahanController extends Controller
             'longitude'         => $request->longitude,
             'alamat_lahan'      => $request->alamat_lahan,
             'keterangan_lahan'  => $request->ket_pj,
-            'poktan'            => $request->jml_poktan,
+            'poktan'            => 1, // Fixed: The column is integer for the number of poktans
+            'id_poktan'         => $idPoktan,
             'jml_petani'        => $request->jml_petani,
             'id_komoditi'       => $request->id_komoditi,
             'ket_polisi'        => $request->keterangan_lain,
@@ -324,11 +366,14 @@ class PotensiLahanController extends Controller
             'alamat_lahan'     => 'required|string|max:500',
             'ket_pj'           => 'nullable|string|max:1000',
             'jml_poktan'       => 'nullable|string|max:255',
+            'id_poktan'        => 'nullable|string',
             'jml_petani'       => 'nullable|integer|min:0',
             'id_komoditi'      => 'nullable|integer',
             'keterangan_lain'  => 'nullable|string|max:1000',
             'dokumentasi_lahan'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
+
+        $idPoktan = $this->resolvePoktan($request);
 
         $data = [
             'id_tingkat'        => $request->id_sektor ?? $request->id_resor,
@@ -344,7 +389,8 @@ class PotensiLahanController extends Controller
             'longitude'         => $request->longitude,
             'alamat_lahan'      => $request->alamat_lahan,
             'keterangan_lahan'  => $request->ket_pj,
-            'poktan'            => $request->jml_poktan,
+            'poktan'            => 1, // Fixed: The column is integer for the number of poktans
+            'id_poktan'         => $idPoktan,
             'jml_petani'        => $request->jml_petani,
             'id_komoditi'       => $request->id_komoditi,
             'ket_polisi'        => $request->keterangan_lain,
@@ -362,7 +408,16 @@ class PotensiLahanController extends Controller
             $data['dokumentasi_lahan'] = 'storage/dokumentasi/' . $filename;
         }
 
+        $old = DB::table('lahan')->where('id_lahan', $id)->first();
         DB::table('lahan')->where('id_lahan', $id)->update($data);
+        
+        // Bersihkan poktan yatim jika id_poktan berubah
+        if ($old && $old->id_poktan && $old->id_poktan != $idPoktan) {
+            $stillUsed = DB::table('lahan')->where('id_poktan', $old->id_poktan)->where('deletestatus', '!=', '0')->exists();
+            if (!$stillUsed) {
+                DB::table('poktan')->where('id_poktan', $old->id_poktan)->delete();
+            }
+        }
 
         AktivitasLog::catat('update', 'potensi_lahan', [
             'record_id'   => $id,
@@ -483,14 +538,25 @@ class PotensiLahanController extends Controller
     public function destroy(Request $request, $id)
     {
         $old = DB::table('lahan')->where('id_lahan', $id)->first();
-        DB::transaction(function () use ($id) {
+        DB::transaction(function () use ($id, $old) {
             $tanamIds = DB::table('tanam')->where('id_lahan', $id)->pluck('id_tanam');
             if ($tanamIds->isNotEmpty()) {
-                DB::table('distribusi')->whereIn('id_tanam', $tanamIds)->delete();
+                $panenIds = DB::table('panen')->whereIn('id_tanam', $tanamIds)->pluck('id_panen')->toArray();
+                if (!empty($panenIds)) {
+                    DB::table('distribusi')->whereIn('id_panen', $panenIds)->delete();
+                }
                 DB::table('panen')->whereIn('id_tanam', $tanamIds)->delete();
                 DB::table('tanam')->where('id_lahan', $id)->delete();
             }
             DB::table('lahan')->where('id_lahan', $id)->delete();
+            
+            // Hapus poktan jika sudah tidak ada lahan yang menggunakannya (yatim)
+            if ($old && $old->id_poktan) {
+                $stillUsed = DB::table('lahan')->where('id_poktan', $old->id_poktan)->where('deletestatus', '!=', '0')->exists();
+                if (!$stillUsed) {
+                    DB::table('poktan')->where('id_poktan', $old->id_poktan)->delete();
+                }
+            }
         });
 
         AktivitasLog::catat('delete', 'potensi_lahan', [

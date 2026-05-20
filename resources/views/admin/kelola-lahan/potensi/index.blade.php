@@ -1236,7 +1236,7 @@
                                         <span
                                             class="text-[10px] font-bold uppercase tracking-wider transition-colors duration-300"
                                             :class="currentStep >= step ? 'text-emerald-700' : 'text-slate-400'"
-                                            x-text="['Institusi', 'Personel', 'Teknis', 'Lokasi'][step-1]"></span>
+                                            x-text="['Institusi', 'Personel', 'Lokasi', 'Teknis'][step-1]"></span>
                                     </div>
                                 </template>
                             </div>
@@ -1386,70 +1386,14 @@
                                     </div>
                                 </div>
 
-                                {{-- STEP 3: Data Teknis Lahan --}}
+                                {{-- STEP 3: Lokasi & Dokumentasi --}}
                                 <div x-show="isStep(3)" x-transition.opacity.duration.400ms class="space-y-6">
-                                    <div class="space-y-1 border-l-4 border-emerald-500 pl-4 py-1">
-                                        <h4 class="text-base font-bold text-slate-800 tracking-tight">Data Teknis Lahan</h4>
-                                        <p class="text-xs text-slate-500">Detail produktivitas dan kapasitas lahan yang
-                                            didaftarkan.</p>
-                                    </div>
-
-                                    <div class="grid grid-cols-3 gap-6">
-                                        <div class="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3">
-                                            <label
-                                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center block">Jml.
-                                                Poktan</label>
-                                            <input type="number" x-model="formData.jml_poktan"
-                                                class="w-full text-center text-xl font-bold bg-slate-50 border-none rounded-lg h-12 focus:ring-0"
-                                                placeholder="0">
-                                            <p class="text-[9px] text-slate-400 text-center font-medium leading-tight">Total
-                                                kelompok tani terdaftar</p>
-                                        </div>
-                                        <div
-                                            class="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm space-y-3">
-                                            <label
-                                                class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest text-center block">Luas
-                                                Lahan (HA)</label>
-                                            <input type="number" step="0.01" x-model="formData.luas"
-                                                class="w-full text-center text-xl font-bold bg-white border-none rounded-lg h-12 text-emerald-700 focus:ring-2 focus:ring-emerald-200"
-                                                placeholder="0.00">
-                                            <p
-                                                class="text-[9px] text-emerald-500 text-center font-medium leading-tight tracking-tighter">
-                                                Luas total area dalam Hektar</p>
-                                        </div>
-                                        <div class="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3">
-                                            <label
-                                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center block">Jml.
-                                                Petani</label>
-                                            <input type="number" x-model="formData.jml_petani"
-                                                class="w-full text-center text-xl font-bold bg-slate-50 border-none rounded-lg h-12 focus:ring-0"
-                                                placeholder="0">
-                                            <p class="text-[9px] text-slate-400 text-center font-medium leading-tight">Total
-                                                anggota petani aktif</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-1.5">
-                                        <label class="text-xs font-semibold text-slate-600 ml-1">Komoditi Utama</label>
-                                        <select x-model="formData.komoditi"
-                                            class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all">
-                                            <option value="">PILIH KOMODITI</option>
-                                            @foreach($komoditiList as $km)
-                                            <option value="{{ $km->id_komoditi }}">{{ $km->jenis_komoditi }} - {{ $km->nama_komoditi }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {{-- STEP 4: Lokasi & Dokumentasi --}}
-                                <div x-show="isStep(4)" x-transition.opacity.duration.400ms class="space-y-6">
                                     <div class="space-y-1 border-l-4 border-emerald-500 pl-4 py-1">
                                         <h4 class="text-base font-bold text-slate-800 tracking-tight">Lokasi & Dokumentasi
                                         </h4>
                                         <p class="text-xs text-slate-500">Koordinat geospasial dan bukti foto lokasi lahan.
                                         </p>
                                     </div>
-
 
                                     <div class="space-y-4">
                                         {{-- Alamat --}}
@@ -1509,9 +1453,87 @@
                                     </div>
                                 </div>
 
+                                {{-- STEP 4: Data Teknis Lahan --}}
+                                <div x-show="isStep(4)" x-transition.opacity.duration.400ms class="space-y-6">
+                                    <div class="space-y-1 border-l-4 border-emerald-500 pl-4 py-1">
+                                        <h4 class="text-base font-bold text-slate-800 tracking-tight">Data Teknis Lahan</h4>
+                                        <p class="text-xs text-slate-500">Detail produktivitas dan kapasitas lahan yang
+                                            didaftarkan.</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div class="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 col-span-1 md:col-span-2 relative" x-data="searchPoktan()">
+                                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Nama Poktan</label>
+                                            <input type="text" x-model="query" @input="onInput()" @focus="showDropdown = true" @click.outside="showDropdown = false"
+                                                class="w-full px-4 h-12 text-sm font-bold bg-slate-50 border-none rounded-lg focus:ring-4 focus:ring-emerald-500/10 outline-none"
+                                                placeholder="Ketik nama poktan...">
+                                            <div x-show="showDropdown" class="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto p-1">
+                                                <template x-if="filtered.length > 0">
+                                                    <div>
+                                                        <template x-for="p in filtered" :key="p.id_poktan">
+                                                            <div @click="select(p)" class="px-4 py-3 hover:bg-emerald-50 cursor-pointer rounded-lg mb-1 flex items-center justify-between group">
+                                                                <div>
+                                                                    <div class="font-bold text-slate-800 text-sm group-hover:text-emerald-700" x-text="p.nama_poktan"></div>
+                                                                    <div class="text-[10px] font-medium text-slate-400" x-text="`Polsek: ${p.id_polsek}`"></div>
+                                                                </div>
+                                                                <div class="text-xs font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md" x-text="p.luas_lahan + ' Ha'"></div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template x-if="query.length > 0 && !exactMatchExists()">
+                                                    <div @click="selectNew()" class="px-4 py-3 hover:bg-emerald-50 cursor-pointer rounded-lg border border-dashed border-emerald-300 bg-emerald-50/50 flex items-center gap-3">
+                                                        <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">+</div>
+                                                        <div>
+                                                            <div class="font-bold text-emerald-700 text-sm">Buat Poktan Baru</div>
+                                                            <div class="text-[10px] font-medium text-emerald-600" x-text="`Simpan '${query}' ke database`"></div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <p class="text-[9px] text-slate-400 font-medium leading-tight pt-1">Pilih dari database atau buat baru otomatis</p>
+                                        </div>
+                                        <div
+                                            class="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm space-y-3">
+                                            <label
+                                                class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest text-center block">Luas
+                                                Lahan (HA)</label>
+                                            <input type="number" step="0.01" x-model="formData.luas"
+                                                class="w-full text-center text-xl font-bold bg-white border-none rounded-lg h-12 text-emerald-700 focus:ring-2 focus:ring-emerald-200"
+                                                placeholder="0.00">
+                                            <p
+                                                class="text-[9px] text-emerald-500 text-center font-medium leading-tight tracking-tighter">
+                                                Luas total area dalam Hektar</p>
+                                        </div>
+                                        <div class="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3">
+                                            <label
+                                                class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center block">Jml.
+                                                Petani</label>
+                                            <input type="number" x-model="formData.jml_petani"
+                                                class="w-full text-center text-xl font-bold bg-slate-50 border-none rounded-lg h-12 focus:ring-0"
+                                                placeholder="0">
+                                            <p class="text-[9px] text-slate-400 text-center font-medium leading-tight">Total
+                                                anggota petani aktif</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs font-semibold text-slate-600 ml-1">Komoditi Utama</label>
+                                        <select x-model="formData.komoditi"
+                                            class="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-600 transition-all">
+                                            <option value="">PILIH KOMODITI</option>
+                                            @foreach($komoditiList as $km)
+                                            <option value="{{ $km->id_komoditi }}">{{ $km->jenis_komoditi }} - {{ $km->nama_komoditi }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+
+
                                 {{-- RIGHT COLUMN: Visuals (Peta & Dokumentasi) --}}
                                 <div
-                                    x-show="currentStep === 4"
+                                    x-show="currentStep === 3"
                                     class="flex-col w-full lg:w-[650px] xl:w-[700px] bg-slate-50/50 md:border-l border-t md:border-t-0 border-slate-100 overflow-y-auto shrink-0 flex">
                                     <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {{-- Map Section --}}
@@ -1679,6 +1701,9 @@
     <script id="data-tingkat-wilayah" type="application/json">
         <?php echo json_encode($tingkatWilayahList ?? []); ?>
     </script>
+    <script id="data-poktan" type="application/json">
+        <?php echo json_encode($poktanList ?? []); ?>
+    </script>
     <script id="data-desa" type="application/json">
         <?php echo json_encode($desaList ?? []); ?>
     </script>
@@ -1752,6 +1777,74 @@
                             id: anggota.id_anggota
                         });
                     }
+                }
+            };
+        }
+        const poktanData = JSON.parse(document.getElementById('data-poktan').textContent || '[]');
+        function searchPoktan() {
+            return {
+                allPoktan: poktanData,
+                query: '',
+                filtered: [],
+                showDropdown: false,
+                init() {
+                    // Pre-fill if editing
+                    this.$watch('formData.jml_poktan', (val) => {
+                        if (val && this.query === '') {
+                            this.query = val;
+                        }
+                    });
+                },
+                onInput() {
+                    const q = this.query.toLowerCase().trim();
+                    if (q.length < 1) {
+                        this.filtered = [];
+                        return;
+                    }
+
+                    // Filter by id_sektor if available
+                    let currentIdSektor = '';
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            currentIdSektor = d.formData.id_sektor || '';
+                        }
+                    });
+
+                    this.filtered = this.allPoktan
+                        .filter(p => p.nama_poktan && p.nama_poktan.toLowerCase().includes(q))
+                        .slice(0, 15);
+                    this.showDropdown = true;
+                    
+                    // Update form data (will be saved as text/new if not selected from list)
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            d.formData.jml_poktan = this.query; // Treat jml_poktan as nama poktan for backwards compatibility
+                            d.formData.id_poktan = ''; // Reset ID if typing custom
+                        }
+                    });
+                },
+                select(poktan) {
+                    this.query = poktan.nama_poktan;
+                    this.showDropdown = false;
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            d.formData.jml_poktan = poktan.nama_poktan;
+                            d.formData.id_poktan = 'new'; // Selalu buat id_poktan baru meski nama sama
+                            // Tidak auto-fill luas agar user bisa isi luas masing-masing daerah
+                        }
+                    });
+                },
+                selectNew() {
+                    this.showDropdown = false;
+                    this.$root._x_dataStack?.forEach(d => {
+                        if (d.formData) {
+                            d.formData.jml_poktan = this.query;
+                            d.formData.id_poktan = 'new'; 
+                        }
+                    });
+                },
+                exactMatchExists() {
+                    return this.filtered.some(p => p.nama_poktan && p.nama_poktan.toLowerCase() === this.query.toLowerCase().trim());
                 }
             };
         }
@@ -2052,6 +2145,7 @@
                             alamat: item.alamat_lahan || '',
                             keterangan_lain: item.ket_polisi || '',
                             jml_poktan: item.poktan || '',
+                            id_poktan: item.id_poktan || '',
                             jml_petani: item.jml_petani || '',
                             komoditi: String(item.id_komoditi || ''),
                             lat: item.latitude || '',
@@ -2155,6 +2249,7 @@
                         fd.append('alamat_lahan', this.formData.alamat);
                         fd.append('keterangan_lain', this.formData.keterangan_lain);
                         fd.append('jml_poktan', this.formData.jml_poktan);
+                        fd.append('id_poktan', this.formData.id_poktan || '');
                         fd.append('jml_petani', this.formData.jml_petani);
                         fd.append('id_komoditi', this.formData.komoditi);
 

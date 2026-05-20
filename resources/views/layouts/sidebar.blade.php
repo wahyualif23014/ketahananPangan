@@ -221,13 +221,16 @@ default => ['label' => 'Anggota Satgas', 'bg' => 'bg-slate-500/10', 'text' => 't
                     @php
                     $potensiRoute = $userRole === 'operator' ? 'operator.kelola-lahan.potensi.index' : 'admin.kelola-lahan.potensi.index';
                     $daftarRoute = $userRole === 'operator' ? 'operator.kelola-lahan.daftar.index' : 'admin.kelola-lahan.daftar.index';
+                    $poktanRoute = $userRole === 'operator' ? 'operator.kelola-lahan.poktan.index' : 'admin.kelola-lahan.poktan.index';
                     $riwayatRoute = $userRole === 'operator' ? 'operator.kelola-lahan.riwayat.index' : 'admin.kelola-lahan.riwayat.index';
                     $potensiActive = $userRole === 'operator' ? 'operator.kelola-lahan.potensi.*' : 'admin.kelola-lahan.potensi.*';
                     $daftarActive = $userRole === 'operator' ? 'operator.kelola-lahan.daftar.*' : 'admin.kelola-lahan.daftar.*';
+                    $poktanActive = $userRole === 'operator' ? 'operator.kelola-lahan.poktan.*' : 'admin.kelola-lahan.poktan.*';
                     $riwayatActive = $userRole === 'operator' ? 'operator.kelola-lahan.riwayat.*' : 'admin.kelola-lahan.riwayat.*';
                     @endphp
                     <a href="{{ route($potensiRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($potensiActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Kelola Potensi</a>
                     <a href="{{ route($daftarRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($daftarActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Kelola Lahan</a>
+                    <a href="{{ route($poktanRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($poktanActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Data Poktan</a>
                     <a href="{{ route($riwayatRoute) }}" class="block py-2 pl-3 text-[12px] font-medium rounded-lg transition-colors {{ request()->routeIs($riwayatActive) ? 'text-emerald-400 bg-emerald-400/5' : 'text-[#9CA3AF] hover:text-[#E5E7EB] hover:bg-white/5' }}">Riwayat Lahan</a>
                     @endif
                 </div>

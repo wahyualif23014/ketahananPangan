@@ -92,6 +92,16 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
             </button>
+            <button type="button" @click="modalJadwalPanen = true" title="Jadwal Panen Mendatang"
+                class="flex items-center gap-2 px-4 py-3.5 bg-amber-500/20 text-amber-600 rounded-2xl shadow-xl border border-amber-300/40 hover:bg-amber-500 hover:text-white transition-all duration-300 active:scale-95 text-[10px] font-black uppercase tracking-widest flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="hidden sm:inline">Jadwal Panen</span>
+                @if(isset($upcomingHarvests) && $upcomingHarvests->count() > 0)
+                <span class="w-5 h-5 bg-amber-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">{{ min($upcomingHarvests->count(), 9) }}</span>
+                @endif
+            </button>
         </div>
     </div>
 
@@ -306,7 +316,12 @@
                                 'lokasi' => $detail->total_lokasi
                             ];
                         }
-                        return null;
+                        return [
+                            'id' => $id,
+                            'name' => $name,
+                            'luas' => '0.00',
+                            'lokasi' => 0
+                        ];
                     })->filter()->values()
                 ]
             ];
@@ -378,6 +393,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
                     Refresh
+                </button>
+                <button type="button" @click="modalJadwalPanen = true" title="Jadwal Panen Mendatang"
+                    class="flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-white border border-amber-500/30 hover:border-amber-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95 shadow-sm group">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Jadwal Panen
                 </button>
                 <span class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-xl text-[10px] font-black uppercase tracking-widest">
                     <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
@@ -475,16 +497,24 @@
                                                 @endif
                                                 </div>
                                                 @if(!$row->tanam_valid_oleh)
-                                                @if(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
-                                                <div class="flex flex-col gap-1 w-full mt-1">
-                                                    <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" class="m-0">
-                                                        @csrf @method('PUT')
-                                                        <button class="px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
-                                                    </form>
-                                                </div>
-                                                @endif
+                                                    @if($row->tanam_alasan_tolak)
+                                                        <div class="flex flex-col gap-1 group relative mt-1">
+                                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
+                                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->tanam_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                                        </div>
+                                                    @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                        <div class="flex flex-col gap-1 w-full mt-1">
+                                                            <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" class="m-0">
+                                                                @csrf @method('PUT')
+                                                                <button class="px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                                            </form>
+                                                            <button @click="submitTolakDirect('{{ $row->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
+                                                    @endif
                                                 @else
-                                                <span class="text-[9px] font-black text-emerald-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                                    <span class="text-[9px] font-black text-emerald-500 tracking-tight mt-1">✅ Tervalidasi</span>
                                                 @endif
                                             </div>
                                         @else
@@ -510,16 +540,24 @@
                                                 @endif
                                                 </div>
                                                 @if(!$row->panen_valid_oleh)
-                                                @if(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
-                                                <div class="flex flex-col gap-1 w-full mt-1">
-                                                    <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" class="m-0">
-                                                        @csrf @method('PUT')
-                                                        <button class="px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
-                                                    </form>
-                                                </div>
-                                                @endif
+                                                    @if($row->panen_alasan_tolak)
+                                                        <div class="flex flex-col gap-1 group relative mt-1">
+                                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
+                                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->panen_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                                        </div>
+                                                    @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                        <div class="flex flex-col gap-1 w-full mt-1">
+                                                            <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" class="m-0">
+                                                                @csrf @method('PUT')
+                                                                <button class="px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                                            </form>
+                                                            <button @click="submitTolakDirect('{{ $row->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
+                                                    @endif
                                                 @else
-                                                <span class="text-[9px] font-black text-amber-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                                    <span class="text-[9px] font-black text-amber-500 tracking-tight mt-1">✅ Tervalidasi</span>
                                                 @endif
                                             </div>
                                         @else
@@ -542,16 +580,24 @@
                                                 @endif
                                                 </div>
                                                 @if(!$row->serapan_valid_oleh)
-                                                @if(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
-                                                <div class="flex flex-col gap-1 w-full mt-1">
-                                                    <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" class="m-0">
-                                                        @csrf @method('PUT')
-                                                        <button class="px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
-                                                    </form>
-                                                </div>
-                                                @endif
+                                                    @if($row->serapan_alasan_tolak)
+                                                        <div class="flex flex-col gap-1 group relative mt-1">
+                                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
+                                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->serapan_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                                        </div>
+                                                    @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                        <div class="flex flex-col gap-1 w-full mt-1">
+                                                            <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" class="m-0">
+                                                                @csrf @method('PUT')
+                                                                <button class="px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                                            </form>
+                                                            <button @click="submitTolakDirect('{{ $row->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
+                                                    @endif
                                                 @else
-                                                <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
+                                                    <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1">✅ Tervalidasi</span>
                                                 @endif
                                             </div>
                                         @else
@@ -651,9 +697,7 @@
                                     <td class="px-4 py-6 text-right">
                                         <div class="flex flex-col items-end gap-1.5">
 
-                                            <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=view'" title="Detail Lahan" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all shadow-sm">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                            </button>
+                                            <!-- Detail Lahan Button Removed -->
                                             @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                             <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=edit'" title="Edit Lahan" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-lg transition-all shadow-sm">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -715,9 +759,11 @@
                                                                         @php
                                                                             $canSelesai = !is_null($tanam->valid_oleh) && 
                                                                                           $tanam->panens->count() > 0 && 
-                                                                                          $tanam->panens->every(fn($p) => !is_null($p->valid_oleh)) && 
-                                                                                          $tanam->distribusis->count() > 0 && 
-                                                                                          $tanam->distribusis->every(fn($s) => !is_null($s->valid_oleh));
+                                                                                          $tanam->panens->every(fn($p) => !is_null($p->valid_oleh)) &&
+                                                                                          $tanam->panens->every(fn($p) => 
+                                                                                              isset($p->distribusis) && $p->distribusis->count() > 0 && 
+                                                                                              $p->distribusis->every(fn($s) => !is_null($s->valid_oleh))
+                                                                                          );
                                                                         @endphp
                                                                         @if(auth()->user()->role === 'admin' && $canSelesai)
                                                                         <form action="{{ route('admin.kelola-lahan.tanam.selesai', $tanam->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Selesaikan siklus ini? Data akan diarsipkan ke Riwayat Lahan.');">
@@ -726,7 +772,7 @@
                                                                         </form>
                                                                         @endif
                                                                         @if(auth()->user()->role === 'admin' && !is_null($tanam->id_tanam))
-                                                                        <button @click="openTolakModal('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg> Tolak Siklus</button>
+                                                                        <button @click="submitTolakDirect('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg> Tolak Siklus</button>
                                                                         @endif
                                                                         @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                                                             @if(is_null($tanam->valid_oleh))
@@ -751,108 +797,100 @@
                                                                         <button @click='deleteTanam("{{ $tanam->id_tanam }}")' class="px-2.5 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Hapus</button>
                                                                         @if(!is_null($tanam->valid_oleh))
                                                                         <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20 ml-2">+ Panen</button>
-                                                                        <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-blue-600 transition-all shadow-sm shadow-blue-500/20">+ Serapan</button>
                                                                         @endif
                                                                         @endif
                                                                     </div>
                                                                 </div>
 
-                                                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                                    {{-- PANEN COLUMN --}}
-                                                                    <div>
-                                                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Riwayat Panen
-                                                                        </h5>
-                                                                        @if($tanam->panens->isEmpty())
-                                                                            <div class="p-3 bg-white rounded-lg border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 italic">Belum ada panen</div>
-                                                                        @else
-                                                                            <div class="space-y-2.5">
-                                                                                @foreach($tanam->panens as $panen)
-                                                                                <div class="bg-white rounded-lg border border-amber-100 p-3 flex justify-between items-center shadow-sm hover:border-amber-300 transition-colors">
+                                                                <div class="mt-6">
+                                                                    <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Riwayat Panen & Serapan
+                                                                    </h5>
+                                                                    @if($tanam->panens->isEmpty())
+                                                                        <div class="p-3 bg-white rounded-lg border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 italic">Belum ada panen</div>
+                                                                    @else
+                                                                        <div class="space-y-4">
+                                                                            @foreach($tanam->panens as $panen)
+                                                                            <div class="bg-white rounded-xl border border-amber-100 shadow-sm overflow-hidden">
+                                                                                <div class="p-4 bg-amber-50/30 flex justify-between items-start border-b border-amber-100">
                                                                                     <div>
                                                                                         <div class="flex items-center gap-1.5 mb-1">
                                                                                             <span class="text-[10px] font-bold text-slate-500">{{ \Carbon\Carbon::parse($panen->tgl_panen)->format('d M Y') }}</span>
                                                                                             <span class="text-[8px] font-black text-white bg-amber-500 px-1.5 py-0.5 rounded">{{ $panen->status_panen == 1 ? 'NORMAL' : ($panen->status_panen == 2 ? 'GAGAL' : ($panen->status_panen == 3 ? 'DINI' : 'TEBASAN')) }}</span>
                                                                                         </div>
-                                                                                        <p class="text-xs font-black text-slate-800">{{ number_format($panen->total_panen, 2) }} TON <span class="text-[9px] font-bold text-slate-400 ml-1">dari {{ number_format($panen->luas_panen, 2) }} HA</span></p>
+                                                                                        <p class="text-sm font-black text-slate-800">{{ number_format($panen->luas_panen, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-1">dari {{ number_format($panen->total_panen, 2) }} TON</span></p>
                                                                                     </div>
-                                                                                    <div class="flex flex-col gap-1">
+                                                                                    <div class="flex items-center gap-2">
                                                                                         @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
-                                                                                        @if(is_null($panen->valid_oleh))
-                                                                                            @if($panen->alasan_tolak)
-                                                                                                {{-- DITOLAK: badge saja --}}
-                                                                                                <div class="group relative w-full mb-1">
-                                                                                                    <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
-                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ $panen->alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
-                                                                                                </div>
+                                                                                            @if(is_null($panen->valid_oleh))
+                                                                                                @if($panen->alasan_tolak)
+                                                                                                    <div class="group relative">
+                                                                                                        <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase flex items-center cursor-help">❌ Ditolak</span>
+                                                                                                        <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $panen->alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
+                                                                                                    </div>
+                                                                                                @else
+                                                                                                    <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
+                                                                                                    <button @click="submitTolakDirect('{{ $panen->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                                                                                @endif
                                                                                             @else
-                                                                                                {{-- BELUM VALIDASI: Validasi + Tolak --}}
-                                                                                                <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                                
+                                                                                                <form action="{{ route($routePrefix.'.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-amber-500 text-white rounded text-[9px] font-black uppercase hover:bg-amber-600 transition-colors flex items-center gap-1">Unvalidasi</button></form>
                                                                                             @endif
-                                                                                        @else
-                                                                                            {{-- TERVALIDASI: Unvalidasi saja --}}
-                                                                                            <form action="{{ route($routePrefix.'.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-amber-600 transition-colors flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Unvalidasi</button></form>
-                                                                                        @endif
                                                                                         @endif
                                                                                         @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                                                                        <button @click='editPanen("{{ $panen->id_panen }}", @json(array_merge((array)$row, (array)$tanam, (array)$panen)))' class="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[8px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors">Edit</button>
-                                                                                        <button @click='deletePanen("{{ $panen->id_panen }}")' class="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Del</button>
+                                                                                            <button @click='editPanen("{{ $panen->id_panen }}", @json(array_merge((array)$row, (array)$tanam, (array)$panen)))' class="px-2 py-1 bg-white text-amber-600 border border-amber-200 rounded text-[9px] font-black uppercase hover:bg-amber-50 transition-colors">Edit</button>
+                                                                                            <button @click='deletePanen("{{ $panen->id_panen }}")' class="px-2 py-1 bg-white text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase hover:bg-rose-50 transition-colors">Hapus</button>
+                                                                                            @if(!is_null($panen->valid_oleh))
+                                                                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2, "{{ $tanam->id_tanam }}", "{{ $panen->id_panen }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 shadow-sm ml-2">+ Serapan</button>
+                                                                                            @endif
                                                                                         @endif
                                                                                     </div>
                                                                                 </div>
-                                                                                @endforeach
-                                                                            </div>
-                                                                        @endif
-                                                                    </div>
-
-                                                                    {{-- SERAPAN COLUMN --}}
-                                                                    <div>
-                                                                        <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Riwayat Serapan
-                                                                        </h5>
-                                                                        @if($tanam->distribusis->isEmpty())
-                                                                            <div class="p-3 bg-white rounded-lg border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 italic">Belum ada serapan</div>
-                                                                        @else
-                                                                            <div class="space-y-2.5">
-                                                                                @foreach($tanam->distribusis as $distribusi)
-                                                                                <div class="bg-white rounded-lg border border-blue-100 p-3 flex justify-between items-center shadow-sm hover:border-blue-300 transition-colors">
-                                                                                    <div>
-                                                                                        <div class="flex items-center gap-1.5 mb-1">
-                                                                                            <span class="text-[10px] font-bold text-slate-500">{{ \Carbon\Carbon::parse($distribusi->tgl_distribusi)->format('d M Y') }}</span>
-                                                                                            <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{{ $distribusi->distribusi_ke == 1 ? 'BULOG' : ($distribusi->distribusi_ke == 2 ? 'PABRIK' : ($distribusi->distribusi_ke == 3 ? 'TENGKULAK' : 'KONSUMSI')) }}</span>
+                                                                                
+                                                                                {{-- Daftar Serapan --}}
+                                                                                <div class="p-4 bg-white">
+                                                                                    @if($panen->distribusis->isEmpty())
+                                                                                        <div class="text-center text-[10px] font-bold text-slate-400 italic">Belum ada serapan untuk panen ini</div>
+                                                                                    @else
+                                                                                        <div class="space-y-2">
+                                                                                            @foreach($panen->distribusis as $distribusi)
+                                                                                            <div class="bg-slate-50 rounded-lg border border-slate-100 p-3 flex justify-between items-center">
+                                                                                                <div>
+                                                                                                    <div class="flex items-center gap-1.5 mb-1">
+                                                                                                        <span class="text-[10px] font-bold text-slate-500">{{ \Carbon\Carbon::parse($distribusi->tgl_distribusi)->format('d M Y') }}</span>
+                                                                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">{{ $distribusi->distribusi_ke == 1 ? 'BULOG' : ($distribusi->distribusi_ke == 2 ? 'PABRIK' : ($distribusi->distribusi_ke == 3 ? 'TENGKULAK' : 'KONSUMSI')) }}</span>
+                                                                                                    </div>
+                                                                                                    <p class="text-[11px] font-black text-slate-800">{{ number_format($distribusi->total_distribusi, 2) }} TON</p>
+                                                                                                </div>
+                                                                                                <div class="flex items-center gap-2">
+                                                                                                    @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                                                                        @if(is_null($distribusi->valid_oleh))
+                                                                                                            @if($distribusi->alasan_tolak)
+                                                                                                                <div class="group relative">
+                                                                                                                    <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase flex items-center cursor-help">❌ Ditolak</span>
+                                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $distribusi->alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
+                                                                                                                </div>
+                                                                                                            @else
+                                                                                                                <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
+                                                                                                                <button @click="submitTolakDirect('{{ $distribusi->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                                                                                            @endif
+                                                                                                        @else
+                                                                                                            <form action="{{ route($routePrefix.'.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors flex items-center gap-1">Unvalidasi</button></form>
+                                                                                                        @endif
+                                                                                                    @endif
+                                                                                                    @if(in_array(auth()->user()->role, ['admin', 'operator']))
+                                                                                                        <button @click='editSerapan("{{ $distribusi->id_distribusi }}", @json(array_merge((array)$row, (array)$tanam, (array)$distribusi)))' class="px-2 py-1 bg-white text-blue-600 border border-blue-200 rounded text-[8px] font-black uppercase hover:bg-blue-50 transition-colors">Edit</button>
+                                                                                                        <button @click='deleteSerapan("{{ $distribusi->id_distribusi }}")' class="px-2 py-1 bg-white text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase hover:bg-rose-50 transition-colors">Del</button>
+                                                                                                    @endif
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            @endforeach
                                                                                         </div>
-                                                                                        <p class="text-xs font-black text-slate-800">{{ number_format($distribusi->total_distribusi, 2) }} TON</p>
-                                                                                    </div>
-                                                                                    <div class="flex flex-col gap-1">
-                                                                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
-                                                                                        @if(is_null($distribusi->valid_oleh))
-                                                                                            @if($distribusi->alasan_tolak)
-                                                                                                {{-- DITOLAK: badge saja --}}
-                                                                                                <div class="group relative w-full mb-1">
-                                                                                                    <span class="w-full px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[8px] font-black uppercase text-center block cursor-help">❌ Ditolak</span>
-                                                                                                    <div class="absolute bottom-full right-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[8px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold text-left whitespace-pre-wrap">{{ $distribusi->alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit kembali.</span></div>
-                                                                                                </div>
-                                                                                            @else
-                                                                                                {{-- BELUM VALIDASI: Validasi + Tolak --}}
-                                                                                                <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Validasi</button></form>
-                                                                                                
-                                                                                            @endif
-                                                                                        @else
-                                                                                            {{-- TERVALIDASI: Unvalidasi saja --}}
-                                                                                            <form action="{{ route($routePrefix.'.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Unvalidasi</button></form>
-                                                                                        @endif
-                                                                                        @endif
-                                                                                        @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                                                                        <button @click='editSerapan("{{ $distribusi->id_distribusi }}", @json(array_merge((array)$row, (array)$tanam, (array)$distribusi)))' class="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors">Edit</button>
-                                                                                        <button @click='deleteSerapan("{{ $distribusi->id_distribusi }}")' class="px-2 py-1 bg-rose-50 text-rose-600 rounded text-[8px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors">Del</button>
-                                                                                        @endif
-                                                                                    </div>
+                                                                                    @endif
                                                                                 </div>
-                                                                                @endforeach
                                                                             </div>
-                                                                        @endif
-                                                                    </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                    @endif
                                                                 </div>
 
                                                             </div>
@@ -952,6 +990,7 @@
             modalPanen: false,
             modalSerapan: false,
             modalValidasi: false,
+            modalJadwalPanen: false,
             validasiData: { tanam: [], panen: [], serapan: [], has_active: false },
             lahanStages: @json($lahanStagesMap ?? new stdClass()),
 
@@ -1018,28 +1057,10 @@
                 return Math.max(0, maxLahan - terpakai);
             },
 
-            openTolakModal(id, type, label) {
-                this.tolakModalData.type = type;
-                this.tolakModalData.lahanInfo = { nama_wilayah: label };
-                this.tolakModalData.alasan = '';
-                this.tolakModalData.targetReject = 'tanam';
-                this.tolakModalData.id = id;
-                this.tolakModalData.isOpen = true;
-            },
+            async submitTolakDirect(id, type) {
+                if (!confirm('Apakah Anda yakin ingin menolak data ini?')) return;
 
-            openDetailModal(type, data) {
-                this.detailModalData.type = type;
-                this.detailModalData.data = data;
-                this.detailModalData.isOpen = true;
-            },
-
-            async submitTolak() {
-                if (!this.tolakModalData.alasan.trim()) {
-                    $notify('error', 'Alasan Wajib Diisi', 'Harap masukkan alasan penolakan sebelum melanjutkan!');
-                    return;
-                }
-
-                const url = `{{ url('/') }}/${this.routeBase}/${this.tolakModalData.type}/${this.tolakModalData.id}/tolak`;
+                const url = `{{ url('/') }}/${this.routeBase}/${type}/${id}/tolak`;
 
                 try {
                     const response = await fetch(url, {
@@ -1050,14 +1071,12 @@
                             'Accept': 'application/json'
                         },
                         body: JSON.stringify({
-                            alasan: this.tolakModalData.alasan,
-                            target_reject: this.tolakModalData.targetReject
+                            target_reject: 'tanam'
                         })
                     });
                     const data = await response.json();
                     if (data.success) {
-                        this.tolakModalData.isOpen = false;
-                        $notify('success', 'Validasi Ditolak', data.message);
+                        $notify('success', 'Berhasil Ditolak', data.message);
                         setTimeout(() => window.location.reload(), 1500);
                     } else {
                         $notify('error', 'Gagal Menolak', data.message || 'Terjadi kesalahan.');
@@ -1068,10 +1087,12 @@
                 }
             },
 
-            openStageModal(id_lahan, rowData, forcedStage = null, targetTanamId = null) {
+
+            openStageModal(id_lahan, rowData, forcedStage = null, targetTanamId = null, targetPanenId = null) {
                 this.activeLahan = rowData;
                 this.isEditMode = false;
                 this.activeTanamId = targetTanamId;
+                this.activePanenId = targetPanenId;
                 const stage = forcedStage !== null ? forcedStage : this.lahanStages[id_lahan];
                 if (stage === 0) {
                     this.formTanam.luas_tanam = '';
@@ -1237,6 +1258,7 @@
                         body: JSON.stringify({
                             id_lahan: this.activeLahan.id_lahan,
                             id_tanam: this.activeTanamId,
+                            id_panen: this.activePanenId,
                             ...this.formSerapan
                         })
                     });
@@ -1687,7 +1709,7 @@
                                     <button type="submit" class="px-2 py-1 bg-emerald-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-emerald-600">Validasi</button>
                                 </form>
                                 <template x-if="validasiData.serapan.length > 0 || !validasiData.has_active">
-                                    <button type="button" @click="openTolakModal(t.id_tanam, 'tanam', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                    <button type="button" @click="submitTolakDirect(t.id_tanam, 'tanam', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                 </template>
                             </div>
                         </div>
@@ -1715,7 +1737,7 @@
                                     <button type="submit" class="px-2 py-1 bg-amber-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-amber-600">Validasi</button>
                                 </form>
                                 <template x-if="validasiData.serapan.length > 0 || !validasiData.has_active">
-                                    <button type="button" @click="openTolakModal(p.id_panen, 'panen', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                    <button type="button" @click="submitTolakDirect(p.id_panen, 'panen', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                                 </template>
                             </div>
                         </div>
@@ -1739,7 +1761,7 @@
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-blue-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-blue-600">Validasi</button>
                                 </form>
-                                <button type="button" @click="openTolakModal(s.id_distribusi, 'serapan', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
+                                <button type="button" @click="submitTolakDirect(s.id_distribusi, 'serapan', activeLahan?.nama_wilayah || activeLahan?.alamat_lahan)" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded shadow-sm text-[10px] font-bold hover:bg-rose-500 hover:text-white transition-colors">Tolak</button>
                             </div>
                         </div>
                     </template>
@@ -1832,28 +1854,148 @@
                                 <div class="text-[8px] font-bold text-slate-400 leading-tight">Reset seluruh siklus</div>
                             </div>
                         </label>
-                    </div>
-                    <p class="text-[9px] mt-2 font-bold leading-relaxed px-1"
-                       :class="tolakModalData.targetReject === 'tanam' ? 'text-rose-500' : (tolakModalData.targetReject === 'panen' ? 'text-amber-500' : (tolakModalData.targetReject === 'serapan' ? 'text-blue-500' : 'text-rose-700'))">
-                        <span x-show="tolakModalData.targetReject === 'tanam'">⚠️ Validasi Tanam, Panen, dan Serapan akan dihapus. Operator harus memperbaiki data Tanam dari awal.</span>
-                        <span x-show="tolakModalData.targetReject === 'panen'">⚠️ Validasi Panen dan Serapan akan dihapus. Tanam tetap tervalidasi, operator hanya perlu memperbaiki data Panen.</span>
-                        <span x-show="tolakModalData.targetReject === 'serapan'">⚠️ Hanya validasi Serapan yang dihapus. Tanam dan Panen tetap tervalidasi.</span>
-                        <span x-show="tolakModalData.targetReject === 'semua'">⚠️ Seluruh validasi siklus (Tanam, Panen, dan Serapan) akan dihapus. Operator harus mengisi ulang dari awal.</span>
-                    </p>
+{{-- Jadwal Panen Mendatang Modal --}}
+<div @keydown.escape.window="modalJadwalPanen = false"
+     x-show="modalJadwalPanen" 
+     style="display: none;"
+     class="fixed inset-0 z-[100] flex items-center justify-center">
+    
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+         x-show="modalJadwalPanen" 
+         x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+         x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         @click="modalJadwalPanen = false"></div>
+         
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col m-4 transform transition-all"
+         x-show="modalJadwalPanen" 
+         x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+         x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+         
+        {{-- Header --}}
+        <div class="px-7 py-5 bg-gradient-to-r from-amber-900 to-amber-800 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/30 flex items-center justify-center text-amber-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
                 </div>
-
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
-                    <textarea x-model="tolakModalData.alasan" rows="3" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none transition-all resize-none" placeholder="Tuliskan alasan spesifik kenapa data ditolak... (Minimal 10 karakter)"></textarea>
+                    <h3 class="text-sm font-black text-white uppercase tracking-[0.2em] leading-none">Jadwal Panen Mendatang</h3>
+                    <p class="text-[10px] font-bold text-amber-300 uppercase tracking-wider mt-1">Filter berdasarkan wilayah & waktu</p>
                 </div>
             </div>
-            <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
-                <button @click="tolakModalData.isOpen = false" class="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest">Batal</button>
-                <button @click="submitTolak()" :disabled="tolakModalData.alasan.length < 10" :class="tolakModalData.alasan.length < 10 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-rose-700 active:scale-95'" class="flex-[2] px-4 py-3 bg-rose-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-rose-600/20 transition-all">Konfirmasi Tolak</button>
-            </div>
+            <button @click="modalJadwalPanen = false" class="p-2 text-amber-200 hover:text-white hover:bg-amber-700/50 rounded-xl transition-all">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
+
+        {{-- Filter Form --}}
+        <form method="GET" action="{{ route($routePrefix.'.kelola-lahan.daftar.index') }}" class="px-7 py-4 bg-amber-50/50 border-b border-amber-100 flex flex-wrap items-end gap-3 shrink-0">
+            @foreach(request()->except(['panen_bulan','panen_tahun','panen_resor','panen_start','panen_end']) as $k => $v)
+                @if($v)<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif
+            @endforeach
+
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">WILAYAH / POLRES</label>
+                <select name="panen_resor" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all uppercase cursor-pointer shadow-sm">
+                    <option value="">SEMUA WILAYAH</option>
+                    @foreach($polresForHarvest as $pr)
+                        <option value="{{ $pr->id_tingkat }}" {{ ($harvestFilters['resor'] ?? '') == $pr->id_tingkat ? 'selected' : '' }}>
+                            {{ $pr->nama_tingkat }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="w-32">
+                <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">MULAI</label>
+                <input type="date" name="panen_start" value="{{ $harvestFilters['panen_start'] ?? '' }}" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
+            </div>
+
+            <div class="w-32">
+                <label class="block text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-1.5">SAMPAI</label>
+                <input type="date" name="panen_end" value="{{ $harvestFilters['panen_end'] ?? '' }}" class="w-full h-10 text-[10px] font-black px-3 bg-white text-slate-700 border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all cursor-pointer shadow-sm">
+            </div>
+
+            <button type="submit" class="h-10 px-5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-amber-600 transition-all shadow-md shadow-amber-500/20 flex items-center gap-2 flex-shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                Filter
+            </button>
+            
+            <a href="{{ route($routePrefix.'.kelola-lahan.daftar.index') }}" class="h-10 px-4 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase hover:bg-slate-200 transition-all flex items-center justify-center">
+                Reset
+            </a>
+        </form>
+
+        {{-- Table Content --}}
+        <div class="overflow-auto custom-scrollbar flex-1 p-0">
+            @if($upcomingHarvests->isEmpty())
+                <div class="flex flex-col items-center justify-center py-20 text-center px-6">
+                    <div class="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center mb-5 border border-amber-100">
+                        <svg class="w-10 h-10 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-black text-slate-400 uppercase tracking-widest">Tidak Ada Jadwal Panen</p>
+                    <p class="text-xs font-bold text-slate-300 mt-2">Coba ubah filter wilayah atau rentang waktu</p>
+                </div>
+            @else
+                <table class="w-full text-left min-w-[600px]">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-amber-50/90 backdrop-blur-sm border-b border-amber-100">
+                            <th class="px-6 py-4 text-[10px] font-black text-amber-700 uppercase tracking-[0.2em]">WILAYAH / POLSEK</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-amber-700 uppercase tracking-[0.2em]">LAHAN / POKTAN</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-amber-700 uppercase tracking-[0.2em]">LUAS TANAM</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-amber-700 uppercase tracking-[0.2em]">EST. PANEN</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-amber-700 uppercase tracking-[0.2em]">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-amber-50">
+                        @foreach($upcomingHarvests as $harvest)
+                            @php
+                                $estAwal  = \Carbon\Carbon::parse($harvest->est_awal_panen);
+                                $estAkhir = \Carbon\Carbon::parse($harvest->est_akhir_panen ?? $harvest->est_awal_panen);
+                                $now      = \Carbon\Carbon::now();
+                                $daysLeft = $now->diffInDays($estAwal, false);
+                                if ($daysLeft > 30)      { $urgencyClass = 'text-slate-500'; $urgencyBg = 'bg-slate-50 border-slate-200'; $urgencyLabel = 'Jauh'; }
+                                elseif ($daysLeft > 7)   { $urgencyClass = 'text-amber-600'; $urgencyBg = 'bg-amber-50 border-amber-200'; $urgencyLabel = $daysLeft . ' Hari'; }
+                                elseif ($daysLeft >= 0)  { $urgencyClass = 'text-rose-600';  $urgencyBg = 'bg-rose-50 border-rose-200';  $urgencyLabel = $daysLeft . ' Hari!'; }
+                                else                     { $urgencyClass = 'text-emerald-600'; $urgencyBg = 'bg-emerald-50 border-emerald-200'; $urgencyLabel = 'Melewati Est.'; }
+                            @endphp
+                            <tr class="hover:bg-amber-50/50 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <p class="text-xs font-black text-slate-800 uppercase tracking-tight mb-0.5">{{ $harvest->nama_wilayah ?? '-' }}</p>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">{{ str_replace('POLSEK ', '', $harvest->nama_tingkat) }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-xs font-black text-slate-700 uppercase mb-0.5">{{ $harvest->poktan ?? $harvest->alamat_lahan ?? '-' }}</p>
+                                    <p class="text-[10px] font-bold text-slate-400">ID Lahan: {{ $harvest->id_lahan }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-100 shadow-sm inline-block">
+                                        {{ number_format($harvest->luas_tanam, 2) }} HA
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-xs font-black text-slate-700 mb-0.5">{{ $estAwal->format('d M Y') }}</p>
+                                    @if($estAwal->format('Y-m-d') !== $estAkhir->format('Y-m-d'))
+                                        <p class="text-[10px] font-bold text-slate-400">s/d {{ $estAkhir->format('d M Y') }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest shadow-sm inline-flex items-center justify-center min-w-[80px] {{ $urgencyBg }} {{ $urgencyClass }}">
+                                        {{ $urgencyLabel }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    </div>
 </div>
-
-</div>{{-- END x-data="kelolaLahan()" --}}
-
+{{-- END x-data="kelolaLahan()" --}}
 @endsection
