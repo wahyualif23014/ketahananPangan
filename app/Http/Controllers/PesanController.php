@@ -70,7 +70,7 @@ class PesanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'recipient_id' => 'required',
+            'recipient_id' => 'required|string',
             'judul' => 'nullable|string|max:255',
             'isi_pesan' => 'required|string'
         ]);
@@ -185,6 +185,10 @@ class PesanController extends Controller
 
     public function destroyMultiple(Request $request)
     {
+        $request->validate([
+            'ids' => 'required|array'
+        ]);
+
         $ids = $request->input('ids', []);
         $userId = Auth::user()->id_anggota;
         

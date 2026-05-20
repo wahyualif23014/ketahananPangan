@@ -17,7 +17,7 @@ class AnggotaController extends Controller
     {
         $search = $request->input('search', '');
 
-        $query = Anggota::with('jabatan')->orderBy('nama_anggota');
+        $query = Anggota::with('jabatan')->where('deletestatus', '2')->orderBy('nama_anggota');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -30,7 +30,7 @@ class AnggotaController extends Controller
             });
         }
 
-        $personels = $query->paginate(250)->appends(['search' => $search]);
+        $personels = $query->get();
         $jabatans = Jabatan::where('deletestatus', '2')->get();
         $tingkatList = DB::table('tingkat')->orderBy('id_tingkat')->get(['id_tingkat', 'nama_tingkat']);
         $tingkatMap = $tingkatList->keyBy('id_tingkat');
@@ -139,7 +139,7 @@ class AnggotaController extends Controller
             'data_lama'   => ['id_anggota'=>$anggota->id_anggota,'nama_anggota'=>$anggota->nama_anggota,'username'=>$anggota->username,'role'=>$anggota->role],
             'keterangan'  => 'Hapus data personel: ' . $anggota->nama_anggota . ' (ID #' . $id_anggota . ')',
         ]);
-        $anggota->delete();
+        $anggota->update(['deletestatus' => '1']);
 
         return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil dihapus.');
     }

@@ -28,7 +28,7 @@ class CheckRole
             return redirect()->route('login')->with('error', 'Akun Anda telah dinonaktifkan.');
         }
 
-        if ($request->user()->role === 'admin' || in_array($request->user()->role, $roles)) {
+        if (in_array($request->user()->role, $roles)) {
             return $next($request);
         }
         if ($request->expectsJson()) {
