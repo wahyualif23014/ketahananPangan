@@ -20,6 +20,15 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <!-- NProgress for smooth page transitions -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
+    <script>
+        // Start progress bar as soon as the head parses
+        NProgress.configure({ showSpinner: false, minimum: 0.1, speed: 400 });
+        NProgress.start();
+    </script>
+
     <style>
         [x-cloak] {
             display: none !important;
@@ -108,6 +117,40 @@
 
             .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                 background: #374151;
+            }
+        }
+
+        /* NProgress custom color */
+        #nprogress .bar {
+            background: #10b981 !important; /* emerald-500 */
+            height: 3px !important;
+        }
+        #nprogress .peg {
+            box-shadow: 0 0 10px #10b981, 0 0 5px #10b981 !important;
+        }
+        #nprogress .spinner-icon {
+            border-top-color: #10b981 !important;
+            border-left-color: #10b981 !important;
+        }
+
+        /* Smooth Page Transition */
+        .page-transition-enter {
+            animation: fadeInPage 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .page-transition-leave {
+            opacity: 0.5;
+            transform: scale(0.995);
+            pointer-events: none;
+            transition: all 0.3s ease-in-out;
+        }
+        @keyframes fadeInPage {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
@@ -201,7 +244,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+            <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar page-transition-enter">
                 <div class="max-w-[1600px] mx-auto">
                     @yield('content')
                 </div>
@@ -571,6 +614,39 @@
             });
             return false;
         }
+    </script>
+
+    <!-- Global Page Loader & Transitions Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            NProgress.done();
+        });
+
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (!link) return;
+            
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript') || link.getAttribute('target') === '_blank') return;
+            
+            if (link.hasAttribute('download') || link.origin !== window.location.origin) return;
+
+            if (link.pathname === window.location.pathname && link.search === window.location.search) return;
+
+            NProgress.start();
+            document.getElementById('main-content')?.classList.add('page-transition-leave');
+        });
+
+        document.addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return;
+            NProgress.start();
+            document.getElementById('main-content')?.classList.add('page-transition-leave');
+        });
+
+        window.addEventListener('pageshow', function(e) {
+            NProgress.done();
+            document.getElementById('main-content')?.classList.remove('page-transition-leave');
+        });
     </script>
 
 </body>
