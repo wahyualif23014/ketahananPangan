@@ -1757,9 +1757,9 @@ $isPolres = auth()->user()->role === 'admin' ||
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Panen</label>
                         <input type="date" x-model="formPanen.tgl_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
                     </div>
-                    <div class="col-span-1" x-effect="if(formPanen.status_panen == 2) { formPanen.luas_panen = 0; }">
+                    <div class="col-span-1">
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Luas Panen (Ha)</label>
-                        <input type="number" step="0.01" x-model="formPanen.luas_panen" :disabled="formPanen.status_panen == 2" :class="formPanen.status_panen == 2 ? 'opacity-50 bg-slate-200 cursor-not-allowed' : 'bg-slate-50 focus:ring-amber-500/10 focus:border-amber-500'" class="w-full text-xs font-bold border border-slate-200 rounded-xl px-4 py-3.5 outline-none transition-all focus:ring-4">
+                        <input type="number" step="0.01" x-model="formPanen.luas_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
                     </div>
                     <div class="col-span-1" x-effect="if(formPanen.status_panen == 2) { formPanen.total_panen = 0; }">
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Hasil (Ton)</label>
