@@ -54,7 +54,7 @@ class KomoditiController extends Controller
             'keterangan'  => 'Tambah komoditi baru: ' . $request->nama_komoditi . ' (kategori: ' . $request->jenis_komoditi . ')',
         ]);
 
-        return redirect()->route('admin.komoditi.index')->with('success', 'Komoditi berhasil ditambahkan!');
+        return redirect()->back()->with('success', 'Komoditi berhasil ditambahkan!');
     }
 
     public function update(Request $request)
@@ -83,7 +83,7 @@ class KomoditiController extends Controller
             'keterangan'  => 'Edit komoditi #' . $request->id_komoditi . ': ' . $request->nama_komoditi,
         ]);
 
-        return redirect()->route('admin.komoditi.index')->with('success', 'Data Komoditi berhasil diperbarui!');
+        return redirect()->back()->with('success', 'Data Komoditi berhasil diperbarui!');
     }
 
     public function destroy(Request $request)
@@ -108,7 +108,7 @@ class KomoditiController extends Controller
                 'keterangan'  => 'Hapus komoditi: ' . ($old ? $old->nama_komoditi : '#' . $request->id_komoditi),
             ]);
 
-            return redirect()->route('admin.komoditi.index')->with('success', 'Data Komoditi berhasil dihapus!');
+            return redirect()->back()->with('success', 'Data Komoditi berhasil dihapus!');
         } elseif ($request->filled('jenis_komoditi')) {
             // Soft delete entire jenis komoditi
             $items = DB::table('komoditi')->where('jenis_komoditi', $request->jenis_komoditi)->where('deletestatus', '!=', '0')->get();
@@ -126,7 +126,7 @@ class KomoditiController extends Controller
                 ]);
             }
 
-            return redirect()->route('admin.komoditi.index')->with('success', 'Kategori Komoditi beserta isinya berhasil dihapus!');
+            return redirect()->back()->with('success', 'Kategori Komoditi beserta isinya berhasil dihapus!');
         }
 
         return redirect()->back()->with('error', 'Gagal menghapus data: ID atau Jenis Komoditi tidak valid.');

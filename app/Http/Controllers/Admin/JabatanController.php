@@ -58,7 +58,7 @@ class JabatanController extends Controller
                 Log::warning('AktivitasLog gagal (restore jabatan): ' . $e->getMessage());
             }
 
-            return redirect()->route('admin.jabatan.index')->with('success', 'Data Jabatan (yang sebelumnya terhapus) berhasil dipulihkan dan diperbarui');
+            return redirect()->back()->with('success', 'Data Jabatan (yang sebelumnya terhapus) berhasil dipulihkan dan diperbarui');
         }
 
         // Jika benar-benar baru
@@ -80,7 +80,7 @@ class JabatanController extends Controller
             Log::warning('AktivitasLog gagal (store jabatan): ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.jabatan.index')->with('success', 'Data Jabatan berhasil ditambahkan');
+        return redirect()->back()->with('success', 'Data Jabatan berhasil ditambahkan');
     }
 
     public function update(Request $request, $id)
@@ -107,7 +107,7 @@ class JabatanController extends Controller
             Log::warning('AktivitasLog gagal (update jabatan): ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.jabatan.index')->with('success', 'Data Jabatan berhasil diperbarui');
+        return redirect()->back()->with('success', 'Data Jabatan berhasil diperbarui');
     }
 
     public function destroy($id)
@@ -128,6 +128,6 @@ class JabatanController extends Controller
         $jabatan->deletestatus = '1'; // ENUM('1','2'): '1' = soft-deleted, '2' = active
         $jabatan->save();
 
-        return redirect()->route('admin.jabatan.index')->with('success', 'Data Jabatan berhasil dihapus');
+        return redirect()->back()->with('success', 'Data Jabatan berhasil dihapus');
     }
 }

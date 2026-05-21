@@ -87,7 +87,7 @@ class AnggotaController extends Controller
             'keterangan'  => 'Tambah data personel baru: ' . $request->nama_anggota . ' (' . $request->role . ')',
         ]);
 
-        return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil ditambahkan.');
+        return redirect()->back()->with('success', 'Data personel berhasil ditambahkan.');
     }
 
     public function update(Request $request, $id_anggota)
@@ -127,7 +127,7 @@ class AnggotaController extends Controller
             'keterangan'  => 'Edit data personel: ' . $request->nama_anggota . ' (ID #' . $id_anggota . ')',
         ]);
 
-        return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Data personel berhasil diperbarui.');
     }
 
     public function destroy($id_anggota)
@@ -141,6 +141,6 @@ class AnggotaController extends Controller
         ]);
         $anggota->delete();
 
-        return redirect()->route('admin.anggota.index')->with('success', 'Data personel berhasil dihapus.');
+        return redirect()->back()->with('success', 'Data personel berhasil dihapus.');
     }
 }
