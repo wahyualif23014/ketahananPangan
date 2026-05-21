@@ -413,6 +413,9 @@ class KelolaLahanController extends Controller
                 ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
+        if ($mode === 'active') {
+            $tanamQuery->where('tanam.is_active', 1);
+        }
         if ($filters['sektor']) {
             $tanamQuery->where('lahan.id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
@@ -427,10 +430,14 @@ class KelolaLahanController extends Controller
         // Panen Stats — scoped
         $panenQuery = $applyScope(
             DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
                 ->where('panen.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
+        if ($mode === 'active') {
+            $panenQuery->where('tanam.is_active', 1);
+        }
         if ($filters['sektor']) {
             $panenQuery->where('lahan.id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
@@ -447,11 +454,15 @@ class KelolaLahanController extends Controller
         $serapanQuery = $applyScope(
             DB::table('distribusi')
                 ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->where('distribusi.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
+        if ($mode === 'active') {
+            $serapanQuery->where('tanam.is_active', 1);
+        }
         if ($filters['sektor']) {
             $serapanQuery->where('lahan.id_tingkat', $filters['sektor']);
         } elseif ($filters['resor']) {
@@ -1090,6 +1101,10 @@ class KelolaLahanController extends Controller
     public function unvalidasiTanam(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
         DB::table('tanam')->where('id_tanam', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Tanam berhasil di-unvalidasi']);
@@ -1099,6 +1114,10 @@ class KelolaLahanController extends Controller
     public function unvalidasiPanen(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
         DB::table('panen')->where('id_panen', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Panen berhasil di-unvalidasi']);
@@ -1108,6 +1127,10 @@ class KelolaLahanController extends Controller
     public function unvalidasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
         DB::table('distribusi')->where('id_distribusi', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Serapan berhasil di-unvalidasi']);
@@ -1117,6 +1140,10 @@ class KelolaLahanController extends Controller
     public function validasiTanam(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
 
         try {
@@ -1135,6 +1162,10 @@ class KelolaLahanController extends Controller
     public function validasiPanen(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
 
         try {
@@ -1153,6 +1184,10 @@ class KelolaLahanController extends Controller
     public function validasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
 
         $scope = $user->id_tugas ?? '0';
@@ -1239,6 +1274,9 @@ class KelolaLahanController extends Controller
     public function tolakValidasiTanam(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
+        }
         // Hanya Polres (1 titik) yang bisa menolak, bukan Polsek (2 titik)
 
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
@@ -1297,6 +1335,9 @@ class KelolaLahanController extends Controller
     public function tolakValidasiPanen(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
+        }
 
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
@@ -1354,6 +1395,9 @@ class KelolaLahanController extends Controller
     public function tolakValidasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
+        }
 
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
@@ -1451,6 +1495,10 @@ class KelolaLahanController extends Controller
     public function selesaiSiklusTanam(Request $request, $id)
     {
         $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
 
 
         try {

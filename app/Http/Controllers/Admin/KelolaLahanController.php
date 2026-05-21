@@ -349,6 +349,9 @@ class KelolaLahanController extends Controller
                 ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
                 ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', '')
                 ->whereIn('tanam.id_lahan', $filteredLahanIds);
+            if ($mode === 'active') {
+                $tanamQuery->where('tanam.is_active', 1);
+            }
 
             $tanamTotal = (clone $tanamQuery)->sum('tanam.luas_tanam') ?? 0;
             $tanamDetails = (clone $tanamQuery)->selectRaw('lahan.id_jenis_lahan, SUM(tanam.luas_tanam) as total_luas, COUNT(tanam.id_lahan) as total_lokasi')
@@ -359,8 +362,12 @@ class KelolaLahanController extends Controller
             // Panen Stats (All validated cycles)
             $panenQuery = DB::table('panen')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
+                ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
                 ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', '')
                 ->whereIn('panen.id_lahan', $filteredLahanIds);
+            if ($mode === 'active') {
+                $panenQuery->where('tanam.is_active', 1);
+            }
 
             $panenTotal = (clone $panenQuery)->sum('panen.luas_panen') ?? 0;
             $panenTonTotal = (clone $panenQuery)->sum('panen.total_panen') ?? 0;
@@ -372,9 +379,13 @@ class KelolaLahanController extends Controller
             // Serapan Stats (All validated cycles)
             $serapanQuery = DB::table('distribusi')
                 ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', '')
                 ->whereIn('panen.id_lahan', $filteredLahanIds);
+            if ($mode === 'active') {
+                $serapanQuery->where('tanam.is_active', 1);
+            }
 
             $serapanTotal = (clone $serapanQuery)->sum('distribusi.total_distribusi') ?? 0;
             $serapanDetails = (clone $serapanQuery)->selectRaw('distribusi.distribusi_ke, SUM(distribusi.total_distribusi) as total_luas, COUNT(distribusi.id_distribusi) as total_lokasi')

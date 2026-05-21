@@ -516,9 +516,9 @@ $isPolres = auth()->user()->role === 'admin' ||
                                 <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("tanam", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Detail</button>
+                                    <button @click='openDetailModal("tanam", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Detail</button>
                                     @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                    <button @click='editTanam("{{ $row->id_tanam }}", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                    <button @click='editTanam("{{ $row->id_tanam }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                     @endif
                                 </div>
                                 @if(!$row->tanam_valid_oleh)
@@ -527,7 +527,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->tanam_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
+                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -559,9 +559,9 @@ $isPolres = auth()->user()->role === 'admin' ||
                                 @endphp
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("panen", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Detail</button>
+                                    <button @click='openDetailModal("panen", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Detail</button>
                                     @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                    <button @click='editPanen("{{ $row->id_panen }}", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                    <button @click='editPanen("{{ $row->id_panen }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                     @endif
                                 </div>
                                 @if(!$row->panen_valid_oleh)
@@ -570,7 +570,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->panen_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
+                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -599,9 +599,9 @@ $isPolres = auth()->user()->role === 'admin' ||
                                 @endphp
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
                                 <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("serapan", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Detail</button>
+                                    <button @click='openDetailModal("serapan", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Detail</button>
                                     @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
                                     @endif
                                 </div>
                                 @if(!$row->serapan_valid_oleh)
@@ -610,7 +610,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->serapan_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
+                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -720,7 +720,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                         <span class="text-[9px] font-black text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wide">Siklus Berjalan</span>
                                     </h4>
                                     @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 0)' class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2">
+                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])), 0)' class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                                         </svg>
@@ -774,12 +774,12 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                             </svg> Selesai Siklus</button>
                                                     </form>
                                                     @endif
-                                                    @if(in_array(auth()->user()->role, ['admin', 'operator']) && !is_null($tanam->id_tanam))
+                                                    @if((auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1)) && !is_null($tanam->id_tanam))
                                                     <button @click="submitTolakDirect('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
                                                         </svg> Tolak Siklus</button>
                                                     @endif
-                                                    @if(in_array(auth()->user()->role, ['admin', 'operator']))
+                                                    @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                                     @if(is_null($tanam->valid_oleh))
                                                     @if($tanam->alasan_tolak)
                                                     {{-- DITOLAK: badge + info hover saja, tidak ada tombol validasi/tolak --}}
@@ -803,7 +803,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                     <button @click='editTanam("{{ $tanam->id_tanam }}", @json(array_merge((array)$row, (array)$tanam)))' class="px-2.5 py-1.5 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Edit</button>
                                                     <button @click='deleteTanam("{{ $tanam->id_tanam }}")' class="px-2.5 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Hapus</button>
                                                     @if(!is_null($tanam->valid_oleh))
-                                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20 ml-2">+ Panen</button>
+                                                    <button @click='openStageModal("{{ $row->id_lahan }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])), 1, "{{ $tanam->id_tanam }}")' class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20 ml-2">+ Panen</button>
                                                     @endif
                                                     @endif
                                                 </div>
@@ -828,7 +828,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                 <p class="text-sm font-black text-slate-800">{{ number_format($panen->luas_panen, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-1">dari {{ number_format($panen->total_panen, 2) }} TON</span></p>
                                                             </div>
                                                             <div class="flex items-center gap-2">
-                                                                @if(in_array(auth()->user()->role, ['admin', 'operator']))
+                                                                @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                                                 @if(is_null($panen->valid_oleh))
                                                                 @if($panen->alasan_tolak)
                                                                 <div class="group relative">
@@ -847,7 +847,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                 <button @click='editPanen("{{ $panen->id_panen }}", @json(array_merge((array)$row, (array)$tanam, (array)$panen)))' class="px-2 py-1 bg-white text-amber-600 border border-amber-200 rounded text-[9px] font-black uppercase hover:bg-amber-50 transition-colors">Edit</button>
                                                                 <button @click='deletePanen("{{ $panen->id_panen }}")' class="px-2 py-1 bg-white text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase hover:bg-rose-50 transition-colors">Hapus</button>
                                                                 @if(!is_null($panen->valid_oleh))
-                                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2, "{{ $tanam->id_tanam }}", "{{ $panen->id_panen }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 shadow-sm ml-2">+ Serapan</button>
+                                                                <button @click='openStageModal("{{ $row->id_lahan }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])), 2, "{{ $tanam->id_tanam }}", "{{ $panen->id_panen }}")' class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-blue-600 shadow-sm ml-2">+ Serapan</button>
                                                                 @endif
                                                                 @endif
                                                             </div>
@@ -869,7 +869,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                         <p class="text-[11px] font-black text-slate-800">{{ number_format($distribusi->total_distribusi, 2) }} TON</p>
                                                                     </div>
                                                                     <div class="flex items-center gap-2">
-                                                                        @if(in_array(auth()->user()->role, ['admin', 'operator']))
+                                                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
                                                                         @if(is_null($distribusi->valid_oleh))
                                                                         @if($distribusi->alasan_tolak)
                                                                         <div class="group relative">
@@ -1278,8 +1278,16 @@ $isPolres = auth()->user()->role === 'admin' ||
                         this.notify('error', 'Data Tidak Lengkap', 'Lahan aktif tidak ditemukan.');
                         return;
                     }
+                    
+                    let targetTanam = null;
+                    if (this.activeLahan?.history_tanam) {
+                        const historyArray = Array.isArray(this.activeLahan.history_tanam) ? this.activeLahan.history_tanam : Object.values(this.activeLahan.history_tanam);
+                        targetTanam = historyArray.find(t => String(t.id_tanam) === String(this.activeTanamId ?? this.activeLahan.id_tanam));
+                    }
+                    
                     const inputLuasPanen = parseFloat(this.formPanen.luas_panen || 0);
-                    const maxTanam = parseFloat(this.activeLahan.luas_tanam || 0);
+                    const maxTanam = parseFloat(targetTanam?.luas_tanam ?? this.activeLahan.luas_tanam ?? 0);
+                    
                     if (Number(this.formPanen.status_panen) !== 2 && maxTanam > 0 && inputLuasPanen > maxTanam) {
                         this.notify('warning', 'Validasi Gagal', `Luas panen (${inputLuasPanen} Ha) tidak boleh melebihi luas tanam (${maxTanam} Ha).`);
                         return;
@@ -1617,19 +1625,19 @@ $isPolres = auth()->user()->role === 'admin' ||
                 <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">📐 Kapasitas Potensi Lahan</span>
-                        <span class="text-[10px] font-black text-emerald-800 bg-emerald-200 px-2 py-0.5 rounded-lg" x-text="(activeLahan?.luas_lahan ?? 0) + ' Ha'"></span>
+                        <span class="text-[10px] font-black text-emerald-800 bg-emerald-200 px-2 py-0.5 rounded-lg" x-text="(activeLahan?.sisa_lahan ?? activeLahan?.luas_lahan ?? 0) + ' Ha Tersedia'"></span>
                     </div>
                     <div class="text-[10px] font-bold text-emerald-600 mb-1">
                         Masukkan luas tanam ≤ sisa kapasitas lahan. Siklus tanam bisa diulang setelah panen & serapan divalidasi.
                     </div>
                     <div class="mt-2 h-2 bg-emerald-100 rounded-full overflow-hidden">
                         <div class="h-2 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500"
-                            :style="'width:' + Math.min(100, ((parseFloat(formTanam.luas_tanam)||0) / Math.max(0.01, parseFloat(activeLahan?.luas_lahan||1))) * 100) + '%'"></div>
+                            :style="'width:' + Math.min(100, ((parseFloat(formTanam.luas_tanam)||0) / Math.max(0.01, parseFloat(activeLahan?.sisa_lahan ?? activeLahan?.luas_lahan||1))) * 100) + '%'"></div>
                     </div>
                     <div class="flex justify-between mt-1">
                         <span class="text-[9px] text-emerald-500 font-bold">0 Ha</span>
-                        <span class="text-[9px] font-black" :class="(parseFloat(formTanam.luas_tanam)||0) > parseFloat(activeLahan?.luas_lahan||0) ? 'text-rose-600' : 'text-emerald-700'" x-text="'Input: ' + (parseFloat(formTanam.luas_tanam)||0).toFixed(2) + ' Ha'"></span>
-                        <span class="text-[9px] text-emerald-600 font-bold" x-text="'Max: ' + (activeLahan?.luas_lahan ?? 0) + ' Ha'"></span>
+                        <span class="text-[9px] font-black" :class="(parseFloat(formTanam.luas_tanam)||0) > parseFloat(activeLahan?.sisa_lahan ?? activeLahan?.luas_lahan||0) ? 'text-rose-600' : 'text-emerald-700'" x-text="'Input: ' + (parseFloat(formTanam.luas_tanam)||0).toFixed(2) + ' Ha'"></span>
+                        <span class="text-[9px] text-emerald-600 font-bold" x-text="'Sisa: ' + (activeLahan?.sisa_lahan ?? activeLahan?.luas_lahan ?? 0) + ' Ha'"></span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
