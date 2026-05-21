@@ -39,7 +39,7 @@
             /* Smooth Page Transition */
             .page-transition-enter { animation: fadeInPage 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
             .page-transition-leave { opacity: 0.5; transform: scale(0.995); pointer-events: none; transition: all 0.3s ease-in-out; }
-            @keyframes fadeInPage { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes fadeInPage { from { opacity: 0; } to { opacity: 1; } }
         </style>
     </head>
     <body class="font-sans text-gray-900 antialiased overflow-x-hidden bg-[#f8fafc]">

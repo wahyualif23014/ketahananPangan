@@ -696,7 +696,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                             <div class="flex flex-col items-end gap-2">
                                 <!-- Detail Lahan Button Removed -->
                                 @if(in_array(auth()->user()->role, ['admin', 'operator']))
-                                <button onclick="window.location.href='{{ route('admin.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=edit'" title="Edit Lahan" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-lg transition-all shadow-sm">
+                                <button onclick="window.location.href='{{ route($routePrefix.'.kelola-lahan.potensi.index') }}?search={{ $row->id_lahan }}&action=edit'" title="Edit Lahan" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white rounded-lg transition-all shadow-sm">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                     </svg>
@@ -1597,7 +1597,7 @@ $isPolres = auth()->user()->role === 'admin' ||
     {{-- MODALS SECTION - PRODUCTION FLOW --}}
     {{-- ========================================== --}}
 
-    <!-- MODAL PROSES TANAM -->
+    <!-- MODAL PROSES TANAM --> 
     <div x-show="modalTanam"
         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
         x-cloak x-transition.opacity>
@@ -2063,7 +2063,7 @@ $isPolres = auth()->user()->role === 'admin' ||
     </div>
 
     <!-- MODAL TOLAK VALIDASI (TELEPORT KE BODY) -->
-    <template x-teleport="body">
+    
         <div x-show="tolakModalData.isOpen"
             class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
             x-cloak x-transition.opacity>
