@@ -21,6 +21,10 @@ class DashboardController extends Controller
             return back()->with('error', 'Hanya admin yang dapat mengirim notifikasi.');
         }
 
+        $request->validate([
+            'target_polres' => 'nullable|array'
+        ]);
+
         $dataType    = $request->input('data_type', 'all');    // all | potensi | kelola
         $targetType  = $request->input('target_type', 'all'); // all | polres | pending
         $targetPolres = $request->input('target_polres', []);  // diisi jika targetType = polres

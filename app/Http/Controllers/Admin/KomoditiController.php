@@ -99,7 +99,7 @@ class KomoditiController extends Controller
 
             \Illuminate\Support\Facades\DB::table('komoditi')
                 ->where('id_komoditi', $request->id_komoditi)
-                ->delete();
+                ->update(['deletestatus' => '0']);
 
             AktivitasLog::catat('delete', 'komoditi', [
                 'record_id'   => $request->id_komoditi,
@@ -116,7 +116,7 @@ class KomoditiController extends Controller
             if ($items->count() > 0) {
                 \Illuminate\Support\Facades\DB::table('komoditi')
                     ->where('jenis_komoditi', $request->jenis_komoditi)
-                    ->delete();
+                    ->update(['deletestatus' => '0']);
                     
                 AktivitasLog::catat('delete', 'komoditi', [
                     'record_id'   => $items->first()->id_komoditi,

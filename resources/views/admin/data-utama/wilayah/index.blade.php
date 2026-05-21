@@ -5,6 +5,7 @@
 @section('content')
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
     .wilayah-container {
         font-family: 'Outfit', sans-serif;
     }
@@ -23,7 +24,6 @@
 
 <div class="space-y-8 pb-24 wilayah-container max-w-7xl mx-auto" x-data="{ searchQuery: '{{ request('search') }}' }">
 
-    {{-- Top Header Section --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 px-4 mb-2 transition-all duration-700 animate-in fade-in slide-in-from-top-8">
         <div>
             <nav class="flex items-center gap-2 font-black tracking-[0.2em] uppercase text-slate-400 mb-2">
@@ -48,7 +48,6 @@
                 </div>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="CARI WILAYAH..."
                     class="block w-full md:w-72 pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black tracking-wider text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none uppercase shadow-sm">
-                <!-- Submit happens on Enter -->
             </form>
             <button onclick="window.location.reload()" title="Refresh Data"
                 class="p-3.5 bg-slate-900 text-blue-400 rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all duration-300 active:scale-95 border border-slate-700">
@@ -60,6 +59,7 @@
     </div>
 
     @php
+<<<<<<< Updated upstream
     // Optimize: Use SQL LIKE operators instead of pulling everything into PHP memory
     // Kabupaten: format XX.XX (1 dot)
     $totalKabupaten = DB::table('wilayah')
@@ -67,20 +67,16 @@
     ->whereNot('id_wilayah', 'like', '%.%.%')
     ->count();
 
-    // Kecamatan: format XX.XX.XX (2 dots)
     $totalKecamatan = DB::table('wilayah')
     ->where('id_wilayah', 'like', '%.%.%')
     ->whereNot('id_wilayah', 'like', '%.%.%.%')
     ->count();
 
-    // Desa: format XX.XX.XX.XXXX (3 dots)
     $totalDesa = DB::table('wilayah')
     ->where('id_wilayah', 'like', '%.%.%.%')
     ->whereNot('id_wilayah', 'like', '%.%.%.%.%')
     ->count();
 
-    // Server-side database pagination for Kabupaten (Root Nodes)
-    // If searching, show all matches on one page (limit max to 100). Otherwise, show 1.
     $search = request('search');
     $perPage = !empty($search) ? 100 : 1;
 
@@ -89,14 +85,13 @@
     ->whereNot('id_wilayah', 'like', '%.%.%');
 
     $matchingWilayahIds = collect([]);
+
     if (!empty($search)) {
-    // Find ALL matching records (Kabupaten, Kecamatan, or Desa)
     $matchingWilayahIds = DB::table('wilayah')
     ->where('nama_wilayah', 'like', '%' . $search . '%')
     ->orWhere('id_wilayah', 'like', '%' . $search . '%')
     ->pluck('id_wilayah');
 
-    // Extract their root Kabupaten IDs
     $matchingKabupatenIds = $matchingWilayahIds->map(function($id) {
     $parts = explode('.', $id);
     return count($parts) >= 2 ? $parts[0] . '.' . $parts[1] : $id;
@@ -106,13 +101,9 @@
     }
 
     $kabupatenList = $kabupatenQuery->orderBy('id_wilayah')->paginate($perPage)->withQueryString();
-
-    // To support the tree rendering efficiently in Blade, we fetch ONLY the child nodes
-    // (Kecamatan and Desa) that belong strictly to the 5 Kabupaten currently displayed on this page.
     $kabupatenIds = collect($kabupatenList->items())->pluck('id_wilayah')->toArray();
 
     if (!empty($kabupatenIds)) {
-    // Get Kecamatans belonging to these Kabupatens
     $kecamatanQuery = DB::table('wilayah')->where('id_wilayah', 'like', '%.%.%')->whereNot('id_wilayah', 'like', '%.%.%.%');
     $kecamatanQuery->where(function($q) use ($kabupatenIds) {
     foreach($kabupatenIds as $id) {
@@ -121,7 +112,6 @@
     });
     $kecamatans = $kecamatanQuery->get();
 
-    // Get Desas belonging to these Kabupatens
     $desaQuery = DB::table('wilayah')->where('id_wilayah', 'like', '%.%.%.%')->whereNot('id_wilayah', 'like', '%.%.%.%.%');
     $desaQuery->where(function($q) use ($kabupatenIds) {
     foreach($kabupatenIds as $id) {
@@ -130,19 +120,18 @@
     });
     $desas = $desaQuery->get();
 
-    // Store the scoped collection here so Blade's $allWilayah->filter() still works flawlessly
     $allWilayah = collect($kabupatenList->items())->merge($kecamatans)->merge($desas);
     } else {
     $allWilayah = collect();
     }
     @endphp
 
+<<<<<<< Updated upstream
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative px-2">
         <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-105"></div>
         <div class="absolute inset-0 topo-pattern -z-10 rounded-[3rem]"></div>
 
-        <!-- Kabupaten Stats -->
         <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-blue-100 shadow-xl shadow-blue-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 overflow-hidden flex items-center justify-between">
             <div class="absolute -right-8 -top-8 w-32 h-32 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex flex-col justify-center">
@@ -159,7 +148,6 @@
             </div>
         </div>
 
-        <!-- Kecamatan Stats -->
         <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-indigo-100 shadow-xl shadow-indigo-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-900/10 transition-all duration-500 overflow-hidden flex items-center justify-between">
             <div class="absolute -right-8 -top-8 w-32 h-32 bg-indigo-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex flex-col justify-center">
@@ -176,7 +164,6 @@
             </div>
         </div>
 
-        <!-- Desa Stats -->
         <div class="group relative bg-white p-6 md:p-8 rounded-[2rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 overflow-hidden flex items-center justify-between">
             <div class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-700 ease-in-out opacity-60"></div>
             <div class="relative z-10 flex flex-col justify-center">
@@ -195,10 +182,8 @@
     </div>
 
 
-    {{-- Main Tree Accordion --}}
     <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden relative z-20 mx-2 mt-12 bg-clip-padding backdrop-filter backdrop-blur-3xl bg-opacity-70">
 
-        <!-- Header Panel -->
         <div class="px-8 py-6 bg-gradient-to-r from-slate-900 to-slate-800 flex justify-between items-center relative overflow-hidden">
             <svg class="absolute right-0 top-0 h-full w-48 text-white opacity-5 transform translate-x-12 -rotate-12" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path>
@@ -212,7 +197,6 @@
             </div>
         </div>
 
-        <!-- Accordion Loop -->
         <div class="divide-y divide-slate-100/80">
             @forelse($kabupatenList as $kab)
             @php
@@ -236,11 +220,9 @@
                 class="group/kab transition-all duration-300 hover:bg-slate-50/50"
                 :class="expandedKab ? 'bg-slate-50/50' : ''">
 
-                <!-- Level 1: Kabupaten Item -->
                 <div @click="expandedKab = !expandedKab" class="p-6 md:px-8 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex items-start md:items-center gap-5">
 
-                        <!-- Toggle Button -->
                         <div :class="expandedKab ? 'bg-blue-600 text-white shadow-md shadow-blue-500/40 rotate-180' : 'bg-white text-slate-400 shadow-sm border border-slate-200 group-hover/kab:border-blue-300 group-hover/kab:text-blue-500'"
                             class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 z-10">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,11 +238,174 @@
                                 <span class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
                                     KABUPATEN
                                 </span>
+=======
+    {{-- 2. Hierarchical Network Section (Kecil & Rapat) --}}
+    <div class="space-y-4 relative">
+        @forelse($kabupatenList as $kab)
+            @php
+            $kecamatanList = $allWilayah->filter(function($item) use ($kab) {
+                $parts = explode('.', $item->kode_wilayah);
+                return count($parts) == 2 && str_starts_with($kab->kode_wilayah, $item->kode_wilayah);
+            });
+            @endphp
+
+            <div x-data="{ openKab: {{ $loop->first ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative group/kab transition-all duration-300">
+                
+                {{-- Header Kabupaten --}}
+                <div @click="openKab = !openKab" class="px-5 py-4 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 flex justify-between items-center cursor-pointer relative overflow-hidden group/header">
+                    <div class="absolute inset-0 animate-jaring"></div>
+                    <svg class="absolute right-0 top-0 h-full opacity-10 group-hover/header:scale-110 transition-transform duration-700 text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
+                        <polygon points="0,100 100,0 100,100" />
+                    </svg>
+
+                    <div class="relative flex items-center gap-4 z-10 w-full">
+                        <div class="w-11 h-11 bg-white/10 backdrop-blur-md text-white rounded-xl flex items-center justify-center shadow-inner border border-white/20 group-hover/header:rotate-6 transition-transform duration-300 flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-base font-black text-white uppercase tracking-wider drop-shadow-sm leading-tight">{{ $kab->nama_wilayah }}</h3>
+                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                                <span class="bg-blue-600/80 font-bold px-2 py-0.5 rounded text-[11px] text-blue-50 tracking-wide border border-blue-400/50 shadow-sm inline-flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                                    {{ $kab->kode_wilayah }}
+                                </span>
+                                <span class="text-[10px] font-bold text-blue-200 uppercase tracking-wider bg-white/5 py-0.5 px-2 rounded">KABUPATEN INDUK</span>
                             </div>
                         </div>
                     </div>
+                    <div class="bg-white/10 p-2 rounded-lg border border-white/20 backdrop-blur-sm z-10 relative flex-shrink-0 ml-3 group-hover/header:bg-white/20 transition-colors">
+                        <svg class="w-5 h-5 text-white transition-transform duration-300 transform" :class="openKab ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
 
-                    <!-- Right Stats/ID -->
+                {{-- Container Kecamatan --}}
+                <div x-show="openKab" x-collapse x-cloak>
+                    <div class="bg-slate-50 border-t border-slate-200 p-4 lg:p-6 relative overflow-hidden">
+                        
+                        <!-- MASTER VERTICAL LINE -->
+                        <div class="relative ml-2 pl-8 lg:pl-10">
+                            <!-- Garis Induk menurun sepanjang kecamatan -->
+                            <div class="absolute top-0 bottom-6 left-0 w-px border-l-2 border-dashed border-blue-400/60 shadow-[0_0_5px_rgba(147,197,253,0.3)]"></div>
+
+                            @php
+                                $kecamatanInKab = $allWilayah->filter(function($item) use ($kab) {
+                                    $parts = explode('.', $item->kode_wilayah);
+                                    return count($parts) == 2 && explode('.', $kab->kode_wilayah)[1] == $parts[1];
+                                });
+                            @endphp
+
+                            <div class="space-y-4">
+                                @forelse($kecamatanInKab as $kec)
+                                    <div x-data="{ openKec: false }" class="relative group/kecamatan">
+                                        <!-- CONNECTING LINE TO KECAMATAN -->
+                                        <!-- Tinggi header kecamatan estimasi py-3 + h-10 = 12+12+40=64px. Center = ~32px -->
+                                        <div class="absolute top-[32px] -left-8 lg:-left-10 w-8 lg:w-10 border-t-2 border-dashed border-blue-400/60 group-hover/kecamatan:border-blue-500 transition-colors"></div>
+                                        
+                                        <!-- NODE KECAMATAN -->
+                                        <!-- w-3 h-3 radius 6px => 32-6 = 26px -->
+                                        <div class="absolute top-[26.5px] -left-[6px] w-3 h-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-sm border-2 border-white z-10 group-hover/kecamatan:scale-125 transition-transform"></div>
+
+                                        <!-- Card Kecamatan -->
+                                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden relative">
+                                            
+                                            <div @click="openKec = !openKec" class="px-4 lg:px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50/50 transition-colors group/kecheader">
+                                                <div class="flex items-center gap-3.5">
+                                                    <div class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center border border-indigo-100 group-hover/kecheader:bg-indigo-600 group-hover/kecheader:text-white transition-all duration-300">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wide group-hover/kecheader:text-indigo-700 transition-colors">{{ $kec->nama_wilayah }}</h4>
+                                                        <div class="flex items-center gap-2 mt-0.5">
+                                                            <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 tracking-wider inline-flex items-center gap-1">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                                                                {{ $kec->kode_wilayah }}
+                                                            </span>
+                                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Kecamatan</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200 group-hover/kecheader:border-indigo-300 group-hover/kecheader:bg-indigo-50 transition-colors">
+                                                    <svg class="w-4 h-4 text-slate-500 group-hover/kecheader:text-indigo-600 transition-transform duration-300" :class="openKec ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            {{-- Container Desa --}}
+                                            <div x-show="openKec" x-collapse x-cloak class="bg-indigo-50/20 border-t border-slate-100 p-4 lg:p-5">
+                                                
+                                                <div class="relative ml-2 pl-8">
+                                                    <!-- SUB-VERTICAL LINE -->
+                                                    <div class="absolute top-0 bottom-4 left-0 w-px border-l-2 border-dashed border-indigo-300"></div>
+
+                                                    @php
+                                                        $desaList = $allWilayah->filter(function($item) use ($kec) {
+                                                            $parts = explode('.', $item->kode_wilayah);
+                                                            return count($parts) == 4 && str_starts_with($item->kode_wilayah, $kec->kode_wilayah);
+                                                        });
+                                                    @endphp
+
+                                                    <div class="space-y-2.5">
+                                                        @forelse($desaList as $desa)
+                                                            <div class="relative flex items-center hover:translate-x-1 transition-transform duration-300 group/desa">
+                                                                
+                                                                <!-- CONNECTING LINE TO DESA -->
+                                                                <!-- Desa card p-2.5 (20px), icon h-8 (32px) = 52px total. Center 26px-->
+                                                                <div class="absolute top-[26px] -left-8 w-8 border-t-2 border-dashed border-indigo-300 group-hover/desa:border-indigo-500 transition-colors"></div>
+                                                                
+                                                                <!-- NODE DESA -->
+                                                                <!-- w-2 h-2 radius 4px => 26-4 = 22px -->
+                                                                <div class="absolute top-[22px] -left-[4px] w-2 h-2 bg-indigo-400 rounded-full border border-white shadow-sm z-10 group-hover/desa:bg-indigo-600 group-hover/desa:scale-150 transition-all duration-300"></div>
+
+                                                                <!-- Card Desa -->
+                                                                <div class="w-full flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-400 transition-all">
+                                                                    <div class="flex items-center gap-3">
+                                                                        <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100 group-hover/desa:bg-emerald-500 group-hover/desa:text-white transition-colors duration-300 flex-shrink-0">
+                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                                                            </svg>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span class="block text-xs font-bold text-slate-800 uppercase group-hover/desa:text-emerald-700 transition-colors leading-tight">{{ $desa->nama_wilayah }}</span>
+                                                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 mt-0.5 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                                                                                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                                                                                {{ $desa->kode_wilayah }}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <span class="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md border border-emerald-200 uppercase tracking-widest hidden sm:block">DESA</span>
+                                                                </div>
+
+                                                            </div>
+                                                        @empty
+                                                            <div class="ml-2 py-3 px-4 bg-white rounded-lg border border-slate-200 border-dashed text-center">
+                                                                <p class="text-[11px] font-medium text-slate-500 italic">Jaringan wilayah menuju desa belum terhubung.</p>
+                                                            </div>
+                                                        @endforelse
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="py-6 px-6 bg-white rounded-2xl border border-slate-200 border-dashed text-center shadow-sm">
+                                        <p class="text-sm font-semibold text-slate-500 italic">Tidak ada jaringan kecamatan terhubung.</p>
+                                    </div>
+                                @endforelse
+>>>>>>> Stashed changes
+                            </div>
+                        </div>
+
+                    </div>
+<<<<<<< Updated upstream
+
                     <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
                         <div class="flex flex-col items-center justify-center px-4 py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
                             <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Kecamatan</span>
@@ -273,7 +418,6 @@
                     </div>
                 </div>
 
-                <!-- Level 2: Kecamatan Sub-List Dropdown -->
                 @if($kecamatanList->isNotEmpty())
                 <div x-show="expandedKab" x-collapse>
                     <div class="px-4 pb-6 md:px-8 md:pl-16">
@@ -298,11 +442,9 @@
 
                                 <div x-data="{ expandedKec: true }" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/kec">
 
-                                    <!-- Level 2 Connector -->
                                     <div class="absolute -left-9 top-8 w-5 border-t-[3px] border-blue-200/60 z-0"></div>
                                     <div class="absolute -left-4 top-8 w-2.5 h-2.5 rounded-full bg-blue-400 border-2 border-white shadow-sm z-10 group-hover/kec:scale-150 transition-transform -translate-y-1/2"></div>
 
-                                    <!-- Kecamatan Header Area -->
                                     <div @click="expandedKec = !expandedKec" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer relative z-10">
                                         <div class="flex items-center gap-4">
                                             <div :class="expandedKec ? 'bg-indigo-600 text-white shadow-md rotate-180' : 'bg-indigo-50 border border-indigo-100 text-indigo-500 shadow-inner group-hover/kec:bg-indigo-500 group-hover/kec:text-white'"
@@ -332,17 +474,14 @@
                                         </div>
                                     </div>
 
-                                    <!-- Level 3: Desa Sub-List Dropdown -->
                                     @if($desaList->isNotEmpty())
                                     <div x-show="expandedKec" x-collapse>
                                         <div class="relative mt-6 pt-5 pl-4 sm:pl-10 border-t border-slate-100">
-                                            <!-- Vertical line for Desa -->
                                             <div class="absolute left-6 sm:left-12 top-5 bottom-4 w-px border-l-2 border-dashed border-indigo-200/50"></div>
 
                                             <div class="space-y-4">
                                                 @foreach($desaList as $desa)
                                                 <div x-data="{ showMap: false }" class="relative bg-slate-50 hover:bg-emerald-50/30 p-4 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all ml-6 group/desa">
-                                                    <!-- Connector Desa -->
                                                     <div class="absolute -left-6 sm:-left-10 top-1/2 -translate-y-1/2 w-6 sm:w-10 border-t-2 border-dashed border-indigo-200/50 z-0 group-hover/desa:border-emerald-300 transition-colors"></div>
                                                     <div class="absolute -left-1 sm:-left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-300 z-10 group-hover/desa:bg-emerald-400 group-hover/desa:scale-150 transition-all border border-white"></div>
 
@@ -378,12 +517,11 @@
                                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                                                                 </svg>
-                                                                Edit Ordinat
+                                                                Edit Kordinat
                                                             </button>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Interactive Map Container -->
                                                     @if($desa->Latitude && $desa->longitude)
                                                     <div x-show="showMap" x-collapse x-cloak>
                                                         <div class="mt-4 p-2 bg-white border border-slate-200 rounded-xl relative z-10 shadow-sm">
@@ -420,14 +558,14 @@
                 @endif
             </div>
             @empty
-            <div class="text-center py-20 px-4">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-slate-100 rounded-full mb-6">
-                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            <div class="bg-white rounded-2xl p-12 text-center border-2 border-slate-200 border-dashed shadow-sm">
+                <div class="inline-flex p-4 bg-slate-50 rounded-xl border border-slate-100 mb-4 mx-auto">
+                    <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
                     </svg>
                 </div>
-                <h3 class="text-2xl font-black text-slate-800 uppercase mb-2">Data Kosong</h3>
-                <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest max-w-sm mx-auto">Tidak ada hierarki wilayah yang ditemukan.</p>
+                <h3 class="text-lg font-black text-slate-800 uppercase tracking-widest mb-1">Belum Ada Jaringan Hierarki</h3>
+                <p class="text-xs text-slate-500 font-medium max-w-sm mx-auto">Sistem belum menemukan data untuk membangun pohon jaringan wilayah. Silakan sinkronasi data utama terlebih dahulu.</p>
             </div>
             @endforelse
         </div>
@@ -439,17 +577,14 @@
             </div>
 
             <div class="flex items-center gap-1 sm:gap-2">
-                {{-- Previous --}}
                 @if ($kabupatenList->onFirstPage())
                 <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
                 @else
                 <a href="{{ $kabupatenList->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
                 @endif
 
-                {{-- Pages --}}
                 <div class="hidden sm:flex items-center gap-1 mx-2">
                     @php
-                    // Membangun array halaman yang wajar untuk paginasi kustom (Hindari error links()->elements)
                     $startPage = max($kabupatenList->currentPage() - 2, 1);
                     $endPage = min($startPage + 4, $kabupatenList->lastPage());
                     if ($endPage - $startPage < 4) {
@@ -480,7 +615,6 @@
                                     @endif
                 </div>
 
-                {{-- Next --}}
                 @if ($kabupatenList->hasMorePages())
                 <a href="{{ $kabupatenList->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-blue-500/30 active:scale-95">Next</a>
                 @else
@@ -493,21 +627,22 @@
 
 </div>
 
+<<<<<<< Updated upstream
 <!-- Edit Maps Modal -->
 <div id="mapModal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-300 border border-slate-100" id="mapModalContent">
-        <div class="px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between relative overflow-hidden">
-            <svg class="absolute right-0 top-0 h-full opacity-10 text-white transform scale-150" fill="currentColor" viewBox="0 0 24 24">
+        <div class="px-8 py-5 bg-white border-b border-slate-100 flex items-center justify-between relative overflow-hidden">
+            <svg class="absolute right-0 top-0 h-full w-48 text-slate-50 opacity-50 transform scale-150" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L5.5 6.5 12 3.25l6.5 3.25L12 9.5zm0 12.5l-10-5 v-6l10 5 10-5v6l-10 5z"></path>
             </svg>
-            <h3 class="text-lg font-black text-white uppercase tracking-wider relative z-10 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 class="text-lg font-black text-slate-800 uppercase tracking-wider relative z-10 flex items-center gap-2">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
                 Perbarui Lokasi
             </h3>
-            <button onclick="closeMapModal()" class="relative z-10 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all hover:rotate-90">
+            <button onclick="closeMapModal()" class="relative z-10 text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-xl transition-all hover:rotate-90">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -520,29 +655,29 @@
 
             <input type="hidden" name="id_wilayah" id="modal_id_wilayah">
 
-            <div class="mb-6 bg-blue-50/50 border border-blue-100/50 rounded-2xl p-5 text-center">
-                <p class="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-1">WILAYAH TERPILIH</p>
-                <h4 id="modal_nama_desa" class="text-xl font-black text-blue-900 uppercase">NAMA DESA</h4>
+            <div class="mb-6 bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">WILAYAH TERPILIH</p>
+                <h4 id="modal_nama_desa" class="text-xl font-black text-slate-800 uppercase">NAMA DESA</h4>
             </div>
 
             <div class="space-y-5">
                 <div>
                     <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Latitude <span class="text-rose-500">*</span></label>
                     <input type="text" name="latitude" id="modal_latitude" required placeholder="-7.250445"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal">
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-semibold focus:ring-4 focus:ring-slate-500/10 focus:border-slate-500 outline-none transition-all placeholder:font-normal">
                 </div>
                 <div>
                     <label class="block text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Longitude <span class="text-rose-500">*</span></label>
                     <input type="text" name="longitude" id="modal_longitude" required placeholder="112.768845"
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:font-normal">
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-semibold focus:ring-4 focus:ring-slate-500/10 focus:border-slate-500 outline-none transition-all placeholder:font-normal">
                 </div>
             </div>
 
             <div class="mt-8 flex gap-3">
-                <button type="button" onclick="closeMapModal()" class="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 uppercase tracking-widest text-xs font-bold py-3.5 rounded-xl transition-colors">
+                <button type="button" onclick="closeMapModal()" class="flex-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 uppercase tracking-widest text-xs font-bold py-3.5 rounded-xl transition-colors shadow-sm">
                     Batal
                 </button>
-                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white uppercase tracking-widest text-xs font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                <button type="submit" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white uppercase tracking-widest text-xs font-bold py-3.5 rounded-xl shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -584,6 +719,8 @@
     }
 </script>
 
+=======
+>>>>>>> Stashed changes
 <!-- Alpine Plugins -->
 <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 @endsection

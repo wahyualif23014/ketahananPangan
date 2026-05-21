@@ -20,26 +20,59 @@
     }
 </style>
 
+
 @php
-    $currentPage = request()->get('page', 1);
-    $perPage = 250; // Sesuai permintaan: maksimal data tampil 250 per halaman
+    $totalKesatuanGlobal = DB::table('anggota')
+        ->select('id_tugas')
+        ->whereNotNull('id_tugas')
+        ->where('id_tugas', '!=', '0')
+        ->distinct()
+        ->count('id_tugas');
+    if ($totalKesatuanGlobal == 0 && $personels->count() > 0) $totalKesatuanGlobal = 1;
 
-    // Paginate data anggota terlebih dahulu sebelum dikelompokkan
-    $paginatedPersonels = new \Illuminate\Pagination\LengthAwarePaginator(
-        $personels->forPage($currentPage, $perPage),
-        $personels->count(),
-        $perPage,
-        $currentPage,
-        ['path' => url()->current(), 'query' => request()->query()]
-    );
+    // Create Map for tingkatList
+    $tingkatMap = collect($tingkatList)->keyBy('id_tingkat');
 
-    // Lalu kelompokkan 250 data yang tampil di halaman ini berdasarkan kesatuan
-    $groupedPersonels = collect($paginatedPersonels->items())->groupBy(function ($item) {
-        return $item->kesatuan ?? 'PUSAT DATA POLDA JATIM';
-    });
+    $tree = [];
+    foreach ($personels as $p) {
+        $id_tugas = $p->id_tugas;
+        if (empty($id_tugas) || $id_tugas == '0') $id_tugas = '11'; // Default ke POLDA
 
-    // Menghitung total seluruh kesatuan tanpa terpengaruh paginasi (untuk dashboard statistik)
-    $totalKesatuanGlobal = $personels->groupBy('kesatuan')->count();
+        $parts = explode('.', $id_tugas);
+        
+        if (count($parts) <= 1) { // POLDA
+            $namaKesatuan = isset($tingkatMap[$id_tugas]) ? $tingkatMap[$id_tugas]->nama_tingkat : 'POLDA JAWA TIMUR';
+            if (!isset($tree[$namaKesatuan])) {
+                $tree[$namaKesatuan] = ['_personels' => [], 'polseks' => []];
+            }
+            $tree[$namaKesatuan]['_personels'][] = $p;
+        } else { // POLRES & POLSEK
+            $polresId = $parts[0] . '.' . $parts[1];
+            $polresName = isset($tingkatMap[$polresId]) ? $tingkatMap[$polresId]->nama_tingkat : 'POLRES ' . $polresId;
+            
+            if (!isset($tree[$polresName])) {
+                $tree[$polresName] = ['_personels' => [], 'polseks' => []];
+            }
+
+            if (count($parts) >= 3) {
+                $polsekId = $parts[0] . '.' . $parts[1] . '.' . $parts[2];
+                $polsekName = isset($tingkatMap[$polsekId]) ? $tingkatMap[$polsekId]->nama_tingkat : 'POLSEK ' . $polsekId;
+                
+                if (!isset($tree[$polresName]['polseks'][$polsekName])) {
+                    $tree[$polresName]['polseks'][$polsekName] = [];
+                }
+                $tree[$polresName]['polseks'][$polsekName][] = $p;
+            } else {
+                $tree[$polresName]['_personels'][] = $p;
+            }
+        }
+    }
+    
+    // Sort tree alphabetically
+    ksort($tree);
+    foreach($tree as $k => $v) {
+        ksort($tree[$k]['polseks']);
+    }
 @endphp
 
 <div class="space-y-8 pb-24 personel-container max-w-7xl mx-auto" 
@@ -161,116 +194,121 @@
         </div>
 
         <div class="divide-y divide-slate-100/80">
-            @forelse($groupedPersonels as $unit => $members)
+            @forelse($tree as $polresName => $polresData)
+                @php
+                    $polresPersonels = $polresData['_personels'];
+                    $polseks = $polresData['polseks'];
+                    $totalPolresMembers = count($polresPersonels) + collect($polseks)->flatten()->count();
+                @endphp
 
-                <div x-data="{ expanded: {{ $search ? 'true' : 'false' }} }" 
-                     class="group/unit transition-all duration-300 hover:bg-slate-50/50"
-                     :class="expanded ? 'bg-slate-50/50' : ''">
+                <div x-data="{ expandedPolres: {{ $search ? 'true' : 'false' }} }" 
+                     class="group/polres transition-all duration-300 hover:bg-slate-50/50"
+                     :class="expandedPolres ? 'bg-slate-50/50' : ''">
                      
-                    <div @click="expanded = !expanded" class="p-6 md:px-8 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div @click="expandedPolres = !expandedPolres" class="p-6 md:px-8 cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div class="flex items-start md:items-center gap-5">
                             
-                            <div :class="expanded ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 rotate-180' : 'bg-white text-slate-400 shadow-sm border border-slate-200 group-hover/unit:border-emerald-300 group-hover/unit:text-emerald-500'"
+                            <div :class="expandedPolres ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40 rotate-180' : 'bg-white text-slate-400 shadow-sm border border-slate-200 group-hover/polres:border-emerald-300 group-hover/polres:text-emerald-500'"
                                 class="flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 z-10">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
 
                             <div class="space-y-1">
                                 <div class="flex flex-wrap items-center gap-3">
-                                    <h3 class="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight group-hover/unit:text-emerald-600 transition-colors">
-                                        {{ $unit }}
+                                    <h3 class="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight group-hover/polres:text-emerald-600 transition-colors">
+                                        {{ $polresName }}
                                     </h3>
+                                    <span class="inline-flex items-center justify-center bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+                                        {{ str_starts_with($polresName, 'POLDA') ? 'POLDA' : 'POLRES' }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
+                            @if(count($polseks) > 0)
+                            <div class="flex flex-col items-center justify-center px-4 py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Polsek</span>
+                                <span class="text-lg font-black text-indigo-600 leading-none">{{ count($polseks) }}</span>
+                            </div>
+                            @endif
                             <div class="flex flex-col items-center justify-center px-4 py-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
                                 <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Total Personel</span>
-                                <span class="text-lg font-black text-blue-600 leading-none">{{ $members->count() }}</span>
+                                <span class="text-lg font-black text-blue-600 leading-none">{{ $totalPolresMembers }}</span>
                             </div>
                         </div>
                     </div>
 
-                    @if($members->isNotEmpty())
-                        <div x-show="expanded" x-collapse>
+                    @if($totalPolresMembers > 0)
+                        <div x-show="expandedPolres" x-collapse>
                             <div class="px-4 pb-6 md:px-8 md:pl-16">
                                 <div class="pl-7 relative border-l-[3px] border-emerald-200/60 pb-2">
                                     <div class="w-full h-px bg-slate-200 my-4 mb-6"></div>
-                                    <div class="space-y-4">
-                                        @foreach($members as $p)
-                                            <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/p">
-                                                
-                                                <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
-                                                <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/p:scale-150 transition-transform"></div>
+                                    <div class="space-y-6">
+                                        
+                                        {{-- Render Personel langsung di bawah Polres/Polda --}}
+                                        @if(count($polresPersonels) > 0)
+                                        <div class="space-y-4">
+                                            @foreach($polresPersonels as $p)
+                                                <div class="relative bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 group/p">
+                                                    <div class="absolute -left-9 top-1/2 -translate-y-1/2 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
+                                                    <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/p:scale-150 transition-transform"></div>
+                                                    @include('admin.anggota.partials.personel_card', ['p' => $p])
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        @endif
 
-                                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        {{-- Render Polseks --}}
+                                        @foreach($polseks as $polsekName => $polsekPersonels)
+                                            <div x-data="{ expandedPolsek: {{ $search ? 'true' : 'false' }} }" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/polsek mt-6">
+                                                
+                                                <div class="absolute -left-9 top-8 w-5 border-t-[3px] border-emerald-200/60 z-0"></div>
+                                                <div class="absolute -left-4 top-8 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm z-10 group-hover/polsek:scale-150 transition-transform -translate-y-1/2"></div>
+
+                                                <div @click="expandedPolsek = !expandedPolsek" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer relative z-10">
                                                     <div class="flex items-center gap-4">
-                                                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-black shadow-inner shadow-blue-700/50 group-hover/p:rotate-6 transition-all duration-300 border border-blue-400">
-                                                            {{ strtoupper(substr($p->nama_anggota, 0, 2)) }}
+                                                        <div :class="expandedPolsek ? 'bg-indigo-600 text-white shadow-md rotate-180' : 'bg-indigo-50 border border-indigo-100 text-indigo-500 shadow-inner group-hover/polsek:bg-indigo-500 group-hover/polsek:text-white'"
+                                                            class="w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all duration-300">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
                                                         </div>
                                                         <div class="space-y-1">
-                                                            <h4 class="text-base font-black text-slate-800 uppercase tracking-wide group-hover/p:text-blue-600 transition-colors">
-                                                                {{ $p->nama_anggota }}
-                                                            </h4>
                                                             <div class="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-                                                                <span>NRP:</span> <span class="text-slate-700 font-black">{{ $p->username }}</span>
-                                                                <span class="mx-1 text-slate-300">•</span>
-                                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 004.815 4.815l.773-1.548a1 1 0 011.06-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
-                                                                <span class="text-slate-700 font-bold">{{ $p->no_telp_anggota ?? 'BELUM DIATUR' }}</span>
+                                                                <span class="text-indigo-400 bg-indigo-50 px-2 rounded-md border border-indigo-100">POLSEK</span>
                                                             </div>
+                                                            <h4 class="text-base font-black text-slate-800 uppercase tracking-wide group-hover/polsek:text-indigo-600 transition-colors">
+                                                                {{ $polsekName }}
+                                                            </h4>
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div class="flex flex-wrap items-center gap-3">
-                                                        <div class="bg-indigo-50 border border-indigo-100 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-                                                            {{ $p->jabatan->nama_jabatan ?? 'STAFF' }}
-                                                        </div>
-                                                        <div class="bg-blue-50 border border-blue-100 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm flex items-center gap-1.5">
-                                                            <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                                                            {{ $p->role }}
-                                                        </div>
-                                                        
-                                                        <div class="flex gap-2 opacity-0 group-hover/p:opacity-100 transition-opacity duration-300 delay-100">
-                                                            <button 
-                                                                type="button"
-                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-personel', { detail: {
-                                                                    mode: 'edit',
-                                                                    data: {
-                                                                        id_anggota: '{{ $p->id_anggota }}',
-                                                                        nama_anggota: '{{ addslashes($p->nama_anggota) }}',
-                                                                        username: '{{ addslashes($p->username) }}',
-                                                                        id_jabatan: '{{ $p->id_jabatan }}',
-                                                                        role: '{{ $p->role }}',
-                                                                        id_tugas: '{{ addslashes($p->id_tugas) }}',
-                                                                        no_telp_anggota: '{{ addslashes($p->no_telp_anggota) }}'
-                                                                    }
-                                                                }}))"
-                                                                class="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white shadow-sm transition-all active:scale-95">
-                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                            </button>
-                                                            <button 
-                                                                type="button"
-                                                                onclick="window.dispatchEvent(new CustomEvent('open-modal-personel', { detail: {
-                                                                    mode: 'delete',
-                                                                    data: {
-                                                                        id_anggota: '{{ $p->id_anggota }}',
-                                                                        nama_anggota: '{{ addslashes($p->nama_anggota) }}',
-                                                                        username: '{{ $p->username }}',
-                                                                        id_jabatan: '{{ $p->id_jabatan }}',
-                                                                        role: '{{ $p->role }}',
-                                                                        id_tugas: '{{ $p->id_tugas }}',
-                                                                        no_telp_anggota: '{{ $p->no_telp_anggota }}'
-                                                                    }
-                                                                }}))"
-                                                                class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white shadow-sm transition-all active:scale-95">
-                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                            </button>
+
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="text-[10px] font-bold uppercase text-emerald-500 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                                            {{ count($polsekPersonels) }} Personel
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                @if(count($polsekPersonels) > 0)
+                                                <div x-show="expandedPolsek" x-collapse>
+                                                    <div class="relative mt-6 pt-5 pl-4 sm:pl-10 border-t border-slate-100">
+                                                        <div class="absolute left-6 sm:left-12 top-5 bottom-4 w-px border-l-2 border-dashed border-indigo-200/50"></div>
+                                                        <div class="space-y-4">
+                                                            @foreach($polsekPersonels as $p)
+                                                                <div class="relative bg-slate-50 hover:bg-emerald-50/30 p-4 rounded-xl border border-slate-100 hover:border-emerald-200 transition-all ml-6 group/p">
+                                                                    <div class="absolute -left-6 sm:-left-10 top-1/2 -translate-y-1/2 w-6 sm:w-10 border-t-2 border-dashed border-indigo-200/50 z-0 group-hover/p:border-emerald-300 transition-colors"></div>
+                                                                    <div class="absolute -left-1 sm:-left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-300 z-10 group-hover/p:bg-emerald-400 group-hover/p:scale-150 transition-all border border-white"></div>
+                                                                    @include('admin.anggota.partials.personel_card', ['p' => $p])
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endif
                                             </div>
                                         @endforeach
+
                                     </div>
                                 </div>
                             </div>
@@ -291,42 +329,7 @@
                 </div>
             @endforelse
         </div>
-
-        @if($paginatedPersonels->hasPages())
-        <div class="px-6 py-5 border-t border-slate-200/60 bg-slate-50/80 flex flex-col sm:flex-row justify-between items-center gap-4 rounded-b-[2.5rem]">
-            <div class="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-                Data ke <span class="text-blue-600">{{ $paginatedPersonels->firstItem() }}</span> - <span class="text-blue-600">{{ $paginatedPersonels->lastItem() }}</span> dari total <span class="text-slate-800">{{ $paginatedPersonels->total() }}</span>
-                @if($search) &bull; <span class="text-emerald-600">Filter: "{{ $search }}"</span> @endif
-            </div>
-            <div class="flex items-center gap-1 sm:gap-2">
-                @if ($paginatedPersonels->onFirstPage())
-                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Mundur</span>
-                @else
-                    <a href="{{ $paginatedPersonels->appends(['search' => $search])->previousPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 text-slate-600 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">Mundur</a>
-                @endif
-                <div class="hidden sm:flex items-center gap-1 mx-2">
-                    @php
-                        $startPage = max($paginatedPersonels->currentPage() - 2, 1);
-                        $endPage   = min($startPage + 4, $paginatedPersonels->lastPage());
-                        if ($endPage - $startPage < 4) $startPage = max($endPage - 4, 1);
-                    @endphp
-                    @for ($pg = $startPage; $pg <= $endPage; $pg++)
-                        @if ($pg == $paginatedPersonels->currentPage())
-                            <span class="w-9 h-9 flex items-center justify-center bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-500/30">{{ $pg }}</span>
-                        @else
-                            <a href="{{ $paginatedPersonels->appends(['search' => $search])->url($pg) }}" class="w-9 h-9 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl text-xs font-black transition-all">{{ $pg }}</a>
-                        @endif
-                    @endfor
-                </div>
-                @if ($paginatedPersonels->hasMorePages())
-                    <a href="{{ $paginatedPersonels->appends(['search' => $search])->nextPageUrl() }}" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all shadow-md shadow-emerald-500/30 active:scale-95">Next</a>
-                @else
-                    <span class="px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-100 text-slate-400 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-not-allowed border border-slate-200/50">Next</span>
-                @endif
-            </div>
-        </div>
-        @endif
-        </div>
+    </div>
 
     {{-- Universal Modal Component (Desain Baru yang Sederhana) --}}
     <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" aria-modal="true">
@@ -339,7 +342,7 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
              x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-             class="relative z-10 w-full max-w-lg flex flex-col bg-white rounded-xl shadow-lg overflow-hidden max-h-[95vh]">
+             class="relative z-10 w-full max-w-4xl flex flex-col bg-white rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh]">
 
             <form id="personel-form"
                 x-bind:action="getFormAction()"
@@ -496,7 +499,6 @@
         </div>
     </div>
 </div>
-
 <script>
     function personelApp() {
         return {
@@ -511,6 +513,12 @@
                 role: '{{ old('role', 'view') }}',
                 id_tugas: '{!! addslashes(old('id_tugas')) !!}',
                 no_telp_anggota: '{!! addslashes(old('no_telp_anggota')) !!}'
+            },
+
+            init() {
+                this.$watch('isModalOpen', value => {
+                    document.body.style.overflow = value ? 'hidden' : '';
+                });
             },
 
             openModal(mode, data = null) {
