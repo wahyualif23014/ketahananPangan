@@ -422,7 +422,7 @@ class PotensiLahanController extends Controller
         AktivitasLog::catat('update', 'potensi_lahan', [
             'record_id'   => $id,
             'label_modul' => 'Lahan #' . $id . ' - ' . ($request->alamat_lahan ?? ''),
-            'data_baru'   => array_except($data, ['edit_oleh', 'tgl_edit']),
+            'data_baru'   => \Illuminate\Support\Arr::except($data, ['edit_oleh', 'tgl_edit']),
             'keterangan'  => 'Edit data potensi lahan #' . $id . ', luas jadi ' . $request->luas_lahan . ' Ha',
         ]);
 

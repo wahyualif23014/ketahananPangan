@@ -527,7 +527,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->tanam_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -570,7 +570,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->panen_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -610,7 +610,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                     <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
                                     <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->serapan_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
                                 </div>
-                                @elseif(in_array(auth()->user()->role, ['admin']) || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                @elseif(in_array(auth()->user()->role, ['admin', 'operator']))
                                 <div class="flex flex-col gap-1 w-full mt-1">
                                     <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" class="m-0">
                                         @csrf @method('PUT')
@@ -719,7 +719,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                         Kelola Lahan Aktif
                                         <span class="text-[9px] font-black text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wide">Siklus Berjalan</span>
                                     </h4>
-                                    @if(in_array(auth()->user()->role, ['admin', 'operator_polsek']))
+                                    @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                     <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 0)' class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -774,12 +774,12 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                             </svg> Selesai Siklus</button>
                                                     </form>
                                                     @endif
-                                                    @if(auth()->user()->role === 'admin' && !is_null($tanam->id_tanam))
+                                                    @if(in_array(auth()->user()->role, ['admin', 'operator']) && !is_null($tanam->id_tanam))
                                                     <button @click="submitTolakDirect('{{ $tanam->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
                                                         </svg> Tolak Siklus</button>
                                                     @endif
-                                                    @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                    @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                                     @if(is_null($tanam->valid_oleh))
                                                     @if($tanam->alasan_tolak)
                                                     {{-- DITOLAK: badge + info hover saja, tidak ada tombol validasi/tolak --}}
@@ -828,7 +828,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                 <p class="text-sm font-black text-slate-800">{{ number_format($panen->luas_panen, 2) }} HA <span class="text-[10px] font-bold text-slate-400 ml-1">dari {{ number_format($panen->total_panen, 2) }} TON</span></p>
                                                             </div>
                                                             <div class="flex items-center gap-2">
-                                                                @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                                @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                                                 @if(is_null($panen->valid_oleh))
                                                                 @if($panen->alasan_tolak)
                                                                 <div class="group relative">
@@ -869,7 +869,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                         <p class="text-[11px] font-black text-slate-800">{{ number_format($distribusi->total_distribusi, 2) }} TON</p>
                                                                     </div>
                                                                     <div class="flex items-center gap-2">
-                                                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count(auth()->user()->id_tugas, '.') === 1))
+                                                                        @if(in_array(auth()->user()->role, ['admin', 'operator']))
                                                                         @if(is_null($distribusi->valid_oleh))
                                                                         @if($distribusi->alasan_tolak)
                                                                         <div class="group relative">

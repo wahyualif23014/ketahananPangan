@@ -1090,10 +1090,7 @@ class KelolaLahanController extends Controller
     public function unvalidasiTanam(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
         DB::table('tanam')->where('id_tanam', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Tanam berhasil di-unvalidasi']);
         return back()->with('success', 'Data Tanam berhasil di-unvalidasi');
@@ -1102,10 +1099,7 @@ class KelolaLahanController extends Controller
     public function unvalidasiPanen(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
         DB::table('panen')->where('id_panen', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Panen berhasil di-unvalidasi']);
         return back()->with('success', 'Data Panen berhasil di-unvalidasi');
@@ -1114,10 +1108,7 @@ class KelolaLahanController extends Controller
     public function unvalidasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
         DB::table('distribusi')->where('id_distribusi', $id)->update(['valid_oleh' => null, 'tgl_valid' => null]);
         if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Data Serapan berhasil di-unvalidasi']);
         return back()->with('success', 'Data Serapan berhasil di-unvalidasi');
@@ -1126,10 +1117,7 @@ class KelolaLahanController extends Controller
     public function validasiTanam(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
 
         try {
             DB::table('tanam')->where('id_tanam', $id)->update([
@@ -1147,10 +1135,7 @@ class KelolaLahanController extends Controller
     public function validasiPanen(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
 
         try {
             DB::table('panen')->where('id_panen', $id)->update([
@@ -1168,10 +1153,7 @@ class KelolaLahanController extends Controller
     public function validasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
-            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
-        }
+
 
         $scope = $user->id_tugas ?? '0';
         $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
@@ -1258,9 +1240,7 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         // Hanya Polres (1 titik) yang bisa menolak, bukan Polsek (2 titik)
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
-        }
+
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
@@ -1317,9 +1297,7 @@ class KelolaLahanController extends Controller
     public function tolakValidasiPanen(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
-        }
+
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
@@ -1376,9 +1354,7 @@ class KelolaLahanController extends Controller
     public function tolakValidasiSerapan(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak. Hanya Polres atau Admin yang bisa menolak data.'], 403);
-        }
+
         $alasan = "Data ditolak oleh Polres. Silakan perbaiki data dan ajukan kembali.";
 
         try {
@@ -1475,9 +1451,7 @@ class KelolaLahanController extends Controller
     public function selesaiSiklusTanam(Request $request, $id)
     {
         $user = auth()->user();
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyelesaikan siklus.'], 403);
-        }
+
 
         try {
             $tanam = DB::table('tanam')->where('id_tanam', $id)->where('is_active', 1)->first();

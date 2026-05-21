@@ -954,7 +954,7 @@
                             </div>
                             <div class="p-8 bg-slate-900 border border-slate-800 rounded-[2.5rem] text-center shadow-xl shadow-slate-900/10 group relative overflow-hidden">
                                 <div class="absolute -right-4 -top-4 w-16 h-16 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3 relative z-10">Jml. Poktan</p>
+                                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3 relative z-10">Nama Poktan</p>
                                 <p class="text-4xl font-black text-white tracking-tighter relative z-10" x-text="activeDetailData?.poktan || '0'"></p>
                                 <p class="text-[11px] text-slate-400 font-black mt-2 tracking-widest uppercase relative z-10">Kelompok</p>
                             </div>
@@ -1723,6 +1723,14 @@
                 query: '',
                 filtered: [],
                 showDropdown: false,
+                init() {
+                    window.addEventListener('sync-anggota', (e) => {
+                        this.query = type === 'penggerak' ? e.detail.penggerak : e.detail.pj;
+                    });
+                    window.addEventListener('reset-anggota', () => {
+                        this.query = '';
+                    });
+                },
                 onInput() {
                     const q = this.query.toLowerCase().trim();
                     if (q.length < 1) {
@@ -1788,11 +1796,11 @@
                 filtered: [],
                 showDropdown: false,
                 init() {
-                    // Pre-fill if editing
-                    this.$watch('formData.jml_poktan', (val) => {
-                        if (val && this.query === '') {
-                            this.query = val;
-                        }
+                    window.addEventListener('sync-anggota', (e) => {
+                        this.query = e.detail.poktan || '';
+                    });
+                    window.addEventListener('reset-anggota', () => {
+                        this.query = '';
                     });
                 },
                 onInput() {
@@ -1810,8 +1818,18 @@
                         }
                     });
 
+                    let uniqueNames = new Set();
                     this.filtered = this.allPoktan
-                        .filter(p => p.nama_poktan && p.nama_poktan.toLowerCase().includes(q))
+                        .filter(p => {
+                            if (p.nama_poktan && p.nama_poktan.toLowerCase().includes(q)) {
+                                const lowerName = p.nama_poktan.toLowerCase().trim();
+                                if (!uniqueNames.has(lowerName)) {
+                                    uniqueNames.add(lowerName);
+                                    return true;
+                                }
+                            }
+                            return false;
+                        })
                         .slice(0, 15);
                     this.showDropdown = true;
                     
@@ -2158,6 +2176,16 @@
                     this.currentStep = 1;
                     this.isOpen = true;
                     this.initMap();
+                    
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('sync-anggota', {
+                            detail: {
+                                penggerak: item ? (item.cp_polisi || '') : '',
+                                pj: item ? (item.cp_lahan || '') : '',
+                                poktan: item ? (item.poktan || '') : ''
+                            }
+                        }));
+                    }, 50);
                 },
 
                 closeModal() {
@@ -2166,6 +2194,7 @@
                 },
 
                 resetForm() {
+                    window.dispatchEvent(new Event('reset-anggota'));
                     this.formData = {
                         id: null,
                         id_resor: this.polresList.length === 1 ? this.polresList[0].id_tingkat : '',

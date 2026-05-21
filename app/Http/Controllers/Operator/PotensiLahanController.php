@@ -459,6 +459,8 @@ class PotensiLahanController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
+        $idPoktan = $this->resolvePoktan($request);
+
         $data = [
             'id_tingkat'       => $request->id_sektor ?: $request->id_resor,
             'id_wilayah'       => $request->id_desa,
@@ -474,7 +476,7 @@ class PotensiLahanController extends Controller
             'alamat_lahan'     => $request->alamat_lahan,
             'keterangan_lahan' => $request->ket_pj,
             'poktan'           => 1,
-            'id_poktan'        => $this->resolvePoktan($request),
+            'id_poktan'        => $idPoktan,
             'jml_petani'       => $request->jml_petani,
             'id_komoditi'      => $request->id_komoditi,
             'ket_polisi'       => $request->keterangan_lain,
