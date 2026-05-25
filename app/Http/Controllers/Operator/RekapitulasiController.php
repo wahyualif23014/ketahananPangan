@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\DeliversRekapitulasiAjax;
 use Illuminate\Http\Request;
 use App\Models\RekapitulasiLahan;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class RekapitulasiController extends Controller
 {
+    use DeliversRekapitulasiAjax;
+
     /**
      * Buat closure scope yang membatasi query ke jurisdiksi operator
      * berdasarkan kolom id_polres (format prefix matching).
@@ -134,22 +137,7 @@ class RekapitulasiController extends Controller
                 ->get();
         });
 
-        // 4. OPTIMASI: Explicit Selection & Result Caching
-        // Caching per user selama 60 detik untuk mempercepat navigasi
-        $cacheKey = "rekap_op_data_{$userId}_" . md5(serialize($request->all()) . '_p' . $request->get('page', 1));
-
-        $dataRekap = Cache::remember($cacheKey, 60, function() use ($request, $applyScope) {
-            return $applyScope(RekapitulasiLahan::select([
-                'nama_polres', 'nama_polsek', 'nama_desa', 'kapasitas_lahan_ha',
-                'aktual_tanam_ha', 'aktual_panen_ha', 'total_produksi_panen',
-                'total_titik_lahan', 'persentase_serapan', 'nama_jenis_lahan',
-                'nama_komoditi', 'tahun_lahan'
-            ]))
-            ->filter($request->all())
-            ->paginate(100);
-        });
-
-        $dataRekap->withQueryString();
+        $dataRekap = $this->fetchRekapitulasiPaginated($request, $applyScope, $userId);
 
         return view('operator.rekapitulasi.operator_rekap', compact(
             'dataRekap',
@@ -160,6 +148,42 @@ class RekapitulasiController extends Controller
             'userLevel',
             'scope'
         ));
+    }
+
+    public function data(Request $request)
+    {
+        set_time_limit(120);
+
+        if (! $request->ajax() && ! $request->wantsJson()) {
+            return redirect()->route('operator.rekapitulasi.index', $request->query());
+        }
+
+        $applyScope = $this->makeScopeClosure();
+        $userId = auth()->id();
+
+        return $this->rekapitulasiAjaxResponse(
+            $this->fetchRekapitulasiPaginated($request, $applyScope, $userId)
+        );
+    }
+
+    private function fetchRekapitulasiPaginated(Request $request, \Closure $applyScope, int $userId)
+    {
+        $cacheKey = "rekap_op_data_{$userId}_" . md5(serialize($request->all()) . '_p' . $request->get('page', 1));
+
+        $dataRekap = Cache::remember($cacheKey, 60, function () use ($request, $applyScope) {
+            return $applyScope(RekapitulasiLahan::select([
+                'nama_polres', 'nama_polsek', 'nama_desa', 'kapasitas_lahan_ha',
+                'aktual_tanam_ha', 'aktual_panen_ha', 'total_produksi_panen',
+                'total_titik_lahan', 'persentase_serapan', 'nama_jenis_lahan',
+                'nama_komoditi', 'tahun_lahan',
+            ]))
+                ->filter($request->all())
+                ->paginate(100);
+        });
+
+        $dataRekap->withQueryString();
+
+        return $dataRekap;
     }
 
     public function getPolsek(Request $request)

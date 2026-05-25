@@ -18,7 +18,8 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $jabatan = \Illuminate\Support\Facades\DB::table('jabatan')->where('id_jabatan', $user->id_jabatan)->value('nama_jabatan') ?? 'Tidak Ada Jabatan';
-        $wilayah = \Illuminate\Support\Facades\DB::table('tingkat')->where('id_tingkat', $user->id_tugas)->value('nama_tingkat') ?? 'Semua Wilayah';
+        $tingkat = \Illuminate\Support\Facades\DB::table('tingkat')->where('id_tingkat', $user->id_tugas)->first();
+        $wilayah = $tingkat ? $tingkat->id_tingkat . ' - ' . $tingkat->nama_tingkat : ($user->id_tugas ? $user->id_tugas . ' - Data Lokasi Tidak Ditemukan' : 'Semua Wilayah');
 
         return view('profile.edit', [
             'user' => $user,

@@ -1,25 +1,32 @@
 # ============================================================
-# Stage 1: Node — build frontend assets (Vite/Tailwind)
+# Stage 1: Node — build frontend assets (Vite + TailwindCSS)
 # ============================================================
 FROM node:20-alpine AS node_builder
 
-WORKDIR /app
+WORKDIR /build
 
+# Layer cache: install deps first
 COPY package.json package-lock.json ./
 RUN npm ci --prefer-offline
 
+# Copy frontend source + config files
 COPY resources/ resources/
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 COPY public/ public/
 
+# Build production assets
 RUN npm run build
 
+
 # ============================================================
-# Stage 2: PHP — production app image
+# Stage 2: PHP Application (PHP-FPM + Nginx + Supervisor)
 # ============================================================
 FROM php:8.2-fpm-alpine AS app
 
-# System deps
+LABEL maintainer="Ketahanan Pangan Team"
+LABEL description="Laravel Ketahanan Pangan Application"
+
+# ── System dependencies ──────────────────────────────────────
 RUN apk add --no-cache \
     bash \
     curl \
@@ -34,10 +41,14 @@ RUN apk add --no-cache \
     libxml2-dev \
     shadow \
     nginx \
-    supervisor
+    supervisor \
+    # For healthcheck
+    fcgi
 
-# PHP extensions required by Laravel + maatwebsite/excel
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+# ── PHP extensions (Laravel + maatwebsite/excel) ─────────────
+RUN docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         mbstring \
@@ -50,39 +61,54 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         xml \
         opcache
 
-# Allow composer to run as root inside Docker
+# ── Composer ────────────────────────────────────────────────
 ENV COMPOSER_ALLOW_SUPERUSER=1
-
-# Composer
-COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first (layer cache)
+# ── Layer cache: Composer deps ──────────────────────────────
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install \
+    --no-dev \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --no-interaction
 
-# Copy full application source
+# ── Copy full application source ────────────────────────────
 COPY . .
 
-# Copy built frontend assets from Stage 1
-COPY --from=node_builder /app/public/build ./public/build
+# ── Copy built frontend assets from Stage 1 ─────────────────
+COPY --from=node_builder /build/public/build ./public/build
 
-# Finish composer setup
-# --no-scripts: skip artisan package:discover (dev packages like Breeze not installed)
-# Discovery happens automatically when the app boots in production
-RUN composer dump-autoload --optimize --no-dev --no-scripts
+# ── Finish Composer autoload ────────────────────────────────
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
-# Storage dirs are created at runtime by entrypoint.sh
-# (named volumes would overwrite dirs created here at build time)
+# ── Create storage directory structure ──────────────────────
+RUN mkdir -p \
+    storage/logs \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache/data \
+    storage/app/public \
+    bootstrap/cache
 
-# Copy config files
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-COPY docker/entrypoint.sh /entrypoint.sh
+# ── Set ownership to www-data ───────────────────────────────
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
+
+# ── Copy Docker config files ───────────────────────────────
+COPY docker/nginx.conf        /etc/nginx/nginx.conf
+COPY docker/supervisord.conf  /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php.ini           /usr/local/etc/php/conf.d/99-custom.ini
+COPY docker/entrypoint.sh     /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# ── Healthcheck ─────────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost/up 2>/dev/null || curl -f http://localhost/ 2>/dev/null || exit 1
 
 EXPOSE 80
 
-CMD ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

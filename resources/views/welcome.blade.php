@@ -15,9 +15,6 @@
             <a href="{{ route('login') }}" class="bg-emerald-500 hover:bg-emerald-600 px-8 py-3 rounded-xl font-bold transition">
                 Masuk Sistem
             </a>
-            <a href="{{ route('register') }}" class="border border-slate-700 hover:bg-slate-800 px-8 py-3 rounded-xl font-bold transition">
-                Daftar Personil
-            </a>
         </div>
     </div>
 </body>

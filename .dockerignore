@@ -1,27 +1,49 @@
-# Exclude heavy dirs that shouldn't be sent to Docker build context
-node_modules
-vendor
-.git
-.vscode
-.idea
+# ============================================================
+#  .dockerignore — Ketahanan Pangan
+# ============================================================
 
-# Laravel cache/generated files (will be generated inside container)
+# ── Heavy directories (rebuilt inside container) ───────────
+node_modules/
+vendor/
+.git/
+.vscode/
+.idea/
+
+# ── Laravel generated files ────────────────────────────────
 bootstrap/cache/*.php
 storage/logs/*.log
-storage/framework/cache
-storage/framework/sessions
-storage/framework/views
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
 
-# Docker files themselves
+# ── Docker files ───────────────────────────────────────────
 .env
 .env.docker
 .env.*.local
 docker-compose*.yml
 
-# Dev/test files
-*.sql
-*.xlsx
+# ── Dev/test artifacts ─────────────────────────────────────
 phpunit.xml
 tests/
 npm-debug.log
 yarn-error.log
+
+# ── Scratch/temp files ─────────────────────────────────────
+scratch/
+artifacts/
+dump.txt
+fix*.php
+db_inspect.php
+add_column.php
+get_error.php
+modify_view.cjs
+temp_validate.*
+
+# ── Build artifacts ────────────────────────────────────────
+public/build/
+public/hot
+
+# NOTE: init.sql is NOT excluded — it's needed for DB seeding
+# If init.sql is large and you don't need it in the image,
+# uncomment the next line:
+# init.sql
