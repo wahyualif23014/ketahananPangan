@@ -691,7 +691,7 @@
 
                                             @if(auth()->user()->role === 'admin' && $row->id_tanam)
                                             <div class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3">
-                                                <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $row->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan siklus ini ke Kelola Lahan Aktif? Status arsip akan dibatalkan.')">
+                                                <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan siklus ini ke Kelola Lahan Aktif? Status arsip akan dibatalkan.')">
                                                     @csrf
                                                     @method('PUT')
                                                     <button type="submit" class="w-full px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5">
@@ -700,7 +700,7 @@
                                                     </button>
                                                 </form>
 
-                                                <form action="{{ route('admin.kelola-lahan.tanam.destroy', $row->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Peringatan: Seluruh data siklus ini (Tanam, Panen, Serapan) akan Dihapus Permanen! Lanjutkan?')">
+                                                <form action="{{ route('admin.kelola-lahan.tanam.destroy', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Peringatan: Seluruh data siklus ini (Tanam, Panen, Serapan) akan Dihapus Permanen! Lanjutkan?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="w-full px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5">
@@ -774,7 +774,7 @@
                                                                     </div>
                                                                     <div class="flex gap-2">
                                                                         @if(auth()->user()->role === 'admin' && $tanam->is_active == 0)
-                                                                            <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $tanam->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Aktifkan kembali siklus ini? Data akan dikembalikan ke Kelola Lahan Aktif.');">
+                                                                            <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Aktifkan kembali siklus ini? Data akan dikembalikan ke Kelola Lahan Aktif.');">
                                                                                 @csrf @method('PUT')
                                                                                 <button type="submit" class="px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-700 transition-all shadow-sm flex items-center gap-1">
                                                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
@@ -960,6 +960,14 @@
             modalValidasi: false,
             validasiData: { tanam: [], panen: [], serapan: [], has_active: false },
             lahanStages: @json($lahanStagesMap ?? new stdClass()),
+            get minPanenDate() {
+                const rawDate = this.activeLahan?.est_awal_panen || this.activeLahan?.tgl_tanam || '';
+                return rawDate ? String(rawDate).split(' ')[0] : '';
+            },
+            get minSerapanDate() {
+                const rawDate = this.activeLahan?.tgl_panen || '';
+                return rawDate ? String(rawDate).split(' ')[0] : '';
+            },
 
             // Form Data
             formTanam: {
@@ -1053,6 +1061,21 @@
             },
 
             async submitTanam() {
+                if (this.formTanam.tgl_tanam && this.formTanam.est_awal_panen) {
+                    const dTanam = new Date(this.formTanam.tgl_tanam);
+                    const dAwal = new Date(this.formTanam.est_awal_panen);
+                    if (dAwal <= dTanam) {
+                        $notify('warning', 'Validasi Gagal', 'Estimasi tanggal awal panen harus sesudah tanggal tanam.');
+                        return;
+                    }
+                    if (this.formTanam.est_akhir_panen) {
+                        const dAkhir = new Date(this.formTanam.est_akhir_panen);
+                        if (dAkhir < dAwal) {
+                            $notify('warning', 'Validasi Gagal', 'Estimasi tanggal akhir panen tidak boleh kurang dari awal panen.');
+                            return;
+                        }
+                    }
+                }
                 try {
                     const url = this.isEditMode ? `/admin/kelola-lahan/tanam/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.tanam.store') }}";
                     const method = this.isEditMode ? 'PUT' : 'POST';
@@ -1082,6 +1105,18 @@
             },
 
             async submitPanen() {
+                const estAwalPanenSource = this.activeLahan?.est_awal_panen;
+                if (estAwalPanenSource && this.formPanen.tgl_panen) {
+                    if (new Date(this.formPanen.tgl_panen) < new Date(estAwalPanenSource)) {
+                        $notify('warning', 'Validasi Gagal', `Tanggal panen tidak boleh kurang dari Estimasi Panen (${estAwalPanenSource}).`);
+                        return;
+                    }
+                } else if (this.activeLahan?.tgl_tanam && this.formPanen.tgl_panen) {
+                    if (new Date(this.formPanen.tgl_panen) <= new Date(this.activeLahan.tgl_tanam)) {
+                        $notify('warning', 'Validasi Gagal', `Tanggal panen harus sesudah tanggal tanam (${this.activeLahan.tgl_tanam}).`);
+                        return;
+                    }
+                }
                 try {
                     const url = this.isEditMode ? `/admin/kelola-lahan/panen/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.panen.store') }}";
                     const method = this.isEditMode ? 'PUT' : 'POST';
@@ -1112,6 +1147,13 @@
             },
 
             async submitSerapan() {
+                const tglPanenSource = this.activeLahan?.tgl_panen;
+                if (tglPanenSource && this.formSerapan.tgl_distribusi) {
+                    if (new Date(this.formSerapan.tgl_distribusi) < new Date(tglPanenSource)) {
+                        $notify('warning', 'Validasi Gagal', `Tanggal serapan tidak boleh kurang dari tanggal panen (${tglPanenSource}).`);
+                        return;
+                    }
+                }
                 try {
                     const url = this.isEditMode ? `/admin/kelola-lahan/serapan/${this.activeProcessId}` : "{{ route('admin.kelola-lahan.serapan.store') }}";
                     const method = this.isEditMode ? 'PUT' : 'POST';
@@ -1323,11 +1365,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tgl. Awal</span>
-                        <input type="date" x-model="formTanam.est_awal_panen" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
+                        <input type="date" x-model="formTanam.est_awal_panen" :min="formTanam.tgl_tanam" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
                     </div>
                     <div>
                         <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Tgl. Akhir</span>
-                        <input type="date" x-model="formTanam.est_akhir_panen" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
+                        <input type="date" x-model="formTanam.est_akhir_panen" :min="formTanam.est_awal_panen || formTanam.tgl_tanam" class="w-full text-xs font-bold bg-white border border-emerald-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/10 outline-none">
                     </div>
                 </div>
             </div>
@@ -1399,7 +1441,7 @@
             <div class="grid grid-cols-3 gap-4">
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Panen</label>
-                    <input type="date" x-model="formPanen.tgl_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
+                    <input type="date" x-model="formPanen.tgl_panen" :min="minPanenDate" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
                 </div>
                 <div class="col-span-1" x-effect="if(formPanen.status_panen == 2) { formPanen.luas_panen = 0; }">
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Luas Panen (Ha)</label>
@@ -1445,7 +1487,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Serapan</label>
-                    <input type="date" x-model="formSerapan.tgl_distribusi" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                    <input type="date" x-model="formSerapan.tgl_distribusi" :min="minSerapanDate" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
                 </div>
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Total Serapan (Ton)</label>
@@ -1536,7 +1578,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="text-xs font-black text-emerald-600 bg-white px-2 py-1 rounded shadow-sm border border-emerald-100" x-text="t.luas_tanam + ' Ha'"></div>
-                                <form :action="`/admin/kelola-lahan/tanam/${t.id_tanam}/validasi`" method="POST" class="m-0">
+                                <form :action="`/admin/kelola-lahan/tanam/${t.id_tanam}/validasi`" method="POST" data-ajax="true" class="m-0">
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-emerald-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-emerald-600">Validasi</button>
                                 </form>
@@ -1561,7 +1603,7 @@
                                     <div class="text-[10px] font-black text-amber-600 bg-white px-2 py-0.5 rounded shadow-sm border border-amber-100 mb-1" x-text="p.luas_panen + ' Ha'"></div>
                                     <div class="text-[10px] font-black text-amber-600 bg-white px-2 py-0.5 rounded shadow-sm border border-amber-100" x-text="p.total_panen + ' Ton'"></div>
                                 </div>
-                                <form :action="`/admin/kelola-lahan/panen/${p.id_panen}/validasi`" method="POST" class="m-0">
+                                <form :action="`/admin/kelola-lahan/panen/${p.id_panen}/validasi`" method="POST" data-ajax="true" class="m-0">
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-amber-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-amber-600">Validasi</button>
                                 </form>
@@ -1583,7 +1625,7 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="text-xs font-black text-blue-600 bg-white px-2 py-1 rounded shadow-sm border border-blue-100" x-text="s.total_distribusi + ' Ton'"></div>
-                                <form :action="`/admin/kelola-lahan/serapan/${s.id_distribusi}/validasi`" method="POST" class="m-0">
+                                <form :action="`/admin/kelola-lahan/serapan/${s.id_distribusi}/validasi`" method="POST" data-ajax="true" class="m-0">
                                     @csrf @method('PUT')
                                     <button type="submit" class="px-2 py-1 bg-blue-500 text-white rounded shadow-sm text-[10px] font-bold hover:bg-blue-600">Validasi</button>
                                 </form>

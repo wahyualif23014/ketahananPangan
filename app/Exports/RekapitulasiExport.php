@@ -206,7 +206,7 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
 
     private function getSerapanSubquery($distribusiKe, $level)
     {
-        $filterSql = "d.deletestatus = 0 AND d.distribusi_ke = " . (int)$distribusiKe;
+        $filterSql = "d.deletestatus != '0' AND d.distribusi_ke = " . (int)$distribusiKe;
 
         if (!empty($this->filters['tahun'])) {
             $filterSql .= " AND YEAR(d.tgl_distribusi) = " . (int)$this->filters['tahun'];

@@ -172,12 +172,14 @@ class RekapitulasiController extends Controller
 
         $dataRekap = Cache::remember($cacheKey, 60, function () use ($request, $applyScope) {
             return $applyScope(RekapitulasiLahan::select([
+                'id_wilayah', 'id_polres', 'id_polsek',
                 'nama_polres', 'nama_polsek', 'nama_desa', 'kapasitas_lahan_ha',
                 'aktual_tanam_ha', 'aktual_panen_ha', 'total_produksi_panen',
                 'total_titik_lahan', 'persentase_serapan', 'nama_jenis_lahan',
                 'nama_komoditi', 'tahun_lahan',
             ]))
                 ->filter($request->all())
+                ->withSerapanDetails($request->all())
                 ->paginate(100);
         });
 

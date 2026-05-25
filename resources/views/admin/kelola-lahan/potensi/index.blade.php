@@ -583,7 +583,7 @@
                                         @elseif(!$item['valid_oleh'])
                                             @if($canValidate)
                                             <div class="flex flex-col gap-1 w-full">
-                                                <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" class="w-full m-0">
+                                                <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.validasi', $item['id_lahan']) }}" method="POST" data-ajax="true" class="w-full m-0">
                                                     @csrf @method('PUT')
                                                     <button type="submit" class="w-full inline-flex justify-center items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
                                                         Validasi
@@ -600,7 +600,7 @@
                                             @endif
                                         @else
                                             @if($canValidate)
-                                            <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
+                                            <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" data-ajax="true" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
                                                 @csrf @method('PUT')
                                                 <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
                                                     Batal Validasi
@@ -612,7 +612,7 @@
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit
                                         </button>
-                                        <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Hapus Data Lahan?', 'Data ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.', 'danger')">
+                                        <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" data-ajax="true" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Hapus Data Lahan?', 'Data ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.', 'danger')">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
                                                 Hapus
@@ -1102,7 +1102,7 @@
                         </svg>
                     </button>
                 </div>
-                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
+                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/update/${activeData?.id_lahan}`" method="POST" data-ajax="true" class="flex-1 overflow-y-auto custom-scrollbar">
                     @csrf @method('PUT')
                     <div class="p-8 space-y-6">
 
@@ -1164,7 +1164,7 @@
                 <h3 class="text-xl font-black text-slate-800 mb-2 uppercase">Hapus Data?</h3>
                 <p class="text-xs text-slate-500 font-medium mb-8">Data lahan seluas <strong class="text-rose-500" x-text="activeData?.luas_lahan + ' HA'"></strong> milik <strong class="text-slate-700 uppercase" x-text="activeData?.cp_lahan"></strong> akan dihapus sementara dari sistem.</p>
 
-                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" class="w-full flex gap-3">
+                <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/destroy/${activeData?.id_lahan}`" method="POST" data-ajax="true" class="w-full flex gap-3">
                     @csrf @method('DELETE')
                     <button type="button" @click="isDeleteOpen = false" class="flex-1 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl transition-all">Batal</button>
                     <button type="submit" class="flex-1 bg-rose-500 text-white hover:bg-rose-600 uppercase tracking-widest text-[10px] font-black py-3.5 rounded-xl shadow-lg shadow-rose-500/30 transition-all active:scale-95">Ya, Hapus</button>
@@ -1243,7 +1243,7 @@
                         </div>
 
                         {{-- Main Form Body --}}
-                        <form @submit.prevent="saveData()" class="flex flex-col md:flex-row flex-2 overflow-hidden">
+                        <form @submit.prevent="saveData()" data-draft="true" class="flex flex-col md:flex-row flex-2 overflow-hidden">
 
                             {{-- LEFT: Form Inputs --}}
                             <div class="flex-1 overflow-y-auto p-8 space-y-8 scroll-smooth">

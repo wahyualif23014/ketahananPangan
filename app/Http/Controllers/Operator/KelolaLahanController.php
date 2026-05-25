@@ -318,7 +318,8 @@ class KelolaLahanController extends Controller
 
             // Build Hierarchy
             $groupedItems = collect($paginator->items())->map(function ($resor) use ($allSektors, $recordsCollection) {
-                $resor->sektors = $allSektors->filter(function ($s) use ($resor) {
+                // Sektor-sektor yang berada di bawah Resor ini
+                $sektors = $allSektors->filter(function ($s) use ($resor) {
                     return str_starts_with($s->id_tingkat, $resor->id_tingkat . '.');
                 })->map(function ($sektor) use ($recordsCollection) {
                     $sektor->lahans = $recordsCollection->filter(function ($l) use ($sektor) {
@@ -327,7 +328,21 @@ class KelolaLahanController extends Controller
                     return $sektor;
                 })->filter(function ($sektor) {
                     return $sektor->lahans->isNotEmpty();
+                })->values();
+
+                // Tambahkan virtual sektor untuk lahan yang nempel langsung ke Resor (misalnya lahan Polda/Polres)
+                $resorLahans = $recordsCollection->filter(function ($l) use ($resor) {
+                    return $l->id_tingkat === $resor->id_tingkat;
                 });
+
+                if ($resorLahans->isNotEmpty()) {
+                    $virtualSektor = clone $resor;
+                    $virtualSektor->nama_tingkat = $resor->nama_tingkat; // Label akan menunjukkan nama Polres
+                    $virtualSektor->lahans = $resorLahans;
+                    $sektors->prepend($virtualSektor);
+                }
+
+                $resor->sektors = $sektors;
                 return $resor;
             })->filter(function ($resor) {
                 return $resor->sektors->isNotEmpty();

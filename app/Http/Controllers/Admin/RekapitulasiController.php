@@ -81,6 +81,9 @@ class RekapitulasiController extends Controller
 
         $dataRekap = Cache::remember($cacheKey, 60, function () use ($request) {
             return RekapitulasiLahan::select([
+                'id_wilayah',
+                'id_polres',
+                'id_polsek',
                 'nama_polres',
                 'nama_polsek',
                 'nama_desa',
@@ -95,6 +98,7 @@ class RekapitulasiController extends Controller
                 'tahun_lahan',
             ])
                 ->filter($request->all())
+                ->withSerapanDetails($request->all())
                 ->paginate(100);
         });
 
