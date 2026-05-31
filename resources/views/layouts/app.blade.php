@@ -646,7 +646,8 @@
             document.getElementById('main-content')?.classList.remove('page-transition-leave');
         });
     </script>
-
+    
+    @include('components.floating-chat')
 </body>
 
 </html>
