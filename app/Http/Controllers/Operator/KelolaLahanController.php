@@ -563,7 +563,7 @@ class KelolaLahanController extends Controller
             ->limit(100)
             ->get();
             
-        $polresForHarvest = DB::table('tingkat')
+        $polresForHarvest = $applyTingkatScope(DB::table('tingkat'))
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\.[0-9]+$'")
             ->orderBy('id_tingkat')
             ->get();

@@ -1321,10 +1321,30 @@
 {{-- ========================================== --}}
 
 <!-- MODAL PROSES TANAM -->
-<div x-show="modalTanam" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalTanam = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+<div x-show="modalTanam"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+     x-cloak>
+    <!-- Backdrop -->
+    <div x-show="modalTanam"
+         x-transition:enter="ease-out duration-250"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="modalTanam = false"
+         class="absolute inset-0"
+         style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+    <!-- Dialog Box -->
+    <div x-show="modalTanam"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-90 translate-y-8"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+         class="relative z-10 bg-white rounded-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
+         style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.04);">
         <div class="px-8 py-6 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -1386,10 +1406,30 @@
 </div>
 
 <!-- MODAL PROSES PANEN -->
-<div x-show="modalPanen" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalPanen = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+<div x-show="modalPanen"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+     x-cloak>
+    <!-- Backdrop -->
+    <div x-show="modalPanen"
+         x-transition:enter="ease-out duration-250"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="modalPanen = false"
+         class="absolute inset-0"
+         style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+    <!-- Dialog Box -->
+    <div x-show="modalPanen"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-90 translate-y-8"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+         class="relative z-10 bg-white rounded-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
+         style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.04);">
         <div class="px-8 py-6 bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -1465,10 +1505,30 @@
 </div>
 
 <!-- MODAL SERAPAN DATA -->
-<div x-show="modalSerapan" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
-     x-cloak x-transition.opacity>
-    <div @click.outside="modalSerapan = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+<div x-show="modalSerapan"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+     x-cloak>
+    <!-- Backdrop -->
+    <div x-show="modalSerapan"
+         x-transition:enter="ease-out duration-250"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="modalSerapan = false"
+         class="absolute inset-0"
+         style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+    <!-- Dialog Box -->
+    <div x-show="modalSerapan"
+         x-transition:enter="ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-90 translate-y-8"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+         class="relative z-10 bg-white rounded-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
+         style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.04);">
         <div class="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">

@@ -163,38 +163,48 @@
     {{-- Detail Modal --}}
     <div x-show="showModal" 
          class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 backdrop-blur-none"
-         x-transition:enter-end="opacity-100 backdrop-blur-sm"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 backdrop-blur-sm"
-         x-transition:leave-end="opacity-0 backdrop-blur-none"
          style="display: none;">
-         
-        <div class="fixed inset-0 bg-slate-900/60 transition-opacity" @click="showModal = false"></div>
 
-        <div class="relative w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 scale-95 translate-y-8"
+        <!-- Backdrop -->
+        <div x-show="showModal"
+             x-transition:enter="ease-out duration-250"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="showModal = false"
+             class="absolute inset-0"
+             style="background: rgba(15,23,42,0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+        <!-- Dialog -->
+        <div x-show="showModal"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-8"
              x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave="ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-             x-transition:leave-end="opacity-0 scale-95 translate-y-8">
+             x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+             class="relative z-10 w-full max-w-6xl bg-white rounded-2xl overflow-hidden flex flex-col max-h-[90vh]"
+             style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.05);">
              
             {{-- Modal Header --}}
-            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <div class="flex-shrink-0">
+                <div class="h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-slate-900 tracking-tight" x-text="activePoktanName"></h2>
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">DETAIL SEBARAN LOKASI</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tight" x-text="activePoktanName"></h2>
-                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">DETAIL SEBARAN LOKASI</p>
-                    </div>
+                    <button @click="showModal = false" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-200 text-slate-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
-                <button @click="showModal = false" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-200 text-slate-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
             </div>
 
             {{-- Modal Body --}}

@@ -237,7 +237,7 @@ class RekapitulasiSheet implements FromCollection, WithColumnWidths, WithStyles,
         if ($level === 'polres') {
             return "(SELECT SUM(d.total_distribusi) FROM distribusi d JOIN lahan l ON d.id_lahan = l.id_lahan WHERE l.id_tingkat LIKE CONCAT(view_rekapitulasi_lahan.id_polres, '%') AND $filterSql)";
         } else {
-            return "(SELECT SUM(d.total_distribusi) FROM distribusi d JOIN lahan l ON d.id_lahan = l.id_lahan WHERE l.id_tingkat = view_rekapitulasi_lahan.id_wilayah AND $filterSql)";
+            return "(SELECT SUM(d.total_distribusi) FROM distribusi d JOIN lahan l ON d.id_lahan = l.id_lahan WHERE l.id_wilayah = view_rekapitulasi_lahan.id_wilayah AND $filterSql)";
         }
     }
 

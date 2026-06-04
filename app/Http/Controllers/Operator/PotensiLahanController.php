@@ -242,7 +242,46 @@ class PotensiLahanController extends Controller
             ->get();
 
         $tingkatWilayahList = DB::table('tingkatwilayah')->get();
-        $poktanList = \App\Models\Poktan::all();
+
+        $poktanQuery = \App\Models\Poktan::query()
+            ->select('poktan.*')
+            ->addSelect(['id_wilayah' => DB::table('lahan')
+                ->whereColumn('lahan.id_poktan', 'poktan.id_poktan')
+                ->where('deletestatus', '!=', '0')
+                ->select('id_wilayah')
+                ->limit(1)
+            ]);
+
+        if ($scope && $scope != '0') {
+            $parts = explode('.', $scope);
+            $levelCount = count($parts);
+            if ($levelCount == 2) {
+                $poktanQuery->where('id_polres', $scope);
+            } elseif ($levelCount >= 3) {
+                $polsekScope = implode('.', array_slice($parts, 0, 3));
+                $poktanQuery->where('id_polsek', $polsekScope);
+            } else {
+                $poktanQuery->where('id_polda', $parts[0]);
+            }
+        }
+        
+        $tingkatMapPoktan = DB::table('tingkat')->pluck('nama_tingkat', 'id_tingkat');
+        $wilayahMapPoktan = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
+        $poktanList = $poktanQuery->get()->map(function($p) use ($tingkatMapPoktan, $wilayahMapPoktan) {
+            $parts = [];
+            if (!empty($p->id_wilayah) && isset($wilayahMapPoktan[$p->id_wilayah])) {
+                $parts[] = 'Desa: ' . $wilayahMapPoktan[$p->id_wilayah];
+            }
+            if (!empty($p->id_polsek) && isset($tingkatMapPoktan[$p->id_polsek])) {
+                $parts[] = 'Polsek: ' . $tingkatMapPoktan[$p->id_polsek];
+            }
+            if (!empty($p->id_polres) && isset($tingkatMapPoktan[$p->id_polres])) {
+                $parts[] = 'Polres: ' . $tingkatMapPoktan[$p->id_polres];
+            }
+            
+            $p->nama_tingkatan = !empty($parts) ? implode(' | ', $parts) : 'Umum';
+            return $p;
+        });
 
         // ──────────────────────────────────────────
         // Statistics — scoped to operator's jurisdiction

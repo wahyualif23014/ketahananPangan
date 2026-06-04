@@ -600,9 +600,7 @@
                             <div class="flex flex-col gap-1.5">
                                 <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='editTanam("{{ $row->id_tanam }}", @json($row))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                </div>
+
                                 @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                     @if(!$row->tanam_valid_oleh)
                                         @if($row->tanam_alasan_tolak)
@@ -651,9 +649,7 @@
                                 $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
                                 @endphp
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='editPanen("{{ $row->id_panen }}", @json($row))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                </div>
+
                                 @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                     @if(!$row->panen_valid_oleh)
                                         @if($row->panen_alasan_tolak)
@@ -702,9 +698,7 @@
                                 $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
                                 @endphp
                                 <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json($row))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                </div>
+
                                 @if(substr_count(auth()->user()->id_tugas, '.') < 2)
                                     @if(!$row->serapan_valid_oleh)
                                         @if($row->serapan_alasan_tolak)

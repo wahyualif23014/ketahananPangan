@@ -547,7 +547,7 @@
                                     <span class="inline-flex items-center gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg shadow-sm">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> DITOLAK
                                     </span>
-                                    <div class="text-[8px] text-rose-400 mt-1 italic line-clamp-2">Menunggu perbaikan dari operator</div>
+                                    <div class="text-[8px] text-rose-400 mt-1 italic line-clamp-2" title="{{ $item['ket_polisi'] ?? 'Menunggu perbaikan dari operator' }}">{{ $item['ket_polisi'] ?? 'Menunggu perbaikan dari operator' }}</div>
                                     @elseif(!$item['valid_oleh'])
                                     <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg shadow-sm">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Belum Divalidasi
@@ -606,8 +606,13 @@
                                                     Batal Validasi
                                                 </button>
                                             </form>
+                                            @else
+                                            <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg">
+                                                Sudah Tervalidasi
+                                            </span>
                                             @endif
                                         @endif
+                                        @if($canValidate || $item['status_lahan'] == '2')
                                         <button onclick='openEditModal(@json($item))'
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit
@@ -618,6 +623,7 @@
                                                 Hapus
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -697,10 +703,29 @@
              @close-all-modals.window="show = false"
              x-show="show" x-cloak
              class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-             
-             <div x-show="show" x-transition.opacity class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="show = false"></div>
-             
-             <div x-show="show" x-transition.scale.origin.bottom class="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden z-10">
+
+             <!-- Backdrop -->
+             <div x-show="show"
+                  x-transition:enter="ease-out duration-250"
+                  x-transition:enter-start="opacity-0"
+                  x-transition:enter-end="opacity-100"
+                  x-transition:leave="ease-in duration-200"
+                  x-transition:leave-start="opacity-100"
+                  x-transition:leave-end="opacity-0"
+                  @click="show = false"
+                  class="absolute inset-0"
+                  style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+             <div x-show="show"
+                  x-transition:enter="ease-out duration-300"
+                  x-transition:enter-start="opacity-0 scale-90 translate-y-6"
+                  x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                  x-transition:leave="ease-in duration-200"
+                  x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                  x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                  class="relative bg-white rounded-2xl w-full max-w-md overflow-hidden z-10"
+                  style="box-shadow: 0 24px 64px -12px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);">
+                 <div class="h-1 bg-gradient-to-r from-rose-400 to-rose-600"></div>
                  <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                      <h3 class="text-lg font-black text-slate-800 tracking-tight">Tolak Validasi Lahan</h3>
                      <button @click="show = false" class="text-slate-400 hover:text-rose-500 transition-colors">
@@ -779,18 +804,30 @@
 
         <!-- 1. DETAIL MODAL (Refined with Alpine.js) -->
         <div x-show="isDetailOpen"
-            class="fixed inset-0 z-[200] flex items-start justify-center p-4 md:pt-16 bg-slate-900/30 overflow-y-auto custom-scrollbar"
-            x-transition:enter="transition ease-out duration-500"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95"
+            class="fixed inset-0 z-[200] flex items-center justify-center p-4"
             x-cloak>
 
-            <div @click.outside="isDetailOpen = false"
-                class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden border border-white/20 relative"
-                style="max-height:90vh">
+            <!-- Backdrop -->
+            <div x-show="isDetailOpen"
+                 x-transition:enter="ease-out duration-250"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="isDetailOpen = false"
+                 class="absolute inset-0"
+                 style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+            <div x-show="isDetailOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-90 translate-y-8"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="relative z-10 bg-white rounded-2xl w-full max-w-3xl flex flex-col overflow-hidden max-h-[90vh]"
+                 style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,0,0,0.04);">
 
                 <!-- Header -->
                 <div class="px-10 py-8 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900/20 flex items-center justify-between flex-shrink-0 relative overflow-hidden">
@@ -1079,6 +1116,20 @@
                                     </svg>
                                     <span class="text-xs font-black font-mono tracking-wider" x-text="activeDetailData?.tgl_valid"></span>
                                 </div>
+                                
+                                @if($canValidate)
+                                <div x-show="!activeDetailData?.valid_oleh && activeDetailData?.status_lahan != '2'" class="mt-6 flex gap-2 w-full max-w-xs">
+                                    <form :action="`/{{ $rolePrefix }}/kelola-lahan/potensi/validasi/${activeDetailData?.id_lahan}`" method="POST" data-ajax="true" class="flex-1 m-0">
+                                        @csrf @method('PUT')
+                                        <button type="submit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/30">
+                                            Validasi
+                                        </button>
+                                    </form>
+                                    <button @click="isDetailOpen = false; setTimeout(() => openTolakModal(activeDetailData), 300)" type="button" class="flex-1 py-2.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-500 hover:text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm">
+                                        Tolak
+                                    </button>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -1087,8 +1138,29 @@
         </div>
 
         <!-- 2. EDIT MODAL -->
-        <div x-show="isEditOpen" class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-slate-900/30 overflow-y-auto custom-scrollbar" x-cloak>
-            <div @click.outside="isEditOpen = false" x-show="isEditOpen" x-transition.opacity.duration.300ms class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+        <div x-show="isEditOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+
+            <!-- Backdrop -->
+            <div x-show="isEditOpen"
+                 x-transition:enter="ease-out duration-250"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="isEditOpen = false"
+                 class="absolute inset-0"
+                 style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+            <div x-show="isEditOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-90 translate-y-6"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="relative z-10 bg-white rounded-[2rem] w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]"
+                 style="box-shadow: 0 24px 64px -12px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);">
                 <div class="px-8 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between">
                     <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1154,8 +1226,29 @@
         </div>
 
         <!-- 3. DELETE MODAL -->
-        <div x-show="isDeleteOpen" class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 bg-slate-900/30 overflow-y-auto custom-scrollbar" x-cloak>
-            <div @click.outside="isDeleteOpen = false" x-show="isDeleteOpen" x-transition.opacity.duration.300ms class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden border border-rose-100 flex flex-col items-center text-center p-8">
+        <div x-show="isDeleteOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
+
+            <!-- Backdrop -->
+            <div x-show="isDeleteOpen"
+                 x-transition:enter="ease-out duration-250"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="isDeleteOpen = false"
+                 class="absolute inset-0"
+                 style="background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+            <div x-show="isDeleteOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-90 translate-y-6"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="relative z-10 bg-white rounded-[2rem] w-full max-w-sm overflow-hidden border border-rose-100 flex flex-col items-center text-center p-8"
+                 style="box-shadow: 0 24px 64px -12px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);">
                 <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-6">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -1474,7 +1567,7 @@
                                                             <div @click="select(p)" class="px-4 py-3 hover:bg-emerald-50 cursor-pointer rounded-lg mb-1 flex items-center justify-between group">
                                                                 <div>
                                                                     <div class="font-bold text-slate-800 text-sm group-hover:text-emerald-700" x-text="p.nama_poktan"></div>
-                                                                    <div class="text-[10px] font-medium text-slate-400" x-text="`Polsek: ${p.id_polsek}`"></div>
+                                                                    <div class="text-[10px] font-medium text-slate-400" x-text="p.nama_tingkatan || 'Umum'"></div>
                                                                 </div>
                                                                 <div class="text-xs font-black text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md" x-text="p.luas_lahan + ' Ha'"></div>
                                                             </div>

@@ -155,6 +155,7 @@ class RekapitulasiController extends Controller
                 'nama_komoditi', 'tahun_lahan',
             ]))
                 ->filter($request->all())
+                ->withSerapanDetails($request->all())
                 ->paginate(100);
         });
 
