@@ -37,6 +37,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
         // Dashboard Admin
         Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/metrics', [AdminDashboard::class, 'metrics'])->name('dashboard.metrics');
         Route::post('/dashboard/notify-pending', [AdminDashboard::class, 'notifyPending'])->name('dashboard.notify-pending');
 
         // Grouping Data Utama
@@ -98,6 +99,8 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
             Route::put('/serapan/{id}/unvalidasi', [KelolaLahanController::class, 'unvalidasiSerapan'])->name('serapan.unvalidasi');
             Route::get('/lahan/{id}/validasi-data', [KelolaLahanController::class, 'getValidasiData'])->name('lahan.validasi-data');
             Route::put('/tanam/{id}/selesai', [KelolaLahanController::class, 'selesaiSiklusTanam'])->name('tanam.selesai');
+            Route::put('/tanam/{id}/terima-siklus', [KelolaLahanController::class, 'terimaAkhiriSiklus'])->name('tanam.terima-siklus');
+            Route::put('/tanam/{id}/tolak-siklus', [KelolaLahanController::class, 'tolakAkhiriSiklus'])->name('tanam.tolak-siklus');
             Route::put('/tanam/{id}/unselesai', [KelolaLahanController::class, 'unvalidasiSiklusTanam'])->name('tanam.unselesai');
             Route::put('/tanam/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiTanam'])->name('tanam.tolak');
             Route::put('/panen/{id}/tolak', [KelolaLahanController::class, 'tolakValidasiPanen'])->name('panen.tolak');
@@ -106,6 +109,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
 
         // Rekapitulasi
         Route::get('/rekapitulasi', [RekapitulasiController::class, 'index'])->name('rekapitulasi.index');
+        Route::get('/rekapitulasi/data', [RekapitulasiController::class, 'data'])->name('rekapitulasi.data');
         Route::get('/rekapitulasi/polsek', [RekapitulasiController::class, 'getPolsek'])->name('rekapitulasi.polsek');
         Route::get('/rekapitulasi/export', [RekapitulasiController::class, 'export'])->name('rekapitulasi.export');
 
@@ -127,6 +131,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
     // 2. Group Khusus Operator
     Route::middleware(['checkrole:operator'])->prefix('operator')->name('operator.')->group(function () {
         Route::get('/dashboard', [OperatorDashboard::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/metrics', [OperatorDashboard::class, 'metrics'])->name('dashboard.metrics');
 
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
@@ -166,6 +171,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
         });
 
         Route::get('/rekapitulasi', [OperatorRekapitulasi::class, 'index'])->name('rekapitulasi.index');
+        Route::get('/rekapitulasi/data', [OperatorRekapitulasi::class, 'data'])->name('rekapitulasi.data');
         Route::get('/rekapitulasi/polsek', [OperatorRekapitulasi::class, 'getPolsek'])->name('rekapitulasi.polsek');
         Route::get('/rekapitulasi/export', [OperatorRekapitulasi::class, 'export'])->name('rekapitulasi.export');
 
@@ -183,6 +189,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
     // 3. Group Khusus View
     Route::middleware(['checkrole:view'])->prefix('view')->name('view.')->group(function () {
         Route::get('/dashboard', [ViewDashboard::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/metrics', [ViewDashboard::class, 'metrics'])->name('dashboard.metrics');
 
         Route::prefix('kelola-lahan')->name('kelola-lahan.')->group(function () {
             Route::prefix('potensi')->name('potensi.')->group(function () {
@@ -194,6 +201,7 @@ Route::middleware(['auth', 'throttle:100,1'])->group(function () {
         });
 
         Route::get('/rekapitulasi', [ViewRekapitulasi::class, 'index'])->name('rekapitulasi.index');
+        Route::get('/rekapitulasi/data', [ViewRekapitulasi::class, 'data'])->name('rekapitulasi.data');
         Route::get('/rekapitulasi/polsek', [ViewRekapitulasi::class, 'getPolsek'])->name('rekapitulasi.polsek');
         Route::get('/rekapitulasi/export', [ViewRekapitulasi::class, 'export'])->name('rekapitulasi.export');
     });

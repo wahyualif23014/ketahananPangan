@@ -329,20 +329,31 @@
                 </div>
             @endforelse
         </div>
-    </div>
-
-    {{-- Universal Modal Component (Desain Baru yang Sederhana) --}}
+    </div>    {{-- ============================================================
+         ENTERPRISE MODAL — Manajemen Personel
+    ============================================================ --}}
     <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" aria-modal="true">
-        <div x-show="isModalOpen" x-transition.opacity.duration.300ms @click="closeModal()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
-        
+        {{-- Backdrop --}}
         <div x-show="isModalOpen"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+             x-transition:enter="ease-out duration-250"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="closeModal()"
+             class="absolute inset-0"
+             style="background: rgba(15,23,42,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
+
+        <div x-show="isModalOpen"
+             x-transition:enter="ease-out duration-280"
+             x-transition:enter-start="opacity-0 scale-92 translate-y-6"
              x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave="ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-             x-transition:leave-end="opacity-0 scale-95 translate-y-4"
-             class="relative z-10 w-full max-w-4xl flex flex-col bg-white rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh]">
+             x-transition:leave-end="opacity-0 scale-94 translate-y-4"
+             class="relative z-10 w-full max-w-3xl flex flex-col bg-white rounded-2xl overflow-hidden max-h-[90vh]"
+             style="box-shadow: 0 24px 64px -12px rgba(0,0,0,0.26), 0 0 0 1px rgba(0,0,0,0.04);">
 
             <form id="personel-form"
                 x-bind:action="getFormAction()"
@@ -352,22 +363,39 @@
                 <input type="hidden" name="_method" x-bind:value="getFormMethod()">
                 <input type="hidden" name="id_anggota_hidden" x-model="formData.id_anggota">
 
-                {{-- Header --}}
-                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800" x-text="getModalTitle()"></h3>
-                        <p class="text-sm text-slate-500" x-text="getModalSubtitle()"></p>
+                {{-- Header with gradient top bar --}}
+                <div class="relative">
+                    <div class="h-1 w-full"
+                        :class="modalMode === 'delete' ? 'bg-gradient-to-r from-rose-400 to-rose-600' : 'bg-gradient-to-r from-emerald-400 to-teal-500'"></div>
+                    <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+                                :class="modalMode === 'delete' ? 'bg-rose-50' : 'bg-emerald-50'">
+                                <template x-if="modalMode === 'delete'">
+                                    <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </template>
+                                <template x-if="modalMode !== 'delete'">
+                                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                </template>
+                            </div>
+                            <div>
+                                <h3 class="text-[14px] font-bold text-slate-800" x-text="getModalTitle()"></h3>
+                                <p class="text-[11px] text-slate-400 font-medium" x-text="getModalSubtitle()"></p>
+                            </div>
+                        </div>
+                        <button type="button" @click="closeModal()"
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                     </div>
-                    <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
                 </div>
 
                 {{-- Body --}}
                 <div class="px-6 py-5 overflow-y-auto max-h-[65vh]">
                     @if($errors->any())
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">
-                        <ul class="list-disc list-inside">
+                    <div class="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+                        <svg class="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <ul class="text-[11px] font-medium text-rose-700 space-y-0.5 list-disc list-inside">
                             @foreach($errors->all() as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
@@ -377,9 +405,12 @@
 
                     {{-- DELETE MODE --}}
                     <template x-if="modalMode === 'delete'">
-                        <div class="py-4 text-center">
-                            <p class="text-slate-700">Kamu yakin ingin mencopot personel <strong class="text-slate-900 font-bold" x-text="formData.nama_anggota"></strong>?</p>
-                            <p class="text-sm text-slate-500 mt-2">Data ini akan dihapus dari sistem secara permanen.</p>
+                        <div class="py-6 text-center">
+                            <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </div>
+                            <p class="text-[14px] font-semibold text-slate-700">Yakin ingin mencopot personel <strong class="text-slate-900" x-text="formData.nama_anggota"></strong>?</p>
+                            <p class="text-[12px] text-slate-400 mt-1.5">Data ini akan dihapus dari sistem secara permanen.</p>
                         </div>
                     </template>
 
@@ -388,32 +419,32 @@
                         <div class="space-y-4">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">ID Anggota</label>
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">ID Anggota</label>
                                     <input type="number" name="id_anggota" x-model="formData.id_anggota"
                                         :required="modalMode === 'add'"
                                         :readonly="modalMode === 'edit'"
-                                        :class="modalMode === 'edit' ? 'bg-slate-100 cursor-not-allowed' : ''"
-                                        placeholder="Contoh: 1001" 
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        :class="modalMode === 'edit' ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : ''"
+                                        placeholder="Contoh: 1001"
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all bg-white">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">NRP / Username</label>
-                                    <input type="text" name="username" x-model="formData.username" required placeholder="NRP Personel" 
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">NRP / Username</label>
+                                    <input type="text" name="username" x-model="formData.username" required placeholder="NRP Personel"
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                 </div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap & Pangkat</label>
-                                <input type="text" name="nama_anggota" x-model="formData.nama_anggota" required placeholder="Contoh: IPTU BAMBANG SETIAWAN" 
-                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Lengkap &amp; Pangkat</label>
+                                <input type="text" name="nama_anggota" x-model="formData.nama_anggota" required placeholder="Contoh: IPTU BAMBANG SETIAWAN"
+                                    class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                             </div>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Jabatan</label>
-                                    <select name="id_jabatan" x-model="formData.id_jabatan" required 
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow bg-white">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jabatan</label>
+                                    <select name="id_jabatan" x-model="formData.id_jabatan" required
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all bg-white">
                                         <option value="" disabled selected>Pilih Jabatan</option>
                                         @foreach($jabatans as $j)
                                             <option value="{{ $j->id_jabatan }}">{{ $j->nama_jabatan }}</option>
@@ -421,9 +452,9 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Role Akses</label>
-                                    <select name="role" x-model="formData.role" required 
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow bg-white">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Role Akses</label>
+                                    <select name="role" x-model="formData.role" required
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all bg-white">
                                         <option value="view">View</option>
                                         <option value="operator">Operator</option>
                                         <option value="admin">Admin</option>
@@ -433,9 +464,9 @@
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">ID Wilayah Tugas</label>
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">ID Wilayah Tugas</label>
                                     <input type="text" list="wilayah_tugas_list" name="id_tugas" x-model="formData.id_tugas" placeholder="Ketik nama wilayah (misal: jombang)..." autocomplete="off"
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                     <datalist id="wilayah_tugas_list">
                                         @foreach($tingkatList as $tingkat)
                                             <option value="{{ $tingkat->id_tingkat }}">{{ $tingkat->id_tingkat }} - {{ $tingkat->nama_lengkap }}</option>
@@ -443,55 +474,54 @@
                                     </datalist>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">No. Telepon / WA</label>
-                                    <input type="text" name="no_telp_anggota" x-model="formData.no_telp_anggota" placeholder="0812xxxxxxxx" 
-                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                    <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. Telepon / WA</label>
+                                    <input type="text" name="no_telp_anggota" x-model="formData.no_telp_anggota" placeholder="0812xxxxxxxx"
+                                        class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                 </div>
                             </div>
 
                             <template x-if="modalMode === 'add'">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Sandi</label>
-                                        <input type="password" name="password" required placeholder="Minimal 8 karakter" 
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sandi</label>
+                                        <input type="password" name="password" required placeholder="Minimal 8 karakter"
+                                            class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Ulangi Sandi</label>
-                                        <input type="password" name="password_confirmation" required placeholder="Ketik ulang sandi" 
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Ulangi Sandi</label>
+                                        <input type="password" name="password_confirmation" required placeholder="Ketik ulang sandi"
+                                            class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                     </div>
                                 </div>
                             </template>
 
                             <template x-if="modalMode === 'edit'">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Sandi Baru <span class="text-slate-400 font-normal text-xs">(opsional)</span></label>
-                                        <input type="password" name="password" placeholder="Kosongkan jika tidak diubah" 
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sandi Baru <span class="text-slate-300 font-normal normal-case">(opsional)</span></label>
+                                        <input type="password" name="password" placeholder="Kosongkan jika tidak diubah"
+                                            class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Konfirmasi Sandi</label>
-                                        <input type="password" name="password_confirmation" placeholder="Ulangi sandi baru" 
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow">
+                                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Konfirmasi Sandi</label>
+                                        <input type="password" name="password_confirmation" placeholder="Ulangi sandi baru"
+                                            class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition-all">
                                     </div>
                                 </div>
                             </template>
-
                         </div>
                     </template>
                 </div>
 
                 {{-- Footer --}}
-                <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3 bg-slate-50">
-                    <button type="button" @click="closeModal()" 
-                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2.5 bg-slate-50/70">
+                    <button type="button" @click="closeModal()"
+                        class="px-4 py-2.5 text-[12px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
                         Batal
                     </button>
-                    <button type="submit" 
-                        class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors" 
-                        :class="modalMode === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'" 
+                    <button type="submit"
+                        class="px-5 py-2.5 text-[12px] font-semibold text-white rounded-xl transition-all"
+                        :class="modalMode === 'delete' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'"
                         x-text="getSubmitText()">
                     </button>
                 </div>

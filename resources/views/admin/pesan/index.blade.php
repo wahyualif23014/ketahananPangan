@@ -40,7 +40,7 @@
     @endif
 
     <div class="mx-4 bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col md:flex-row h-[700px]">
-        
+
         <!-- Sidebar Messages -->
         <div class="w-full md:w-96 bg-slate-50 border-r border-slate-200 flex flex-col">
             <div class="p-6 border-b border-slate-200">
@@ -52,7 +52,7 @@
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                     Tandai Semua Terbaca
                 </button>
-                
+
                 <div x-show="selectedMessages.length > 0" class="flex gap-2 mt-2">
                     <button @click="deleteMultipleMessages" class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -68,14 +68,14 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto" x-show="tab === 'masuk'">
                 @forelse($pesanMasuk as $pesan)
                 <div @click="openMessage({{ $pesan->toJson() }}, 'masuk')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" value="{{ $pesan->id }}" x-model="selectedMessages" @click.stop class="w-3 h-3 text-sky-600 rounded border-slate-300 cursor-pointer">
-                            <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender?->nama_anggota ?? 'Pengguna Dihapus' }} {{ $pesan->sender?->tingkat ? '- ' . $pesan->sender->tingkat->nama_tingkat : ($pesan->sender?->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
+                            <span class="font-bold text-slate-800 text-sm line-clamp-1">{{ $pesan->sender->nama_anggota ?? 'Pengguna Dihapus / Sistem' }} {{ optional($pesan->sender)->tingkat ? '- ' . $pesan->sender->tingkat->nama_tingkat : (optional($pesan->sender)->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                             @if(!$pesan->is_read)
                             <span x-show="!readMessages.includes('{{ $pesan->id }}')" class="w-2 h-2 rounded-full bg-sky-500"></span>
                             @endif
@@ -92,14 +92,14 @@
                 </div>
                 @endforelse
             </div>
-            
+
             <div class="flex-1 overflow-y-auto" x-show="tab === 'terkirim'" style="display: none;">
                 @forelse($pesanTerkirim as $pesan)
                 <div @click="openMessage({{ $pesan->toJson() }}, 'terkirim')" :class="activePesan?.id === {{ $pesan->id }} ? 'bg-sky-50 border-l-4 border-sky-500' : 'hover:bg-slate-100 border-l-4 border-transparent'" class="p-5 border-b border-slate-100 cursor-pointer transition-all">
                     <div class="flex justify-between items-start mb-1">
                         <div class="flex items-center gap-2">
                             <input type="checkbox" value="{{ $pesan->id }}" x-model="selectedMessages" @click.stop class="w-3 h-3 text-sky-600 rounded border-slate-300 cursor-pointer">
-                            <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient?->nama_anggota ?? 'Pengguna Dihapus' }} {{ $pesan->recipient?->tingkat ? '- ' . $pesan->recipient->tingkat->nama_tingkat : ($pesan->recipient?->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
+                            <span class="font-bold text-slate-800 text-sm line-clamp-1">Ke: {{ $pesan->recipient->nama_anggota ?? 'Pengguna Dihapus / Sistem' }} {{ optional($pesan->recipient)->tingkat ? '- ' . $pesan->recipient->tingkat->nama_tingkat : (optional($pesan->recipient)->role === 'admin' ? '- POLDA JATIM' : '') }}</span>
                         </div>
                         <span class="text-[10px] text-slate-400 font-bold flex-shrink-0">{{ $pesan->created_at->diffForHumans() }}</span>
                     </div>
@@ -114,7 +114,7 @@
                 @endforelse
             </div>
         </div>
-        
+
         <!-- Main Message Area -->
         <div class="flex-1 bg-white flex flex-col items-center justify-center relative">
             <template x-if="!activePesan">
@@ -126,14 +126,14 @@
                     <p class="text-sm text-slate-400 font-medium">Silakan pilih pesan dari daftar di sebelah kiri untuk membacanya.</p>
                 </div>
             </template>
-            
+
             <template x-if="activePesan">
                 <div class="w-full h-full flex flex-col absolute inset-0 bg-white">
                     <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
                         <div>
                             <h3 class="text-2xl font-black text-slate-800 tracking-tight uppercase" x-text="activePesan.judul || 'Tanpa Judul'"></h3>
                             <div class="flex items-center gap-3 mt-2">
-                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest" x-text="tab === 'masuk' ? 'Dari: ' + (activePesan.sender?.nama_anggota || 'Pengguna Dihapus') + (activePesan.sender?.tingkat ? ' - ' + activePesan.sender.tingkat.nama_tingkat : (activePesan.sender?.role === 'admin' ? ' - POLDA JATIM' : '')) : 'Kepada: ' + (activePesan.recipient?.nama_anggota || 'Pengguna Dihapus') + (activePesan.recipient?.tingkat ? ' - ' + activePesan.recipient.tingkat.nama_tingkat : (activePesan.recipient?.role === 'admin' ? ' - POLDA JATIM' : ''))"></span>
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest" x-text="tab === 'masuk' ? 'Dari: ' + (activePesan.sender ? activePesan.sender.nama_anggota : 'Sistem / Terhapus') + (activePesan.sender && activePesan.sender.tingkat ? ' - ' + activePesan.sender.tingkat.nama_tingkat : (activePesan.sender && activePesan.sender.role === 'admin' ? ' - POLDA JATIM' : '')) : 'Kepada: ' + (activePesan.recipient ? activePesan.recipient.nama_anggota : 'Sistem / Terhapus') + (activePesan.recipient && activePesan.recipient.tingkat ? ' - ' + activePesan.recipient.tingkat.nama_tingkat : (activePesan.recipient && activePesan.recipient.role === 'admin' ? ' - POLDA JATIM' : ''))"></span>
                                 <span class="text-xs text-slate-400 font-medium" x-text="formatDate(activePesan.created_at)"></span>
                             </div>
                         </div>
@@ -155,7 +155,7 @@
             </template>
         </div>
     </div>
-    
+
     <!-- Compose Modal -->
     <div x-show="isComposeOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
         <div @click.outside="isComposeOpen = false" x-show="isComposeOpen" x-transition class="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
@@ -168,17 +168,17 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            
+
             @php
                 $routeUrl = $role === 'admin' ? route('admin.pesan.store') : route('operator.pesan.store');
             @endphp
-            
+
             <form action="{{ $routeUrl }}" method="POST" class="flex flex-col flex-1 overflow-y-auto">
                 @csrf
                 <div class="p-8 space-y-6">
-                    <div class="relative" x-data="{ 
-                        dropdownOpen: false, 
-                        searchQuery: '', 
+                    <div class="relative" x-data="{
+                        dropdownOpen: false,
+                        searchQuery: '',
                         selectedText: '-- Pilih Penerima --',
                         options: [
                             @if($role === 'admin' || $isPolres)
@@ -217,16 +217,16 @@
                         }
                     }" @click.outside="dropdownOpen = false">
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Kepada</label>
-                        
+
                         <!-- Hidden input for standard form submission -->
                         <input type="hidden" name="recipient_id" x-model="composeData.recipient_id" required>
-                        
+
                         <!-- Select Trigger -->
                         <div @click="dropdownOpen = !dropdownOpen" class="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer flex justify-between items-center outline-none uppercase transition-all" :class="{'ring-4 ring-sky-500/10 border-sky-500': dropdownOpen}">
                             <span x-text="selectedText" :class="{'text-slate-400': !composeData.recipient_id}" class="truncate"></span>
                             <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{'rotate-180': dropdownOpen}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
-                        
+
                         <!-- Dropdown Content -->
                         <div x-show="dropdownOpen" x-transition.opacity.duration.200ms class="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60" style="display: none;">
                             <div class="p-2 border-b border-slate-100 bg-slate-50/50">
@@ -239,7 +239,7 @@
                                 <template x-if="filteredOptions.length === 0">
                                     <div class="p-4 text-center text-xs text-slate-400 font-bold uppercase tracking-widest">Tidak ada hasil</div>
                                 </template>
-                                
+
                                 <template x-for="opt in filteredOptions" :key="opt.value">
                                     <div @click="selectOption(opt)" class="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-sky-50 hover:text-sky-600 rounded-lg cursor-pointer uppercase transition-colors truncate" x-text="opt.label" :class="{'bg-sky-50 text-sky-600': composeData.recipient_id === opt.value}"></div>
                                 </template>
@@ -280,10 +280,10 @@ document.addEventListener('alpine:init', () => {
             judul: '',
             isi_pesan: ''
         },
-        
+
         openMessage(pesan, currentTab) {
             this.activePesan = pesan;
-            
+
             if (currentTab === 'masuk' && !pesan.is_read) {
                 // Send read request
                 const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
@@ -302,7 +302,7 @@ document.addEventListener('alpine:init', () => {
                 });
             }
         },
-        
+
         markAllAsRead() {
             const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
             fetch(rolePath + `/pesan/read-all`, {
@@ -316,14 +316,14 @@ document.addEventListener('alpine:init', () => {
                 window.location.reload();
             });
         },
-        
+
         replyPesan(pesan) {
             this.composeData.recipient_id = pesan.sender_id;
             this.composeData.judul = 'Re: ' + (pesan.judul || 'Tanpa Judul');
             this.composeData.isi_pesan = '\n\n--- Membalas Pesan Sebelumnya ---\n' + pesan.isi_pesan;
             this.isComposeOpen = true;
         },
-        
+
         deletePesan(pesan) {
             if (confirm('Apakah Anda yakin ingin menghapus pesan ini?')) {
                 const rolePath = '{{ $role === 'admin' ? '/admin' : '/operator' }}';
@@ -344,13 +344,13 @@ document.addEventListener('alpine:init', () => {
                 });
             }
         },
-        
+
         selectAll() {
             // Collect IDs based on the active tab
             const checkboxes = document.querySelectorAll(`[x-show="tab === '${this.tab}'"] input[type="checkbox"]`);
             this.selectedMessages = Array.from(checkboxes).map(cb => cb.value);
         },
-        
+
         deleteMultipleMessages() {
             if (this.selectedMessages.length === 0) return;
             if (confirm(`Apakah Anda yakin ingin menghapus ${this.selectedMessages.length} pesan terpilih?`)) {
@@ -373,13 +373,13 @@ document.addEventListener('alpine:init', () => {
                 });
             }
         },
-        
+
         formatDate(dateStr) {
             const date = new Date(dateStr);
             return date.toLocaleDateString('id-ID', {
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'

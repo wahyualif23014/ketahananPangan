@@ -3,15 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\DeliversDashboardMetricsJson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use DeliversDashboardMetricsJson;
+
     public function index(Request $request)
     {
         $data = $this->getIndexData($request);
         return view('admin.dashboard', $data);
+    }
+
+    public function metrics(Request $request)
+    {
+        return $this->dashboardMetricsResponse($this->getIndexData($request));
     }
 
     public function notifyPending(Request $request)
@@ -201,9 +209,15 @@ class DashboardController extends Controller
         $panenDetails = $panenDetailsQuery->groupBy('lahan.id_jenis_lahan')->get()->keyBy('id_jenis_lahan');
 
         // Serapan Hasil
-        $serapanRaw = DB::table('distribusi')
+        $serapanRawQuery = DB::table('distribusi')
             ->select('distribusi_ke', DB::raw('SUM(total_distribusi) as val'))
-            ->where('deletestatus', '2')->groupBy('distribusi_ke')->pluck('val', 'distribusi_ke');
+            ->where('deletestatus', '2')
+            ->whereYear('tgl_distribusi', $yearFilter);
+        if ($quarterFilter != 'all') {
+            $serapanRawQuery->whereRaw('QUARTER(tgl_distribusi) = ?', [$quarterFilter]);
+        }
+        $serapanRaw = $serapanRawQuery->groupBy('distribusi_ke')->pluck('val', 'distribusi_ke');
+
 
             $serapanBulog = $serapanRaw['1'] ?? 0;
             $serapanTengkulak = $serapanRaw['3'] ?? 0;
@@ -317,16 +331,54 @@ class DashboardController extends Controller
             if (empty($chartYears)) $chartYears = range(2024, (int)date('Y') + 1);
 
         // Map Data
-        $mapData = DB::table('lahan')
+        $mapPoints = DB::table('lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng', 'lahan.status_lahan as status')
-            ->where('lahan.deletestatus', '2')->whereNotNull('lahan.latitude')->whereNotNull('lahan.longitude')
-            ->where('lahan.latitude', '!=', '')->where('lahan.longitude', '!=', '')->limit(300)
-            ->get()->map(function ($item) {
-                $statusMap = ['1' => 'Produktif', '2' => 'Tanam', '3' => 'Panen'];
-                $item->status = $statusMap[$item->status] ?? 'Produktif';
-                return $item;
-            });
+            ->select('lahan.id_lahan', 'tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng')
+            ->where('lahan.deletestatus', '!=', '0')
+            ->whereNotNull('lahan.latitude')->whereNotNull('lahan.longitude')
+            ->where('lahan.latitude', '!=', '')->where('lahan.longitude', '!=', '')
+            ->limit(300)
+            ->get();
+
+        $lahanIds = $mapPoints->pluck('id_lahan')->toArray();
+        $activeTanams = [];
+        $activePanens = [];
+
+        if (!empty($lahanIds)) {
+            $tQuery = DB::table('tanam')
+                ->whereIn('id_lahan', $lahanIds)
+                ->where('deletestatus', '2')
+                ->whereNotNull('valid_oleh')
+                ->where('valid_oleh', '!=', '')
+                ->whereYear('tgl_tanam', $yearFilter);
+            if ($quarterFilter != 'all') {
+                $tQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
+            }
+            $activeTanams = $tQuery->pluck('id_lahan')->toArray();
+
+            $pQuery = DB::table('panen')
+                ->whereIn('id_lahan', $lahanIds)
+                ->where('deletestatus', '2')
+                ->whereNotNull('valid_oleh')
+                ->where('valid_oleh', '!=', '')
+                ->whereYear('tgl_panen', $yearFilter);
+            if ($quarterFilter != 'all') {
+                $pQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            }
+            $activePanens = $pQuery->pluck('id_lahan')->toArray();
+        }
+
+        $mapData = $mapPoints->map(function ($item) use ($activeTanams, $activePanens) {
+            if (in_array($item->id_lahan, $activePanens)) {
+                $item->status = 'Panen';
+            } elseif (in_array($item->id_lahan, $activeTanams)) {
+                $item->status = 'Tanam';
+            } else {
+                $item->status = 'Produktif';
+            }
+            return $item;
+        });
+
 
         // Pending Validation Potensi
         $qPotensi = DB::table('lahan')

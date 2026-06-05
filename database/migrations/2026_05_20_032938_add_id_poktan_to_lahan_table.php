@@ -6,26 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('lahan', function (Blueprint $table) {
-            $table->unsignedBigInteger('id_poktan')->nullable()->after('id_lahan');
-            
-            // Wait, we shouldn't add foreign key constraint if the table engine is MyISAM or existing data has issues.
-            // But we can just add the column.
+            // Pengecekan kritikal: jangan buat kalau kolom sudah ada
+            if (!Schema::hasColumn('lahan', 'id_poktan')) {
+                $table->unsignedBigInteger('id_poktan')->nullable()->after('id_lahan');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('lahan', function (Blueprint $table) {
-            $table->dropColumn('id_poktan');
+            if (Schema::hasColumn('lahan', 'id_poktan')) {
+                $table->dropColumn('id_poktan');
+            }
         });
     }
 };

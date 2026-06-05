@@ -1,5 +1,24 @@
+# ============================================================
+#  Docker Compose — Ketahanan Pangan (Development)
+# ============================================================
+#
+#  Usage:
+#    docker compose up -d --build          # Start all services
+#    docker compose logs -f app            # Follow app logs
+#    docker compose exec app bash          # Shell into app
+#    docker compose down                   # Stop all services
+#    docker compose down -v                # Stop + remove volumes
+#
+#  Access:
+#    App:        http://localhost:8080
+#    Vite HMR:   http://localhost:5173
+#    phpMyAdmin:  http://localhost:8081
+#
+# ============================================================
+
 services:
-  # ── Application (PHP-FPM + Nginx + Supervisor) ────────────
+
+  # ── Laravel Application (PHP-FPM + Nginx + Supervisor) ────
   app:
     build:
       context: .
@@ -8,77 +27,199 @@ services:
     container_name: ketahanan_app
     restart: unless-stopped
     ports:
-      - "8080:80"        # Access app at http://localhost:8080
+      - "8080:80"
+    env_file:
+      - .env.docker
     environment:
+      # ─ App
       APP_NAME: "Ketahanan Pangan"
-      APP_ENV: production
-      APP_DEBUG: "false"
+      APP_ENV: local
+      APP_DEBUG: "true"
       APP_URL: http://localhost:8080
-      APP_KEY: ${APP_KEY}          # Set in .env.docker
+
+      # ─ Database
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: sdmapps
       DB_USERNAME: ketahanan
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      # DB_PASSWORD comes from .env.docker
+
+      # ─ Cache/Session/Queue
       CACHE_DRIVER: file
       SESSION_DRIVER: file
+      SESSION_SECURE_COOKIE: "false"
       QUEUE_CONNECTION: sync
-      LOG_CHANNEL: stderr
+
+      # ─ Logging
+      LOG_CHANNEL: stack
+      LOG_LEVEL: debug
+
+      # ─ Entrypoint flags
+      RUN_MIGRATIONS: "true"
+      RUN_SEEDERS: "false"
+      CONTAINER_ROLE: app
     volumes:
+      # ── Bind mounts for live development ──
+      - ./app:/var/www/html/app
+      - ./config:/var/www/html/config
+      - ./database:/var/www/html/database
+      - ./resources:/var/www/html/resources
+      - ./routes:/var/www/html/routes
+      - ./public:/var/www/html/public
+      # ── Named volumes for generated data ──
       - app_storage:/var/www/html/storage
       - app_cache:/var/www/html/bootstrap/cache
+      - app_vendor:/var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    networks:
+      - ketahanan_net
+
+  # ── MySQL 8.0 Database ────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: ketahanan_db
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=256M
+      - --max-allowed-packet=64M
+    env_file:
+      - .env.docker
+    environment:
+      MYSQL_DATABASE: sdmapps
+      MYSQL_USER: ketahanan
+      # MYSQL_PASSWORD & MYSQL_ROOT_PASSWORD come from .env.docker
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sdmapps.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+    networks:
+      - ketahanan_net
+
+  # ── Node / Vite Dev Server (HMR) ─────────────────────────
+  node:
+    image: node:20-alpine
+    container_name: ketahanan_node
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    environment:
+      VITE_APP_NAME: "Ketahanan Pangan"
+    networks:
+      - ketahanan_net
+
+  # ── phpMyAdmin (Database Management) ──────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ketahanan_pma
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    env_file:
+      - .env.docker
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      # PMA_PASSWORD comes from MYSQL_ROOT_PASSWORD in .env.docker
+      UPLOAD_LIMIT: 100M
     depends_on:
       db:
         condition: service_healthy
     networks:
       - ketahanan_net
 
-  # ── MySQL Database ─────────────────────────────────────────
-  db:
-    image: mysql:8.0
-    container_name: ketahanan_db
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: sdmapps
-      MYSQL_USER: ketahanan
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
-    ports:
-      - "3307:3306"      # Exposed on 3307 to avoid conflict with local MySQL
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "ketahanan", "-p${DB_PASSWORD:-secret}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - ketahanan_net
+  # ── Queue Worker (optional, uncomment if needed) ──────────
+  # queue:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: app
+  #   container_name: ketahanan_queue
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env.docker
+  #   environment:
+  #     APP_NAME: "Ketahanan Pangan"
+  #     APP_ENV: local
+  #     DB_CONNECTION: mysql
+  #     DB_HOST: db
+  #     DB_PORT: 3306
+  #     DB_DATABASE: sdmapps
+  #     DB_USERNAME: ketahanan
+  #     QUEUE_CONNECTION: database
+  #     CONTAINER_ROLE: queue
+  #   volumes:
+  #     - app_storage:/var/www/html/storage
+  #     - app_vendor:/var/www/html/vendor
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - ketahanan_net
 
-  # ── phpMyAdmin (optional, for DB management) ──────────────
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: ketahanan_pma
-    restart: unless-stopped
-    ports:
-      - "8081:80"        # Access at http://localhost:8081
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
-    depends_on:
-      - db
-    networks:
-      - ketahanan_net
+  # ── Scheduler (optional, uncomment if needed) ─────────────
+  # scheduler:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: app
+  #   container_name: ketahanan_scheduler
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env.docker
+  #   environment:
+  #     APP_NAME: "Ketahanan Pangan"
+  #     APP_ENV: local
+  #     DB_CONNECTION: mysql
+  #     DB_HOST: db
+  #     DB_PORT: 3306
+  #     DB_DATABASE: sdmapps
+  #     DB_USERNAME: ketahanan
+  #     CONTAINER_ROLE: scheduler
+  #   volumes:
+  #     - app_storage:/var/www/html/storage
+  #     - app_vendor:/var/www/html/vendor
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - ketahanan_net
+
 
 # ── Named Volumes ──────────────────────────────────────────
 volumes:
   db_data:
+    driver: local
   app_storage:
+    driver: local
   app_cache:
+    driver: local
+  app_vendor:
+    driver: local
+  node_modules:
+    driver: local
 
 # ── Networks ───────────────────────────────────────────────
 networks:

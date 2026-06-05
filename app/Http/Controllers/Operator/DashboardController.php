@@ -3,12 +3,25 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\DeliversDashboardMetricsJson;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    use DeliversDashboardMetricsJson;
+
     public function index(Request $request)
+    {
+        return view('operator.dashboard', $this->getIndexData($request));
+    }
+
+    public function metrics(Request $request)
+    {
+        return $this->dashboardMetricsResponse($this->getIndexData($request));
+    }
+
+    protected function getIndexData(Request $request): array
     {
         $quarterFilter = $request->input('quarter', 'all');
         $yearFilter = $request->input('year', null);
@@ -20,7 +33,7 @@ class DashboardController extends Controller
         if (!$yearFilter) {
             $yearDetect = DB::table('panen')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-                ->where('panen.deletestatus', '1');
+                ->where('panen.deletestatus', '2');
             if ($scope && $scope != '0') {
                 $yearDetect->where(function($q) use ($scope) { $q->where('lahan.id_tingkat', $scope)->orWhere('lahan.id_tingkat', 'LIKE', $scope . '.%'); });
             }
@@ -29,7 +42,7 @@ class DashboardController extends Controller
             if (!$detectedYear) {
                 $yearDetect2 = DB::table('tanam')
                     ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-                    ->where('tanam.deletestatus', '1');
+                    ->where('tanam.deletestatus', '2');
                 if ($scope && $scope != '0') {
                     $yearDetect2->where(function($q) use ($scope) { $q->where('lahan.id_tingkat', $scope)->orWhere('lahan.id_tingkat', 'LIKE', $scope . '.%'); });
                 }
@@ -37,6 +50,7 @@ class DashboardController extends Controller
             }
             $yearFilter = $detectedYear ?? date('Y');
         }
+
 
         $applyScope = function ($query, $column = 'lahan.id_tingkat') use ($scope) {
             if ($scope && $scope != '0') {
@@ -51,7 +65,7 @@ class DashboardController extends Controller
         
         $tanamQuery = DB::table('tanam')
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-            ->where('tanam.deletestatus', '1')
+            ->where('tanam.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('tanam.valid_oleh')
             ->where('tanam.valid_oleh', '!=', '')
@@ -60,7 +74,7 @@ class DashboardController extends Controller
 
         $panenQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
@@ -111,7 +125,7 @@ class DashboardController extends Controller
         $tanamDetailsQuery = DB::table('tanam')
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(tanam.luas_tanam) as total_luas'), DB::raw('COUNT(tanam.id_tanam) as total_lokasi'))
-            ->where('tanam.deletestatus', '1')
+            ->where('tanam.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('tanam.valid_oleh')
             ->where('tanam.valid_oleh', '!=', '')
@@ -125,7 +139,7 @@ class DashboardController extends Controller
         $panenDetailsQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select('lahan.id_jenis_lahan', DB::raw('SUM(panen.luas_panen) as total_luas'), DB::raw('COUNT(panen.id_panen) as total_lokasi'))
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
@@ -140,7 +154,7 @@ class DashboardController extends Controller
         $serapanRawQuery = DB::table('distribusi')
             ->join('lahan', 'distribusi.id_lahan', '=', 'lahan.id_lahan')
             ->select('distribusi.distribusi_ke', DB::raw('SUM(distribusi.total_distribusi) as val'))
-            ->where('distribusi.deletestatus', '1')
+            ->where('distribusi.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('distribusi.valid_oleh')
             ->where('distribusi.valid_oleh', '!=', '')
@@ -163,7 +177,7 @@ class DashboardController extends Controller
         $harvestCardsDataQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select('panen.status_panen', DB::raw('SUM(panen.luas_panen) as val'))
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
@@ -213,7 +227,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(panen.luas_panen) as total_ha'),
                 DB::raw('SUM(panen.total_panen) as total_ton')
             )
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
@@ -268,7 +282,7 @@ class DashboardController extends Controller
         // Map Data
         $mapDataQuery = DB::table('lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
-            ->select('tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng', 'lahan.status_lahan as status')
+            ->select('lahan.id_lahan', 'tingkat.nama_tingkat as title', 'lahan.latitude as lat', 'lahan.longitude as lng')
             ->where('lahan.deletestatus', '!=', '0')
             ->whereNotNull('lahan.latitude')
             ->whereNotNull('lahan.longitude')
@@ -277,13 +291,45 @@ class DashboardController extends Controller
             ->inRandomOrder()
             ->limit(200);
             
-        $mapData = $applyScope($mapDataQuery, 'lahan.id_tingkat')
-            ->get()
-            ->map(function ($item) {
-                $statusMap = ['1' => 'Produktif', '2' => 'Tanam', '3' => 'Panen'];
-                $item->status = $statusMap[$item->status] ?? 'Produktif';
-                return $item;
-            });
+        $mapPoints = $applyScope($mapDataQuery, 'lahan.id_tingkat')->get();
+        $lahanIds = $mapPoints->pluck('id_lahan')->toArray();
+        $activeTanams = [];
+        $activePanens = [];
+
+        if (!empty($lahanIds)) {
+            $tQuery = DB::table('tanam')
+                ->whereIn('id_lahan', $lahanIds)
+                ->where('deletestatus', '2')
+                ->whereNotNull('valid_oleh')
+                ->where('valid_oleh', '!=', '')
+                ->whereYear('tgl_tanam', $yearFilter);
+            if ($quarterFilter != 'all') {
+                $tQuery->whereRaw('QUARTER(tgl_tanam) = ?', [$quarterFilter]);
+            }
+            $activeTanams = $tQuery->pluck('id_lahan')->toArray();
+
+            $pQuery = DB::table('panen')
+                ->whereIn('id_lahan', $lahanIds)
+                ->where('deletestatus', '2')
+                ->whereNotNull('valid_oleh')
+                ->where('valid_oleh', '!=', '')
+                ->whereYear('tgl_panen', $yearFilter);
+            if ($quarterFilter != 'all') {
+                $pQuery->whereRaw('QUARTER(tgl_panen) = ?', [$quarterFilter]);
+            }
+            $activePanens = $pQuery->pluck('id_lahan')->toArray();
+        }
+
+        $mapData = $mapPoints->map(function ($item) use ($activeTanams, $activePanens) {
+            if (in_array($item->id_lahan, $activePanens)) {
+                $item->status = 'Panen';
+            } elseif (in_array($item->id_lahan, $activeTanams)) {
+                $item->status = 'Tanam';
+            } else {
+                $item->status = 'Produktif';
+            }
+            return $item;
+        });
 
         $pendingSearch = $request->input('pending_search', '');
         $pendingYear = $request->input('pending_year', '');
@@ -317,7 +363,7 @@ class DashboardController extends Controller
             ->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Tanam' as jenis"), 'tanam.tgl_tanam as tanggal', 'tanam.luas_tanam as luas', 'lahan.id_jenis_lahan')
-            ->where('tanam.deletestatus', '1')
+            ->where('tanam.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->where(function($q) { $q->whereNull('tanam.valid_oleh')->orWhere('tanam.valid_oleh', '')->orWhere('tanam.valid_oleh', '0'); });
 
@@ -338,7 +384,7 @@ class DashboardController extends Controller
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->join('tingkat', 'lahan.id_tingkat', '=', 'tingkat.id_tingkat')
             ->select('lahan.id_lahan', 'lahan.alamat_lahan', 'tingkat.nama_tingkat as satwil', DB::raw("'Panen' as jenis"), 'panen.tgl_panen as tanggal', 'panen.luas_panen as luas', 'lahan.id_jenis_lahan')
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->where('lahan.deletestatus', '!=', '0')
             ->where(function($q) { $q->whereNull('panen.valid_oleh')->orWhere('panen.valid_oleh', '')->orWhere('panen.valid_oleh', '0'); });
 
@@ -365,7 +411,7 @@ class DashboardController extends Controller
         $yearlyPanenDataQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(DB::raw('YEAR(panen.tgl_panen) as year'), DB::raw('SUM(panen.luas_panen) as total'))
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
             ->whereNotNull('panen.tgl_panen')
@@ -387,7 +433,7 @@ class DashboardController extends Controller
         $monthlyPanenDataQuery = DB::table('panen')
             ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
             ->select(DB::raw('MONTH(panen.tgl_panen) as month'), DB::raw('SUM(panen.luas_panen) as total'))
-            ->where('panen.deletestatus', '1')
+            ->where('panen.deletestatus', '2')
             ->whereNotNull('panen.valid_oleh')
             ->where('panen.valid_oleh', '!=', '')
             ->whereNotNull('panen.tgl_panen')
@@ -435,7 +481,7 @@ class DashboardController extends Controller
             $chartYears = range(2024, (int)date('Y') + 1);
         }
 
-        return view('operator.dashboard', compact(
+        return compact(
             'quarterFilter',
             'yearFilter',
             'potensiTotal',
@@ -470,7 +516,7 @@ class DashboardController extends Controller
             'totalLahanAll',
             'totalPendingPotensi',
             'totalPendingKelola'
-        ));
+        );
     }
 }
 

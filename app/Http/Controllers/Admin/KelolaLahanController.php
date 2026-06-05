@@ -1501,64 +1501,143 @@ class KelolaLahanController extends Controller
         ]);
     }
 
-    public function selesaiSiklusTanam(Request $request, $id)
+    public function terimaAkhiriSiklus(Request $request, $id)
     {
         // Hanya admin yang boleh menyelesaikan siklus
         if (auth()->user() && auth()->user()->role !== 'admin') {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyelesaikan siklus.'], 403);
-            return back()->with('error', 'Anda tidak memiliki izin untuk menyelesaikan siklus.');
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyetujui siklus.'], 403);
+            return back()->with('error', 'Anda tidak memiliki izin untuk menyetujui siklus.');
         }
 
         try {
-            $tanam = DB::table('tanam')->where('id_tanam', $id)->where('is_active', 1)->first();
+            $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
 
             if (!$tanam) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan atau sudah tidak aktif.'], 422);
-                return back()->with('error', 'Data Tanam tidak ditemukan atau sudah tidak aktif.');
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan.'], 422);
+                return back()->with('error', 'Data Tanam tidak ditemukan.');
             }
 
-            if (is_null($tanam->valid_oleh)) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam belum divalidasi.'], 422);
-                return back()->with('error', 'Data Tanam belum divalidasi.');
-            }
-            
-            $panen = DB::table('panen')->where('id_tanam', $id)->first();
-            if (!$panen) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Panen belum dicatat.'], 422);
-                return back()->with('error', 'Siklus belum selesai. Panen belum dicatat.');
-            }
-            if (is_null($panen->valid_oleh)) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Panen belum divalidasi.'], 422);
-                return back()->with('error', 'Data Panen belum divalidasi.');
-            }
-
-            $serapan = DB::table('distribusi')
-                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
-                ->where('panen.id_tanam', $id)
-                ->select('distribusi.*')
-                ->first();
-            if (!$serapan) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Serapan belum dicatat.'], 422);
-                return back()->with('error', 'Siklus belum selesai. Serapan belum dicatat.');
-            }
-            if (is_null($serapan->valid_oleh)) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Serapan belum divalidasi.'], 422);
-                return back()->with('error', 'Data Serapan belum divalidasi.');
-            }
-
-            DB::table('tanam')->where('id_tanam', $id)->update(['is_active' => 0]);
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'status_akhiri_siklus' => 2,
+                'is_active' => 0
+            ]);
             
             AktivitasLog::catat('selesai_siklus', 'tanam', [
                 'record_id'   => $id,
                 'label_modul' => 'Siklus Tanam #' . $id,
-                'keterangan'  => 'Menyelesaikan siklus tanam #' . $id . ' dan mengarsipkannya.',
+                'keterangan'  => 'Menyetujui penyelesaian siklus tanam #' . $id . ' dan mengarsipkannya.',
             ]);
 
-            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Siklus Tanam ini selesai dan telah diarsipkan.']);
-            return back()->with('success', 'Siklus Tanam ini selesai dan telah diarsipkan.');
+            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Persetujuan akhir siklus berhasil. Siklus telah diarsipkan.']);
+            return back()->with('success', 'Persetujuan akhir siklus berhasil. Siklus telah diarsipkan.');
         } catch (\Exception $e) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal menyelesaikan siklus: ' . $e->getMessage()], 500);
-            return back()->with('error', 'Gagal menyelesaikan siklus: ' . $e->getMessage());
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal menyetujui siklus: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal menyetujui siklus: ' . $e->getMessage());
+        }
+    }
+
+    public function tolakAkhiriSiklus(Request $request, $id)
+    {
+        if (auth()->user() && auth()->user()->role !== 'admin') {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk menolak siklus.'], 403);
+            return back()->with('error', 'Anda tidak memiliki izin untuk menolak siklus.');
+        }
+
+        try {
+            $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
+            if (!$tanam) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan.'], 422);
+                return back()->with('error', 'Data Tanam tidak ditemukan.');
+            }
+
+            $target_reject = $request->input('target_reject', 'semua');
+            $alasan = $request->input('alasan', $request->input('alasan_tolak_akhiri_siklus', 'Ditolak oleh Admin.'));
+
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'status_akhiri_siklus' => 0,
+                'alasan_tolak_akhiri_siklus' => $alasan
+            ]);
+
+            $panens = DB::table('panen')->where('id_tanam', $id)->pluck('id_panen');
+            $msgDetail = "";
+
+            if ($target_reject === 'semua' || $target_reject === 'tanam') {
+                DB::table('distribusi')->whereIn('id_panen', $panens)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                DB::table('panen')->where('id_tanam', $id)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                DB::table('tanam')->where('id_tanam', $id)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                $msgDetail = "Data Tanam, Panen, dan Serapan telah ditolak.";
+            } elseif ($target_reject === 'panen') {
+                DB::table('distribusi')->whereIn('id_panen', $panens)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                DB::table('panen')->where('id_tanam', $id)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                $msgDetail = "Data Panen dan Serapan ditolak. Data Tanam tetap valid.";
+            } elseif ($target_reject === 'serapan') {
+                DB::table('distribusi')->whereIn('id_panen', $panens)->update([
+                    'alasan_tolak' => $alasan,
+                    'valid_oleh' => null,
+                    'tgl_valid' => null,
+                    'tgl_edit' => now()
+                ]);
+                $msgDetail = "Data Serapan ditolak. Data Tanam dan Panen tetap valid.";
+            }
+
+            // Kirim notifikasi ke Polsek & Polres
+            $lahan = DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->first();
+            $targetTugas = [$lahan->id_tingkat];
+            $parts = explode('.', $lahan->id_tingkat);
+            if (count($parts) >= 3) {
+                $targetTugas[] = $parts[0] . '.' . $parts[1]; // Tambah polres
+            }
+            
+            $recipients = DB::table('anggota')
+                ->whereIn('id_tugas', $targetTugas)
+                ->where('role', 'operator')
+                ->pluck('id_anggota')
+                ->toArray();
+
+            foreach ($recipients as $recipient_id) {
+                \App\Models\Pesan::create([
+                    'id_pesan'     => \Illuminate\Support\Str::uuid(),
+                    'sender_id'    => auth()->user()->id_anggota ?? 0,
+                    'recipient_id' => $recipient_id,
+                    'judul'        => '❌ Pengajuan Akhiri Siklus Ditolak',
+                    'isi_pesan'    => "Pengajuan Akhiri Siklus untuk Lahan #" . $tanam->id_lahan . " telah **DITOLAK** oleh Admin.\n\n" .
+                                      "📝 **Alasan:**\n{$alasan}\n\n" .
+                                      "ℹ️ **Detail:**\n{$msgDetail}\n\n" .
+                                      "Silakan perbaiki data yang salah.",
+                    'is_read'      => false,
+                ]);
+            }
+
+            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Penolakan akhir siklus berhasil dan notifikasi telah dikirim.']);
+            return back()->with('success', 'Penolakan akhir siklus berhasil dan notifikasi telah dikirim.');
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal menolak siklus: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal menolak siklus: ' . $e->getMessage());
         }
     }
 

@@ -34,46 +34,41 @@
             display: none !important;
         }
 
+        /* ================================================================
+           ENTERPRISE TOAST NOTIFICATION SYSTEM
+        ================================================================ */
         @keyframes toast-slide-in {
             from {
                 opacity: 0;
-                transform: translateX(100%) scale(0.9);
+                transform: translateY(20px) scale(0.92);
             }
-
             to {
                 opacity: 1;
-                transform: translateX(0) scale(1);
+                transform: translateY(0) scale(1);
             }
         }
 
         @keyframes toast-slide-out {
             from {
                 opacity: 1;
-                transform: translateX(0) scale(1);
+                transform: translateY(0) scale(1);
             }
-
             to {
                 opacity: 0;
-                transform: translateX(100%) scale(0.9);
+                transform: translateY(16px) scale(0.92);
             }
         }
 
         @keyframes toast-progress {
-            from {
-                width: 100%;
-            }
-
-            to {
-                width: 0%;
-            }
+            from { width: 100%; }
+            to   { width: 0%; }
         }
 
-        @keyframes confirm-pop-in {
+        @keyframes confirm-scale-in {
             from {
                 opacity: 0;
-                transform: scale(0.85) translateY(16px);
+                transform: scale(0.88) translateY(24px);
             }
-
             to {
                 opacity: 1;
                 transform: scale(1) translateY(0);
@@ -81,11 +76,11 @@
         }
 
         .toast-enter {
-            animation: toast-slide-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .toast-leave {
-            animation: toast-slide-out 0.35s ease-in forwards;
+            animation: toast-slide-out 0.3s ease-in forwards;
         }
 
         .toast-progress-bar {
@@ -93,7 +88,7 @@
         }
 
         .confirm-pop-in {
-            animation: confirm-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation: confirm-scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .font-tactical {
@@ -257,173 +252,181 @@
         @confirm-dialog.window="openConfirm($event.detail)"
         class="pointer-events-none">
 
-        {{-- TOAST CONTAINER --}}
-        <div class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none" style="max-width: 400px; width: calc(100vw - 40px);">
+        {{-- ================================================================
+             ENTERPRISE TOAST NOTIFICATION — Bottom Center, Premium Style
+        ================================================================ --}}
+        <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 gap-4 pointer-events-none" x-show="toasts.length > 0">
+            
+            {{-- Backdrop --}}
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity pointer-events-auto"
+                 x-show="toasts.length > 0"
+                 x-transition.opacity></div>
+
             <template x-for="toast in toasts" :key="toast.id">
                 <div :id="'toast-' + toast.id"
-                    class="toast-enter pointer-events-auto relative flex items-start gap-4 p-4 pr-5 rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,0,0,0.25)] border overflow-hidden"
+                    class="toast-enter pointer-events-auto relative flex flex-col items-center text-center p-8 rounded-[2rem] bg-white w-full max-w-sm overflow-hidden transform transition-all duration-300"
+                    style="box-shadow: 0 32px 80px -16px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05);"
                     :class="{
-                         'bg-white border-emerald-100': toast.type === 'success',
-                         'bg-white border-rose-100': toast.type === 'error',
-                         'bg-white border-amber-100': toast.type === 'warning',
-                         'bg-white border-sky-100': toast.type === 'info',
-                     }">
-
-                    {{-- Accent Bar --}}
-                    <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl"
-                        :class="{
-                             'bg-emerald-500': toast.type === 'success',
-                             'bg-rose-500': toast.type === 'error',
-                             'bg-amber-400': toast.type === 'warning',
-                             'bg-sky-500': toast.type === 'info',
-                         }"></div>
-
-                    {{-- Icon --}}
-                    <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5"
-                        :class="{
-                             'bg-emerald-50 text-emerald-500': toast.type === 'success',
-                             'bg-rose-50 text-rose-500': toast.type === 'error',
-                             'bg-amber-50 text-amber-500': toast.type === 'warning',
-                             'bg-sky-50 text-sky-500': toast.type === 'info',
-                         }">
-                        <template x-if="toast.type === 'success'">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </template>
-                        <template x-if="toast.type === 'error'">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </template>
-                        <template x-if="toast.type === 'warning'">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </template>
-                        <template x-if="toast.type === 'info'">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </template>
+                        'border-t-4 border-emerald-500': toast.type === 'success',
+                        'border-t-4 border-rose-500':    toast.type === 'error',
+                        'border-t-4 border-amber-500':   toast.type === 'warning',
+                        'border-t-4 border-sky-500':     toast.type === 'info',
+                    }">
+                    
+                    {{-- Big Icon with Underglow --}}
+                    <div class="relative w-24 h-24 mb-6 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full opacity-30 blur-2xl"
+                            :class="{
+                                'bg-emerald-500': toast.type === 'success',
+                                'bg-rose-500':    toast.type === 'error',
+                                'bg-amber-500':   toast.type === 'warning',
+                                'bg-sky-500':     toast.type === 'info',
+                            }"></div>
+                        <div class="relative z-10 w-20 h-20 rounded-full flex items-center justify-center text-white shadow-2xl"
+                            :class="{
+                                'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/40': toast.type === 'success',
+                                'bg-gradient-to-br from-rose-400 to-rose-600 shadow-rose-500/40': toast.type === 'error',
+                                'bg-gradient-to-br from-amber-400 to-amber-600 shadow-amber-500/40': toast.type === 'warning',
+                                'bg-gradient-to-br from-sky-400 to-sky-600 shadow-sky-500/40': toast.type === 'info',
+                            }">
+                            <template x-if="toast.type === 'success'">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M5 13l4 4L19 7"/></svg>
+                            </template>
+                            <template x-if="toast.type === 'error'">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </template>
+                            <template x-if="toast.type === 'warning'">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </template>
+                            <template x-if="toast.type === 'info'">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </template>
+                        </div>
                     </div>
 
-                    {{-- Content --}}
-                    <div class="flex-1 min-w-0 pt-0.5">
-                        <p class="text-[13px] font-black text-slate-800 uppercase tracking-wide leading-tight" x-text="toast.title"></p>
-                        <p x-show="toast.message" class="text-[12px] font-medium text-slate-500 mt-1 leading-relaxed" x-text="toast.message"></p>
-                    </div>
+                    {{-- Text Content --}}
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight mb-2 uppercase" x-text="toast.title"></h3>
+                    <p class="text-[13px] font-bold text-slate-500 leading-relaxed px-2" x-text="toast.message"></p>
 
-                    {{-- Close Button --}}
+                    {{-- OK Button --}}
                     <button @click="removeToast(toast.id)"
-                        class="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all duration-300 active:scale-90 mt-0.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        class="mt-8 w-full py-4 rounded-xl text-[12px] font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95"
+                        :class="{
+                            'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30': toast.type === 'success',
+                            'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30': toast.type === 'error',
+                            'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30': toast.type === 'warning',
+                            'bg-sky-500 hover:bg-sky-600 shadow-sky-500/30': toast.type === 'info',
+                        }">
+                        Tutup
                     </button>
 
-                    {{-- Progress Bar --}}
-                    <div class="absolute bottom-0 left-1 right-0 h-[3px] rounded-b-2xl overflow-hidden">
-                        <div class="h-full toast-progress-bar rounded-full"
+                    {{-- Auto-dismiss Progress Bar --}}
+                    <div class="absolute bottom-0 left-0 right-0 h-[5px] bg-slate-100">
+                        <div class="h-full toast-progress-bar"
                             :style="'animation-duration: ' + toast.duration + 'ms'"
                             :class="{
-                                 'bg-emerald-400': toast.type === 'success',
-                                 'bg-rose-400': toast.type === 'error',
-                                 'bg-amber-400': toast.type === 'warning',
-                                 'bg-sky-400': toast.type === 'info',
-                             }"></div>
+                                'bg-emerald-500': toast.type === 'success',
+                                'bg-rose-500':    toast.type === 'error',
+                                'bg-amber-500':   toast.type === 'warning',
+                                'bg-sky-500':     toast.type === 'info',
+                            }"></div>
                     </div>
                 </div>
             </template>
         </div>
 
-        {{-- CUSTOM CONFIRM DIALOG --}}
+        {{-- ================================================================
+             ENTERPRISE CONFIRM DIALOG — Center Screen, Premium Style
+        ================================================================ --}}
         <div x-show="confirm.open"
             x-cloak
             class="fixed inset-0 z-[10000] flex items-center justify-center p-4">
 
             {{-- Backdrop --}}
             <div x-show="confirm.open"
-                x-transition:enter="ease-out duration-400"
+                x-transition:enter="ease-out duration-250"
                 x-transition:enter-start="opacity-0"
                 x-transition:enter-end="opacity-100"
                 x-transition:leave="ease-in duration-200"
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
                 @click="resolveConfirm(false)"
-                class="fixed inset-0 bg-slate-900/40 pointer-events-auto"></div>
+                class="fixed inset-0 pointer-events-auto"
+                style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);"></div>
 
-            {{-- Dialog Box --}}
+            {{-- Dialog Box —— center screen, max-w-sm, enterprise card --}}
             <div x-show="confirm.open"
-                x-transition:enter="ease-out duration-400"
-                x-transition:enter-start="opacity-0 scale-90 translate-y-8"
+                x-transition:enter="ease-out duration-280"
+                x-transition:enter-start="opacity-0 scale-90 translate-y-6"
                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                x-transition:leave="ease-in duration-200"
+                x-transition:leave="ease-in duration-180"
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                x-transition:leave-end="opacity-0 scale-90 translate-y-8"
-                class="relative z-10 w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.3)] overflow-hidden border border-slate-100 pointer-events-auto">
+                x-transition:leave-end="opacity-0 scale-92 translate-y-4"
+                class="relative z-10 w-full max-w-sm bg-white rounded-[20px] overflow-hidden pointer-events-auto"
+                style="box-shadow: 0 24px 64px -12px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);">
 
-                {{-- Top Accent --}}
-                <div class="h-1.5 w-full"
+                {{-- Top Gradient Bar --}}
+                <div class="h-1 w-full"
                     :class="{
-                         'bg-gradient-to-r from-rose-400 to-rose-600': confirm.type === 'danger',
-                         'bg-gradient-to-r from-amber-400 to-orange-500': confirm.type === 'warning',
-                         'bg-gradient-to-r from-sky-400 to-blue-500': confirm.type === 'info',
-                         'bg-gradient-to-r from-emerald-400 to-teal-500': confirm.type === 'success',
-                     }"></div>
+                        'bg-gradient-to-r from-rose-400  to-rose-600':    confirm.type === 'danger',
+                        'bg-gradient-to-r from-amber-400 to-orange-500':  confirm.type === 'warning',
+                        'bg-gradient-to-r from-sky-400   to-blue-500':    confirm.type === 'info',
+                        'bg-gradient-to-r from-emerald-400 to-teal-500':  confirm.type === 'success',
+                    }"></div>
 
-                <div class="p-8">
-                    {{-- Icon Area --}}
-                    <div class="flex justify-center mb-6">
-                        <div class="w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-inner"
+                <div class="px-7 pt-7 pb-6">
+
+                    {{-- Icon Badge --}}
+                    <div class="flex justify-center mb-5">
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
                             :class="{
-                                 'bg-rose-50': confirm.type === 'danger',
-                                 'bg-amber-50': confirm.type === 'warning',
-                                 'bg-sky-50': confirm.type === 'info',
-                                 'bg-emerald-50': confirm.type === 'success',
-                             }">
+                                'bg-rose-50':    confirm.type === 'danger',
+                                'bg-amber-50':   confirm.type === 'warning',
+                                'bg-sky-50':     confirm.type === 'info',
+                                'bg-emerald-50': confirm.type === 'success',
+                            }">
                             <template x-if="confirm.type === 'danger'">
-                                <svg class="w-10 h-10 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg class="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </template>
                             <template x-if="confirm.type === 'warning'">
-                                <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                             </template>
                             <template x-if="confirm.type === 'info'">
-                                <svg class="w-10 h-10 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg class="w-8 h-8 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </template>
                             <template x-if="confirm.type === 'success'">
-                                <svg class="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </template>
                         </div>
                     </div>
 
                     {{-- Text --}}
-                    <div class="text-center mb-8">
-                        <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight mb-2" x-text="confirm.title"></h3>
-                        <p class="text-[13px] font-medium text-slate-500 leading-relaxed" x-text="confirm.message"></p>
+                    <div class="text-center mb-6">
+                        <h3 class="text-base font-bold text-slate-900 mb-1.5" x-text="confirm.title"></h3>
+                        <p class="text-[13px] text-slate-500 leading-relaxed" x-text="confirm.message"></p>
                     </div>
 
-                    {{-- Action Buttons --}}
-                    <div class="flex gap-3">
+                    {{-- Buttons --}}
+                    <div class="flex gap-2.5">
                         <button @click="resolveConfirm(false)"
-                            class="flex-1 py-3.5 px-6 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all duration-300 active:scale-95"
+                            class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[12px] rounded-xl transition-all active:scale-95"
                             x-text="confirm.cancelText"></button>
                         <button @click="resolveConfirm(true)"
-                            class="flex-1 py-3.5 px-6 font-black text-[11px] uppercase tracking-[0.15em] rounded-2xl transition-all duration-300 active:scale-95 shadow-lg"
+                            class="flex-1 py-2.5 px-4 font-semibold text-[12px] text-white rounded-xl transition-all active:scale-95"
                             :class="{
-                                    'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30': confirm.type === 'danger',
-                                    'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30': confirm.type === 'warning',
-                                    'bg-sky-500 hover:bg-sky-600 text-white shadow-sky-500/30': confirm.type === 'info',
-                                    'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30': confirm.type === 'success',
-                                }"
+                                'bg-rose-500 hover:bg-rose-600':       confirm.type === 'danger',
+                                'bg-amber-500 hover:bg-amber-600':     confirm.type === 'warning',
+                                'bg-sky-500 hover:bg-sky-600':         confirm.type === 'info',
+                                'bg-emerald-500 hover:bg-emerald-600': confirm.type === 'success',
+                            }"
                             x-text="confirm.confirmText"></button>
                     </div>
                 </div>
@@ -646,7 +649,8 @@
             document.getElementById('main-content')?.classList.remove('page-transition-leave');
         });
     </script>
-
+    
+    @include('components.floating-chat')
 </body>
 
 </html>

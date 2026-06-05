@@ -236,6 +236,8 @@ class KelolaLahanController extends Controller
                     't.keterangan_tanam',
                     't.valid_oleh as tanam_valid_oleh',
                     't.alasan_tolak as tanam_alasan_tolak',
+                    't.status_akhiri_siklus',
+                    't.alasan_tolak_akhiri_siklus',
                     'p.id_panen',
                     'p.total_panen',
                     'p.tgl_panen',
@@ -318,7 +320,8 @@ class KelolaLahanController extends Controller
 
             // Build Hierarchy
             $groupedItems = collect($paginator->items())->map(function ($resor) use ($allSektors, $recordsCollection) {
-                $resor->sektors = $allSektors->filter(function ($s) use ($resor) {
+                // Sektor-sektor yang berada di bawah Resor ini
+                $sektors = $allSektors->filter(function ($s) use ($resor) {
                     return str_starts_with($s->id_tingkat, $resor->id_tingkat . '.');
                 })->map(function ($sektor) use ($recordsCollection) {
                     $sektor->lahans = $recordsCollection->filter(function ($l) use ($sektor) {
@@ -327,7 +330,21 @@ class KelolaLahanController extends Controller
                     return $sektor;
                 })->filter(function ($sektor) {
                     return $sektor->lahans->isNotEmpty();
+                })->values();
+
+                // Tambahkan virtual sektor untuk lahan yang nempel langsung ke Resor (misalnya lahan Polda/Polres)
+                $resorLahans = $recordsCollection->filter(function ($l) use ($resor) {
+                    return $l->id_tingkat === $resor->id_tingkat;
                 });
+
+                if ($resorLahans->isNotEmpty()) {
+                    $virtualSektor = clone $resor;
+                    $virtualSektor->nama_tingkat = $resor->nama_tingkat; // Label akan menunjukkan nama Polres
+                    $virtualSektor->lahans = $resorLahans;
+                    $sektors->prepend($virtualSektor);
+                }
+
+                $resor->sektors = $sektors;
                 return $resor;
             })->filter(function ($resor) {
                 return $resor->sektors->isNotEmpty();
@@ -548,7 +565,7 @@ class KelolaLahanController extends Controller
             ->limit(100)
             ->get();
             
-        $polresForHarvest = DB::table('tingkat')
+        $polresForHarvest = $applyTingkatScope(DB::table('tingkat'))
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\.[0-9]+$'")
             ->orderBy('id_tingkat')
             ->get();
@@ -955,9 +972,17 @@ class KelolaLahanController extends Controller
 
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('id_tanam', $id)->first(['lahan.id_tingkat']);
+        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('id_tanam', $id)->first(['lahan.id_tingkat', 'tanam.alasan_tolak']);
         if (!$tanam || ($scope && $scope != '0' && ((string)$tanam->id_tingkat !== (string)$scope && !str_starts_with((string)$tanam->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat mengubah data.'], 403);
+        }
+
+        if (empty($tanam->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat diubah jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1004,9 +1029,17 @@ class KelolaLahanController extends Controller
 
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_panen', $id)->first(['lahan.id_tingkat']);
+        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_panen', $id)->first(['lahan.id_tingkat', 'panen.alasan_tolak']);
         if (!$panen || ($scope && $scope != '0' && ((string)$panen->id_tingkat !== (string)$scope && !str_starts_with((string)$panen->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat mengubah data.'], 403);
+        }
+
+        if (empty($panen->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat diubah jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1050,9 +1083,17 @@ class KelolaLahanController extends Controller
 
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat']);
+        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.alasan_tolak']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat mengubah data.'], 403);
+        }
+
+        if (empty($serapan->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat diubah jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1214,9 +1255,17 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('tanam.id_tanam', $id)->first(['lahan.id_tingkat', 'tanam.id_tanam']);
+        $tanam = DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')->where('tanam.id_tanam', $id)->first(['lahan.id_tingkat', 'tanam.id_tanam', 'tanam.alasan_tolak']);
         if (!$tanam || ($scope && $scope != '0' && ((string)$tanam->id_tingkat !== (string)$scope && !str_starts_with((string)$tanam->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        }
+
+        if (empty($tanam->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat dihapus jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1238,9 +1287,17 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('panen.id_panen', $id)->first(['lahan.id_tingkat', 'panen.id_panen']);
+        $panen = DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('panen.id_panen', $id)->first(['lahan.id_tingkat', 'panen.id_panen', 'panen.alasan_tolak']);
         if (!$panen || ($scope && $scope != '0' && ((string)$panen->id_tingkat !== (string)$scope && !str_starts_with((string)$panen->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        }
+
+        if (empty($panen->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat dihapus jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1258,9 +1315,17 @@ class KelolaLahanController extends Controller
     {
         $user = auth()->user();
         $scope = $user->id_tugas ?? '0';
-        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('distribusi.id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.id_distribusi']);
+        $serapan = DB::table('distribusi')->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')->where('distribusi.id_distribusi', $id)->first(['lahan.id_tingkat', 'distribusi.id_distribusi', 'distribusi.alasan_tolak']);
         if (!$serapan || ($scope && $scope != '0' && ((string)$serapan->id_tingkat !== (string)$scope && !str_starts_with((string)$serapan->id_tingkat, (string)$scope . '.')))) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
+        }
+
+        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        }
+
+        if (empty($serapan->alasan_tolak)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Data hanya dapat dihapus jika berstatus ditolak.'], 403);
         }
 
         try {
@@ -1532,11 +1597,32 @@ class KelolaLahanController extends Controller
                 return response()->json(['success' => false, 'message' => 'Data Serapan belum divalidasi.'], 422);
             }
 
-            DB::table('tanam')->where('id_tanam', $id)->update(['is_active' => 0]);
+            DB::table('tanam')->where('id_tanam', $id)->update(['status_akhiri_siklus' => 1]);
             
-            return response()->json(['success' => true, 'message' => 'Siklus Tanam ini selesai dan telah diarsipkan.']);
+            // Send notification to Admin
+            $admins = DB::table('anggota')->where('role', 'admin')->pluck('id_anggota')->toArray();
+            $namaPolres = $user->nama_anggota ?? 'Polres';
+            $alamat = DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->value('alamat_lahan') ?? '-';
+            
+            foreach ($admins as $adminId) {
+                Pesan::create([
+                    'id_pesan'     => Str::uuid(),
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $adminId,
+                    'judul'        => '🔔 Pengajuan Akhiri Siklus Lahan #' . $tanam->id_lahan,
+                    'isi_pesan'    => "{$namaPolres} mengajukan Akhiri Siklus untuk Lahan:\n\n" .
+                                      "📍 **Lokasi Lahan:** {$alamat}\n" .
+                                      "🆔 **ID Lahan:** #{$tanam->id_lahan}\n\n" .
+                                      "Silakan cek dan lakukan Persetujuan di menu Kelola Lahan.",
+                    'is_read'      => false,
+                ]);
+            }
+
+            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Pengajuan Akhiri Siklus berhasil dikirim ke Admin.']);
+            return back()->with('success', 'Pengajuan Akhiri Siklus berhasil dikirim ke Admin.');
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal menyelesaikan siklus: ' . $e->getMessage()], 500);
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal menyelesaikan siklus: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal menyelesaikan siklus: ' . $e->getMessage());
         }
     }
 }

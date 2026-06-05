@@ -508,7 +508,7 @@
                     <div class="w-1.5 h-8 bg-teal-500 rounded-full"></div>
                     <div>
                         <h3 class="text-sm font-black text-white uppercase tracking-widest">Peta Penyebaran Potensi Lahan</h3>
-                        <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Distribusi geografis wilayah &mdash; 2026</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Distribusi geografis wilayah &mdash; Tahun {{ $yearFilter }}{{ $quarterFilter !== 'all' ? ' · Q' . $quarterFilter : '' }}</p>
                     </div>
                 </div>
             </div>
@@ -529,15 +529,50 @@
                     </div>
                 </div>
 
-                {{-- Top Right Legend Overlay --}}
+                {{-- Top Right Legend Overlay -- all 3 statuses --}}
                 <div class="absolute top-6 right-6 z-[400] pointer-events-none hidden md:block">
-                    <div class="bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-slate-700/50 text-right">
-                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Status Lahan</p>
+                    <div class="bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-slate-700/50 text-right space-y-1.5">
+                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-2">Status Lahan &bull; {{ $yearFilter }}{{ $quarterFilter !== 'all' ? ' Q'.$quarterFilter : '' }}</p>
                         <div class="flex items-center justify-end gap-2">
                             <span class="text-xs font-medium text-white">Produktif</span>
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
                         </div>
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-medium text-white">Tanam</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                        </div>
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-medium text-white">Panen</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+                        </div>
                     </div>
+                </div>
+            </div>
+            {{-- Map Stats Bar --}}
+            @php
+                $mapProduktif = $mapData->where('status','Produktif')->count();
+                $mapTanam     = $mapData->where('status','Tanam')->count();
+                $mapPanen     = $mapData->where('status','Panen')->count();
+                $mapTotal     = $mapData->count();
+            @endphp
+            <div class="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100">
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Produktif</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapProduktif }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
+                </div>
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanam</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapTanam }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
+                </div>
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Panen</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapPanen }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
                 </div>
             </div>
         </div>
@@ -774,21 +809,23 @@
 </div>
 
 {{-- ===========================================================================
-     JAVASCRIPT
+     JAVASCRIPT (FIXED DATA BINDING & RE-RENDER MAP)
 =========================================================================== --}}
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script id="chart-tahunan-data" type="application/json">
-    <?php echo json_encode($chartTahunan); ?>
+    {!! json_encode($chartTahunan) !!}
 </script>
 <script id="chart-bulanan-data" type="application/json">
-    <?php echo json_encode($chartBulanan); ?>
+    {!! json_encode($chartBulanan) !!}
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
 
-        // Serapan Bar Chart
+        // ==========================================
+        // 1. SERAPAN BAR CHART (FIXED SYNTAX)
+        // ==========================================
         const serapanCtx = document.getElementById('serapanChart').getContext('2d');
         new Chart(serapanCtx, {
             type: 'bar',
@@ -796,32 +833,17 @@
                 labels: ['Bulog', 'Pabrik Pakan', 'Tengkulak', 'Konsumsi Sendiri'],
                 datasets: [{
                     label: 'Total Serapan (Ton)',
-                    data: [{
-                            {
-                                $serapanBulog
-                            }
-                        },
-                        {
-                            {
-                                $serapanPabrik
-                            }
-                        },
-                        {
-                            {
-                                $serapanTengkulak
-                            }
-                        },
-                        {
-                            {
-                                $serapanKonsumsi
-                            }
-                        }
+                    data: [
+                        {{ (float) $serapanBulog }},
+                        {{ (float) $serapanPabrik }},
+                        {{ (float) $serapanTengkulak }},
+                        {{ (float) $serapanKonsumsi }}
                     ],
                     backgroundColor: [
                         'rgba(59, 130, 246, 0.8)', // blue
                         'rgba(99, 102, 241, 0.8)', // indigo
                         'rgba(245, 158, 11, 0.8)', // amber
-                        'rgba(16, 185, 129, 0.8)' // emerald
+                        'rgba(16, 185, 129, 0.8)'  // emerald
                     ],
                     borderColor: [
                         'rgb(59, 130, 246)',
@@ -883,7 +905,9 @@
             }
         });
 
-        // 1. LINE CHART
+        // ==========================================
+        // 2. LINE CHART (PRODUCTIVITY)
+        // ==========================================
         const lineCtx = document.getElementById('productivityChart').getContext('2d');
         const grad = lineCtx.createLinearGradient(0, 0, 0, 220);
         grad.addColorStop(0, 'rgba(16, 185, 129, 0.12)');
@@ -892,17 +916,11 @@
         const dynamicChartData = {
             monthly: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
-                data: {
-                    !!json_encode($chartMonthlyData) !!
-                }
+                data: {!! json_encode($chartMonthlyData) !!}
             },
             yearly: {
-                labels: {
-                    !!json_encode($chartYearlyLabels) !!
-                },
-                data: {
-                    !!json_encode($chartYearlyData) !!
-                }
+                labels: {!! json_encode($chartYearlyLabels) !!},
+                data: {!! json_encode($chartYearlyData) !!}
             }
         };
 
@@ -943,8 +961,15 @@
                 },
                 scales: {
                     y: {
-                        display: false,
-                        beginAtZero: false
+                        display: true, // Diaktifkan agar garis horizontal penunjuk angka Ha muncul
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.5)'
+                        },
+                        ticks: {
+                            font: { size: 10, family: 'Outfit' },
+                            color: '#94a3b8'
+                        }
                     },
                     x: {
                         grid: {
@@ -996,10 +1021,11 @@
         btnMonthly.addEventListener('click', () => updateProdChart('monthly'));
         btnYearly.addEventListener('click', () => updateProdChart('yearly'));
 
-        // initialize to monthly
         updateProdChart('monthly');
 
-        // 2. LEAFLET MAP
+        // ==========================================
+        // 3. LEAFLET MAP (FIXED AUTOMATIC RE-RENDER)
+        // ==========================================
         var map = L.map('map', {
             zoomControl: false,
             scrollWheelZoom: false
@@ -1014,32 +1040,41 @@
             position: 'bottomright'
         }).addTo(map);
 
-        var sampleData = <?php echo json_encode($mapData); ?>;
+        // Memastikan map merender ulang ukuran container secara presisi setelah DOM siap
+        setTimeout(() => { map.invalidateSize(); }, 500);
 
-        sampleData.forEach(function(point) {
-            L.circleMarker([point.lat, point.lng], {
-                radius: 8,
-                fillColor: '#10b981',
-                color: '#ffffff',
-                weight: 2.5,
-                opacity: 1,
-                fillOpacity: 0.9
-            }).addTo(map).bindPopup(
-                '<div style="font-size:12px;font-weight:600;">' + point.title + '</div>' +
-                '<div style="font-size:11px;color:#64748b;">' + point.status + '</div>'
-            );
-        });
+        var sampleData = {!! json_encode($mapData) !!};
 
-        // 3. DONUT CHARTS
+        if(Array.isArray(sampleData)) {
+            sampleData.forEach(function(point) {
+                var color = '#10b981'; // Produktif (emerald)
+                if (point.status === 'Tanam') {
+                    color = '#3b82f6'; // Tanam (blue)
+                } else if (point.status === 'Panen') {
+                    color = '#f59e0b'; // Panen (amber)
+                }
+                L.circleMarker([point.lat, point.lng], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2.5,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(map).bindPopup(
+                    '<div style="font-size:12px;font-weight:600;font-family:\'Outfit\',sans-serif;">' + point.title + '</div>' +
+                    '<div style="font-size:11px;color:#64748b;font-family:\'Outfit\',sans-serif;">Status: ' + point.status + '</div>'
+                );
+            });
+        }
+
+        // ==========================================
+        // 4. DONUT CHARTS
+        // ==========================================
         const donutOptions = {
             cutout: '78%',
             plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    enabled: false
-                }
+                legend: { display: false },
+                tooltip: { enabled: false }
             },
             animation: {
                 animateScale: true,
@@ -1047,7 +1082,7 @@
             }
         };
 
-        const totalTitikData = <?php echo json_encode([$totalTitikLahan, max(0, $totalLahanAll - $totalTitikLahan)]); ?>;
+        const totalTitikData = {!! json_encode([$totalTitikLahan, max(0, $totalLahanAll - $totalTitikLahan)]) !!};
         new Chart(document.getElementById('totalTitikChart'), {
             type: 'doughnut',
             data: {
@@ -1061,7 +1096,7 @@
             options: donutOptions
         });
 
-        const polsekData = <?php echo json_encode([$polsekAktif, max(0, $totalPolsekInScope - $polsekAktif)]); ?>;
+        const polsekData = {!! json_encode([$polsekAktif, max(0, $totalPolsekInScope - $polsekAktif)]) !!};
         new Chart(document.getElementById('pengelolaanPolsekChart'), {
             type: 'doughnut',
             data: {

@@ -59,7 +59,6 @@
     </div>
 
     @php
-<<<<<<< Updated upstream
     // Optimize: Use SQL LIKE operators instead of pulling everything into PHP memory
     // Kabupaten: format XX.XX (1 dot)
     $totalKabupaten = DB::table('wilayah')
@@ -78,7 +77,7 @@
     ->count();
 
     $search = request('search');
-    $perPage = !empty($search) ? 100 : 1;
+    $perPage = 5;
 
     $kabupatenQuery = DB::table('wilayah')
     ->where('id_wilayah', 'like', '%.%')
@@ -120,13 +119,18 @@
     });
     $desas = $desaQuery->get();
 
-    $allWilayah = collect($kabupatenList->items())->merge($kecamatans)->merge($desas);
+    $kecamatansGrouped = $kecamatans->groupBy(function($item) {
+        return substr($item->id_wilayah, 0, strrpos($item->id_wilayah, '.'));
+    });
+    $desasGrouped = $desas->groupBy(function($item) {
+        return substr($item->id_wilayah, 0, strrpos($item->id_wilayah, '.'));
+    });
     } else {
-    $allWilayah = collect();
+    $kecamatansGrouped = collect();
+    $desasGrouped = collect();
     }
     @endphp
 
-<<<<<<< Updated upstream
     {{-- Stats Dashboard --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative px-2">
         <div class="absolute inset-0 bg-slate-100 rounded-[3rem] -z-10 transform scale-y-110 scale-x-105"></div>
@@ -200,23 +204,21 @@
         <div class="divide-y divide-slate-100/80">
             @forelse($kabupatenList as $kab)
             @php
-            $kecamatanList = $allWilayah->filter(function ($item) use ($kab, $search, $matchingWilayahIds) {
-            if (count(explode('.', $item->id_wilayah)) !== 3 || !str_starts_with($item->id_wilayah, $kab->id_wilayah . '.')) {
-            return false;
+            $kecamatanList = isset($kecamatansGrouped) ? $kecamatansGrouped->get($kab->id_wilayah, collect()) : collect();
+            if (!empty($search) && $matchingWilayahIds->isNotEmpty() && !$matchingWilayahIds->contains($kab->id_wilayah)) {
+                $kecamatanList = $kecamatanList->filter(function($item) use ($matchingWilayahIds) {
+                    if ($matchingWilayahIds->contains($item->id_wilayah)) return true;
+                    foreach ($matchingWilayahIds as $mId) {
+                        if (str_starts_with($mId, $item->id_wilayah . '.')) return true;
+                    }
+                    return false;
+                });
             }
-            if (empty($search) || $matchingWilayahIds->isEmpty()) return true;
-
-            if ($matchingWilayahIds->contains($item->id_wilayah)) return true;
-            if ($matchingWilayahIds->contains($kab->id_wilayah)) return true;
-
-            foreach ($matchingWilayahIds as $mId) {
-            if (str_starts_with($mId, $item->id_wilayah . '.')) return true;
-            }
-            return false;
-            })->sortBy('id_wilayah');
+            $kecamatanList = $kecamatanList->sortBy('id_wilayah');
             @endphp
 
-            <div x-data="{ expandedKab: true }"
+            <div x-data="{ expandedKab: localStorage.getItem('kab_{{ str_replace('.', '_', $kab->id_wilayah) }}') === 'true' }"
+                 x-init="$watch('expandedKab', val => localStorage.setItem('kab_{{ str_replace('.', '_', $kab->id_wilayah) }}', val))"
                 class="group/kab transition-all duration-300 hover:bg-slate-50/50"
                 :class="expandedKab ? 'bg-slate-50/50' : ''">
 
@@ -238,174 +240,10 @@
                                 <span class="inline-flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
                                     KABUPATEN
                                 </span>
-=======
-    {{-- 2. Hierarchical Network Section (Kecil & Rapat) --}}
-    <div class="space-y-4 relative">
-        @forelse($kabupatenList as $kab)
-            @php
-            $kecamatanList = $allWilayah->filter(function($item) use ($kab) {
-                $parts = explode('.', $item->kode_wilayah);
-                return count($parts) == 2 && str_starts_with($kab->kode_wilayah, $item->kode_wilayah);
-            });
-            @endphp
-
-            <div x-data="{ openKab: {{ $loop->first ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative group/kab transition-all duration-300">
-                
-                {{-- Header Kabupaten --}}
-                <div @click="openKab = !openKab" class="px-5 py-4 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 flex justify-between items-center cursor-pointer relative overflow-hidden group/header">
-                    <div class="absolute inset-0 animate-jaring"></div>
-                    <svg class="absolute right-0 top-0 h-full opacity-10 group-hover/header:scale-110 transition-transform duration-700 text-white" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">
-                        <polygon points="0,100 100,0 100,100" />
-                    </svg>
-
-                    <div class="relative flex items-center gap-4 z-10 w-full">
-                        <div class="w-11 h-11 bg-white/10 backdrop-blur-md text-white rounded-xl flex items-center justify-center shadow-inner border border-white/20 group-hover/header:rotate-6 transition-transform duration-300 flex-shrink-0">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-base font-black text-white uppercase tracking-wider drop-shadow-sm leading-tight">{{ $kab->nama_wilayah }}</h3>
-                            <div class="flex flex-wrap items-center gap-2 mt-1.5">
-                                <span class="bg-blue-600/80 font-bold px-2 py-0.5 rounded text-[11px] text-blue-50 tracking-wide border border-blue-400/50 shadow-sm inline-flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                                    {{ $kab->kode_wilayah }}
-                                </span>
-                                <span class="text-[10px] font-bold text-blue-200 uppercase tracking-wider bg-white/5 py-0.5 px-2 rounded">KABUPATEN INDUK</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white/10 p-2 rounded-lg border border-white/20 backdrop-blur-sm z-10 relative flex-shrink-0 ml-3 group-hover/header:bg-white/20 transition-colors">
-                        <svg class="w-5 h-5 text-white transition-transform duration-300 transform" :class="openKab ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                {{-- Container Kecamatan --}}
-                <div x-show="openKab" x-collapse x-cloak>
-                    <div class="bg-slate-50 border-t border-slate-200 p-4 lg:p-6 relative overflow-hidden">
-                        
-                        <!-- MASTER VERTICAL LINE -->
-                        <div class="relative ml-2 pl-8 lg:pl-10">
-                            <!-- Garis Induk menurun sepanjang kecamatan -->
-                            <div class="absolute top-0 bottom-6 left-0 w-px border-l-2 border-dashed border-blue-400/60 shadow-[0_0_5px_rgba(147,197,253,0.3)]"></div>
-
-                            @php
-                                $kecamatanInKab = $allWilayah->filter(function($item) use ($kab) {
-                                    $parts = explode('.', $item->kode_wilayah);
-                                    return count($parts) == 2 && explode('.', $kab->kode_wilayah)[1] == $parts[1];
-                                });
-                            @endphp
-
-                            <div class="space-y-4">
-                                @forelse($kecamatanInKab as $kec)
-                                    <div x-data="{ openKec: false }" class="relative group/kecamatan">
-                                        <!-- CONNECTING LINE TO KECAMATAN -->
-                                        <!-- Tinggi header kecamatan estimasi py-3 + h-10 = 12+12+40=64px. Center = ~32px -->
-                                        <div class="absolute top-[32px] -left-8 lg:-left-10 w-8 lg:w-10 border-t-2 border-dashed border-blue-400/60 group-hover/kecamatan:border-blue-500 transition-colors"></div>
-                                        
-                                        <!-- NODE KECAMATAN -->
-                                        <!-- w-3 h-3 radius 6px => 32-6 = 26px -->
-                                        <div class="absolute top-[26.5px] -left-[6px] w-3 h-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-sm border-2 border-white z-10 group-hover/kecamatan:scale-125 transition-transform"></div>
-
-                                        <!-- Card Kecamatan -->
-                                        <div class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden relative">
-                                            
-                                            <div @click="openKec = !openKec" class="px-4 lg:px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50/50 transition-colors group/kecheader">
-                                                <div class="flex items-center gap-3.5">
-                                                    <div class="w-9 h-9 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center border border-indigo-100 group-hover/kecheader:bg-indigo-600 group-hover/kecheader:text-white transition-all duration-300">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                                        </svg>
-                                                    </div>
-                                                    <div>
-                                                        <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wide group-hover/kecheader:text-indigo-700 transition-colors">{{ $kec->nama_wilayah }}</h4>
-                                                        <div class="flex items-center gap-2 mt-0.5">
-                                                            <span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 tracking-wider inline-flex items-center gap-1">
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                                                                {{ $kec->kode_wilayah }}
-                                                            </span>
-                                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">Kecamatan</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="bg-slate-50 p-1.5 rounded-lg border border-slate-200 group-hover/kecheader:border-indigo-300 group-hover/kecheader:bg-indigo-50 transition-colors">
-                                                    <svg class="w-4 h-4 text-slate-500 group-hover/kecheader:text-indigo-600 transition-transform duration-300" :class="openKec ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                                                    </svg>
-                                                </div>
-                                            </div>
-
-                                            {{-- Container Desa --}}
-                                            <div x-show="openKec" x-collapse x-cloak class="bg-indigo-50/20 border-t border-slate-100 p-4 lg:p-5">
-                                                
-                                                <div class="relative ml-2 pl-8">
-                                                    <!-- SUB-VERTICAL LINE -->
-                                                    <div class="absolute top-0 bottom-4 left-0 w-px border-l-2 border-dashed border-indigo-300"></div>
-
-                                                    @php
-                                                        $desaList = $allWilayah->filter(function($item) use ($kec) {
-                                                            $parts = explode('.', $item->kode_wilayah);
-                                                            return count($parts) == 4 && str_starts_with($item->kode_wilayah, $kec->kode_wilayah);
-                                                        });
-                                                    @endphp
-
-                                                    <div class="space-y-2.5">
-                                                        @forelse($desaList as $desa)
-                                                            <div class="relative flex items-center hover:translate-x-1 transition-transform duration-300 group/desa">
-                                                                
-                                                                <!-- CONNECTING LINE TO DESA -->
-                                                                <!-- Desa card p-2.5 (20px), icon h-8 (32px) = 52px total. Center 26px-->
-                                                                <div class="absolute top-[26px] -left-8 w-8 border-t-2 border-dashed border-indigo-300 group-hover/desa:border-indigo-500 transition-colors"></div>
-                                                                
-                                                                <!-- NODE DESA -->
-                                                                <!-- w-2 h-2 radius 4px => 26-4 = 22px -->
-                                                                <div class="absolute top-[22px] -left-[4px] w-2 h-2 bg-indigo-400 rounded-full border border-white shadow-sm z-10 group-hover/desa:bg-indigo-600 group-hover/desa:scale-150 transition-all duration-300"></div>
-
-                                                                <!-- Card Desa -->
-                                                                <div class="w-full flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-400 transition-all">
-                                                                    <div class="flex items-center gap-3">
-                                                                        <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center border border-emerald-100 group-hover/desa:bg-emerald-500 group-hover/desa:text-white transition-colors duration-300 flex-shrink-0">
-                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                                                                            </svg>
-                                                                        </div>
-                                                                        <div>
-                                                                            <span class="block text-xs font-bold text-slate-800 uppercase group-hover/desa:text-emerald-700 transition-colors leading-tight">{{ $desa->nama_wilayah }}</span>
-                                                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 mt-0.5 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                                                                                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
-                                                                                {{ $desa->kode_wilayah }}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <span class="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md border border-emerald-200 uppercase tracking-widest hidden sm:block">DESA</span>
-                                                                </div>
-
-                                                            </div>
-                                                        @empty
-                                                            <div class="ml-2 py-3 px-4 bg-white rounded-lg border border-slate-200 border-dashed text-center">
-                                                                <p class="text-[11px] font-medium text-slate-500 italic">Jaringan wilayah menuju desa belum terhubung.</p>
-                                                            </div>
-                                                        @endforelse
-                                                    </div>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <div class="py-6 px-6 bg-white rounded-2xl border border-slate-200 border-dashed text-center shadow-sm">
-                                        <p class="text-sm font-semibold text-slate-500 italic">Tidak ada jaringan kecamatan terhubung.</p>
-                                    </div>
-                                @endforelse
->>>>>>> Stashed changes
                             </div>
                         </div>
 
                     </div>
-<<<<<<< Updated upstream
-
                     <div class="flex items-center md:justify-end gap-4 md:pl-0 pl-16">
                         <div class="flex flex-col items-center justify-center px-4 py-2 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
                             <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Kecamatan</span>
@@ -426,21 +264,16 @@
                             <div class="space-y-4">
                                 @foreach($kecamatanList as $kec)
                                 @php
-                                $desaList = $allWilayah->filter(function ($item) use ($kec, $kab, $search, $matchingWilayahIds) {
-                                if (count(explode('.', $item->id_wilayah)) !== 4 || !str_starts_with($item->id_wilayah, $kec->id_wilayah . '.')) {
-                                return false;
+                                $desaList = isset($desasGrouped) ? $desasGrouped->get($kec->id_wilayah, collect()) : collect();
+                                if (!empty($search) && $matchingWilayahIds->isNotEmpty() && !$matchingWilayahIds->contains($kab->id_wilayah) && !$matchingWilayahIds->contains($kec->id_wilayah)) {
+                                    $desaList = $desaList->filter(function($item) use ($matchingWilayahIds) {
+                                        return $matchingWilayahIds->contains($item->id_wilayah);
+                                    });
                                 }
-                                if (empty($search) || $matchingWilayahIds->isEmpty()) return true;
-
-                                if ($matchingWilayahIds->contains($item->id_wilayah)) return true;
-                                if ($matchingWilayahIds->contains($kec->id_wilayah)) return true;
-                                if ($matchingWilayahIds->contains($kab->id_wilayah)) return true;
-
-                                return false;
-                                })->sortBy('id_wilayah');
+                                $desaList = $desaList->sortBy('id_wilayah');
                                 @endphp
 
-                                <div x-data="{ expandedKec: true }" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/kec">
+                                <div x-data="{ expandedKec: localStorage.getItem('kec_{{ str_replace('.', '_', $kec->id_wilayah) }}') === 'true' }" x-init="$watch('expandedKec', val => localStorage.setItem('kec_{{ str_replace('.', '_', $kec->id_wilayah) }}', val))" class="relative bg-white p-4 sm:p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 group/kec">
 
                                     <div class="absolute -left-9 top-8 w-5 border-t-[3px] border-blue-200/60 z-0"></div>
                                     <div class="absolute -left-4 top-8 w-2.5 h-2.5 rounded-full bg-blue-400 border-2 border-white shadow-sm z-10 group-hover/kec:scale-150 transition-transform -translate-y-1/2"></div>
@@ -524,21 +357,23 @@
 
                                                     @if($desa->Latitude && $desa->longitude)
                                                     <div x-show="showMap" x-collapse x-cloak>
-                                                        <div class="mt-4 p-2 bg-white border border-slate-200 rounded-xl relative z-10 shadow-sm">
-                                                            <iframe width="100%" height="220" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"
-                                                                src="https://maps.google.com/maps?q={{ $desa->Latitude }},{{ $desa->longitude }}&hl=id&z=15&output=embed"
-                                                                class="rounded-lg shadow-inner border border-slate-100 w-full">
-                                                            </iframe>
-                                                            <div class="flex justify-between items-center mt-2 px-2 pb-1">
-                                                                <span class="text-[10px] font-black text-slate-400 tracking-wider">MAPS PREVIEW</span>
-                                                                <a href="https://www.google.com/maps/search/?api=1&query={{ $desa->Latitude }},{{ $desa->longitude }}" target="_blank" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 transition-colors">
-                                                                    Buka di Tab Baru
-                                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                                                    </svg>
-                                                                </a>
+                                                        <template x-if="showMap">
+                                                            <div class="mt-4 p-2 bg-white border border-slate-200 rounded-xl relative z-10 shadow-sm">
+                                                                <iframe width="100%" height="220" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"
+                                                                    src="https://maps.google.com/maps?q={{ $desa->Latitude }},{{ $desa->longitude }}&hl=id&z=15&output=embed"
+                                                                    class="rounded-lg shadow-inner border border-slate-100 w-full">
+                                                                </iframe>
+                                                                <div class="flex justify-between items-center mt-2 px-2 pb-1">
+                                                                    <span class="text-[10px] font-black text-slate-400 tracking-wider">MAPS PREVIEW</span>
+                                                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $desa->Latitude }},{{ $desa->longitude }}" target="_blank" class="text-[10px] font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 transition-colors">
+                                                                        Buka di Tab Baru
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                                        </svg>
+                                                                    </a>
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        </template>
                                                     </div>
                                                     @endif
 
@@ -627,7 +462,7 @@
 
 </div>
 
-<<<<<<< Updated upstream
+
 <!-- Edit Maps Modal -->
 <div id="mapModal" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden transform scale-95 opacity-0 transition-all duration-300 border border-slate-100" id="mapModalContent">
@@ -719,8 +554,20 @@
     }
 </script>
 
-=======
->>>>>>> Stashed changes
+
 <!-- Alpine Plugins -->
 <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() { 
+        var scrollpos = sessionStorage.getItem('scrollpos');
+        if (scrollpos) {
+            window.scrollTo(0, scrollpos);
+            sessionStorage.removeItem('scrollpos');
+        }
+    });
+
+    window.addEventListener("beforeunload", function() {
+        sessionStorage.setItem('scrollpos', window.scrollY);
+    });
+</script>
 @endsection

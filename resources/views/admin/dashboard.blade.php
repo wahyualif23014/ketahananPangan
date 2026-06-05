@@ -22,22 +22,6 @@
     {{-- Background pattern --}}
     <div class="fixed inset-0 topo-pattern -z-10 pointer-events-none"></div>
 
-    @if(session('success'))
-    <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-2xl flex items-center gap-3 shadow-sm mx-1 mt-6">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-        <span class="font-bold text-sm">{{ session('success') }}</span>
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="p-4 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl flex items-center gap-3 shadow-sm mx-1 mt-6">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-        </svg>
-        <span class="font-bold text-sm">{{ session('error') }}</span>
-    </div>
-    @endif
 
     {{-- =====================================================================
          1. HEADER
@@ -525,7 +509,7 @@
                     <div class="w-1.5 h-8 bg-teal-500 rounded-full"></div>
                     <div>
                         <h3 class="text-sm font-black text-white uppercase tracking-widest">Peta Penyebaran Potensi Lahan</h3>
-                        <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Distribusi geografis wilayah &mdash; 2026</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest">Distribusi geografis wilayah &mdash; Tahun {{ $yearFilter }}{{ $quarterFilter !== 'all' ? ' · Q' . $quarterFilter : '' }}</p>
                     </div>
                 </div>
             </div>
@@ -546,15 +530,50 @@
                     </div>
                 </div>
 
-                {{-- Top Right Legend Overlay --}}
+                {{-- Top Right Legend Overlay -- all 3 statuses --}}
                 <div class="absolute top-6 right-6 z-[400] pointer-events-none hidden md:block">
-                    <div class="bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-slate-700/50 text-right">
-                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Status Lahan</p>
+                    <div class="bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-slate-700/50 text-right space-y-1.5">
+                        <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-2">Status Lahan &bull; {{ $yearFilter }}{{ $quarterFilter !== 'all' ? ' Q'.$quarterFilter : '' }}</p>
                         <div class="flex items-center justify-end gap-2">
                             <span class="text-xs font-medium text-white">Produktif</span>
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
                         </div>
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-medium text-white">Tanam</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                        </div>
+                        <div class="flex items-center justify-end gap-2">
+                            <span class="text-xs font-medium text-white">Panen</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+                        </div>
                     </div>
+                </div>
+            </div>
+            {{-- Map Stats Bar --}}
+            @php
+                $mapProduktif = $mapData->where('status','Produktif')->count();
+                $mapTanam     = $mapData->where('status','Tanam')->count();
+                $mapPanen     = $mapData->where('status','Panen')->count();
+                $mapTotal     = $mapData->count();
+            @endphp
+            <div class="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100">
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Produktif</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapProduktif }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
+                </div>
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanam</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapTanam }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
+                </div>
+                <div class="flex flex-col items-center py-4 gap-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Panen</span>
+                    <span class="text-xl font-black text-slate-800">{{ $mapPanen }}</span>
+                    <span class="text-[9px] text-slate-400">titik lahan</span>
                 </div>
             </div>
         </div>
@@ -1234,16 +1253,22 @@
         var sampleData = <?php echo json_encode($mapData); ?>;
 
         sampleData.forEach(function(point) {
+            var color = '#10b981'; // Produktif (emerald)
+            if (point.status === 'Tanam') {
+                color = '#3b82f6'; // Tanam (blue)
+            } else if (point.status === 'Panen') {
+                color = '#f59e0b'; // Panen (amber)
+            }
             L.circleMarker([point.lat, point.lng], {
                 radius: 8,
-                fillColor: '#10b981',
+                fillColor: color,
                 color: '#ffffff',
                 weight: 2.5,
                 opacity: 1,
                 fillOpacity: 0.9
             }).addTo(map).bindPopup(
                 '<div style="font-size:12px;font-weight:600;">' + point.title + '</div>' +
-                '<div style="font-size:11px;color:#64748b;">' + point.status + '</div>'
+                '<div style="font-size:11px;color:#64748b;">Status: ' + point.status + '</div>'
             );
         });
 

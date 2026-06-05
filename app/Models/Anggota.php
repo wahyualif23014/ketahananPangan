@@ -9,9 +9,10 @@ class Anggota extends Model
     
     protected $primaryKey = 'id_anggota';
     
-    public $incrementing = false; 
+    public $incrementing = true; 
     
-    protected $keyType = 'string';
+    protected $keyType = 'int';
+    // protected $keyType = 'string'; // Jika primary key adalah string
 
     protected $fillable = [
         'id_anggota',
