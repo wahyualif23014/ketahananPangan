@@ -105,12 +105,12 @@ class KelolaLahanController extends Controller
         ];
 
         if ($mode === 'history') {
-            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
+            $latestTanam = DB::raw('(SELECT id_tanam, id_lahan, luas_tanam, tgl_tanam, est_awal_panen, est_akhir_panen, keterangan_tanam, valid_oleh, alasan_tolak, status_akhiri_siklus, alasan_tolak_akhiri_siklus FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam GROUP BY id_lahan)) as t');
         } else {
-            $latestTanam = DB::raw('(SELECT * FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
+            $latestTanam = DB::raw('(SELECT id_tanam, id_lahan, luas_tanam, tgl_tanam, est_awal_panen, est_akhir_panen, keterangan_tanam, valid_oleh, alasan_tolak, status_akhiri_siklus, alasan_tolak_akhiri_siklus FROM tanam WHERE id_tanam IN (SELECT MAX(id_tanam) FROM tanam WHERE is_active = 1 GROUP BY id_lahan)) as t');
         }
-        $latestPanen = DB::raw('(SELECT * FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
-        $latestDistribusi = DB::raw('(SELECT * FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_panen)) as d');
+        $latestPanen = DB::raw('(SELECT id_panen, id_tanam, total_panen, tgl_panen, status_panen, luas_panen, ket_panen, valid_oleh, alasan_tolak FROM panen WHERE id_panen IN (SELECT MAX(id_panen) FROM panen GROUP BY id_tanam)) as p');
+        $latestDistribusi = DB::raw('(SELECT id_distribusi, id_panen, total_distribusi, tgl_distribusi, distribusi_ke, keterangan_distribusi, valid_oleh, alasan_tolak FROM distribusi WHERE id_distribusi IN (SELECT MAX(id_distribusi) FROM distribusi GROUP BY id_panen)) as d');
 
         // 3. Build Base Data Query (Applying Filters)
         $dataQuery = $applyScope(DB::table('lahan')->where('lahan.deletestatus', '!=', '0')->whereNotNull('lahan.valid_oleh'))
