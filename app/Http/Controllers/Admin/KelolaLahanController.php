@@ -1510,11 +1510,34 @@ class KelolaLahanController extends Controller
         }
 
         try {
-            $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
+            $tanam = DB::table('tanam')->where('id_tanam', $id)->where('is_active', 1)->first();
 
             if (!$tanam) {
-                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan.'], 422);
-                return back()->with('error', 'Data Tanam tidak ditemukan.');
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan atau sudah tidak aktif.'], 422);
+                return back()->with('error', 'Data Tanam tidak ditemukan atau sudah tidak aktif.');
+            }
+
+            // Validasi semua tahap sudah tervalidasi sebelum siklus bisa diakhiri
+            if (is_null($tanam->valid_oleh)) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam belum divalidasi.'], 422);
+                return back()->with('error', 'Data Tanam belum divalidasi.');
+            }
+
+            $panen = DB::table('panen')->where('id_tanam', $id)->whereNotNull('valid_oleh')->first();
+            if (!$panen) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Panen belum dicatat atau belum divalidasi.'], 422);
+                return back()->with('error', 'Siklus belum selesai. Panen belum dicatat atau belum divalidasi.');
+            }
+
+            $serapan = DB::table('distribusi')
+                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->where('panen.id_tanam', $id)
+                ->whereNotNull('distribusi.valid_oleh')
+                ->select('distribusi.*')
+                ->first();
+            if (!$serapan) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Serapan belum dicatat atau belum divalidasi.'], 422);
+                return back()->with('error', 'Siklus belum selesai. Serapan belum dicatat atau belum divalidasi.');
             }
 
             DB::table('tanam')->where('id_tanam', $id)->update([
@@ -1522,17 +1545,42 @@ class KelolaLahanController extends Controller
                 'is_active' => 0
             ]);
             
+            // Kirim notifikasi ke Polsek & Polres jika siklus ini berasal dari pengajuan Polres (status 1)
+            if (($tanam->status_akhiri_siklus ?? 0) == 1) {
+                $lahan = DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->first();
+                $targetTugas = [$lahan->id_tingkat ?? ''];
+                $parts = explode('.', $lahan->id_tingkat ?? '');
+                if (count($parts) >= 3) {
+                    $targetTugas[] = $parts[0] . '.' . $parts[1];
+                }
+                $recipients = DB::table('anggota')
+                    ->whereIn('id_tugas', $targetTugas)
+                    ->where('role', 'operator')
+                    ->pluck('id_anggota')
+                    ->toArray();
+                foreach ($recipients as $recipient_id) {
+                    \App\Models\Pesan::create([
+                        'id_pesan'     => \Illuminate\Support\Str::uuid(),
+                        'sender_id'    => auth()->user()->id_anggota ?? 0,
+                        'recipient_id' => $recipient_id,
+                        'judul'        => '✅ Pengajuan Akhiri Siklus Disetujui',
+                        'isi_pesan'    => "Pengajuan Akhiri Siklus untuk Lahan #" . $tanam->id_lahan . " telah **DISETUJUI** oleh Admin.\n\nData siklus telah berhasil diarsipkan ke Riwayat Lahan.",
+                        'is_read'      => false,
+                    ]);
+                }
+            }
+
             AktivitasLog::catat('selesai_siklus', 'tanam', [
                 'record_id'   => $id,
                 'label_modul' => 'Siklus Tanam #' . $id,
-                'keterangan'  => 'Menyetujui penyelesaian siklus tanam #' . $id . ' dan mengarsipkannya.',
+                'keterangan'  => 'Mengakhiri siklus tanam #' . $id . ' dan mengarsipkannya ke Riwayat Lahan.',
             ]);
 
-            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Persetujuan akhir siklus berhasil. Siklus telah diarsipkan.']);
-            return back()->with('success', 'Persetujuan akhir siklus berhasil. Siklus telah diarsipkan.');
+            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Siklus berhasil diakhiri. Data telah diarsipkan ke Riwayat Lahan.']);
+            return back()->with('success', 'Siklus berhasil diakhiri. Data telah diarsipkan ke Riwayat Lahan.');
         } catch (\Exception $e) {
-            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal menyetujui siklus: ' . $e->getMessage()], 500);
-            return back()->with('error', 'Gagal menyetujui siklus: ' . $e->getMessage());
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal mengakhiri siklus: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal mengakhiri siklus: ' . $e->getMessage());
         }
     }
 

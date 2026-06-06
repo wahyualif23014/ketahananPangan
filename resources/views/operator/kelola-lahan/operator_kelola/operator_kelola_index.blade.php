@@ -93,40 +93,92 @@
         </div>
     </div>
 
-    <div class="mx-4 mb-6 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
+    <div class="mx-4 mb-6 relative z-30 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
         <div class="flex flex-col gap-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">RESOR</label>
-                    <div class="relative">
-                        <select x-model="selectedResor" @change="selectedSektor = ''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA RESOR</option>
-                            @foreach($polresList as $resor)
-                            <option value="{{ $resor->id_tingkat }}">{{ $resor->id_tingkat }} - {{ $resor->nama_tingkat }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <div x-data='{
+                        polresListLocal: @json($polresList ?? []),
+                        polresOpen: false,
+                        polresSearch: "",
+                        get polresLabel() {
+                            if (!selectedResor) return "";
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            let p = list.find(x => x.id_tingkat == selectedResor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLRES") ? p.nama_tingkat : "POLRES " + p.nama_tingkat;
+                            return selectedResor;
+                        },
+                        get polresFiltered() {
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            if (this.polresSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polresSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedResor || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="SEMUA RESOR..."
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400">
+                            <div x-show="selectedResor && !polresOpen" @click="polresOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polresLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedResor" @click="selectedResor=''; selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedResor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polresFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedResor = item.id_tingkat; polresOpen = false; polresSearch = ''; selectedSektor = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLRES') ? item.nama_tingkat : 'POLRES ' + item.nama_tingkat"></div>
+                            </template>
                         </div>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">SEKTOR</label>
-                    <div class="relative">
-                        <select x-model="selectedSektor" @change="submitFilters()"
-                            class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer"
-                            :disabled="!selectedResor">
-                            <option value="">SEMUA SEKTOR</option>
-                            <template x-for="p in filteredPolseks" :key="p.id_tingkat">
-                                <option :value="p.id_tingkat" x-text="p.id_tingkat + ' - ' + p.nama_tingkat"></option>
+                    <div x-data='{
+                        polsekListLocal: @json($polsekList ?? []),
+                        polsekOpen: false,
+                        polsekSearch: "",
+                        get polsekLabel() {
+                            if (!selectedSektor) return "";
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            let p = list.find(x => x.id_tingkat == selectedSektor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLSEK") ? p.nama_tingkat : "POLSEK " + p.nama_tingkat;
+                            return selectedSektor;
+                        },
+                        get polsekFiltered() {
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            if (this.polsekSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polsekSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedSektor || polsekOpen" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" placeholder="SEMUA SEKTOR..." :disabled="!selectedResor"
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div x-show="selectedSektor && !polsekOpen" @click="polsekOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polsekLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedSektor" @click="selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedSektor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polsekFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedSektor = item.id_tingkat; polsekOpen = false; polsekSearch = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLSEK') ? item.nama_tingkat : 'POLSEK ' + item.nama_tingkat"></div>
                             </template>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
                         </div>
                     </div>
                 </div>
@@ -692,14 +744,18 @@
                                         Tanam
                                     </button>
                                     <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 1)'
-                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white active:scale-95 transition-all shadow-sm">
+                                        :disabled="lahanStages['{{ $row->id_lahan }}'] < 1"
+                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-sm"
+                                        :class="lahanStages['{{ $row->id_lahan }}'] < 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-500 hover:text-white active:scale-95'">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
                                         </svg>
                                         Panen
                                     </button>
                                     <button @click='openStageModal("{{ $row->id_lahan }}", @json($row), 2)'
-                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white active:scale-95 transition-all shadow-sm">
+                                        :disabled="lahanStages['{{ $row->id_lahan }}'] < 2"
+                                        class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-sm"
+                                        :class="lahanStages['{{ $row->id_lahan }}'] < 2 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-500 hover:text-white active:scale-95'">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path>
                                         </svg>
@@ -1546,7 +1602,7 @@
                 <div class="grid grid-cols-3 gap-4">
                     <div class="col-span-1">
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Tanggal Panen</label>
-                        <input type="date" x-model="formPanen.tgl_panen" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
+                        <input type="date" x-model="formPanen.tgl_panen" :min="activeLahan ? activeLahan.est_awal_panen : ''" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all">
                     </div>
                     <div class="col-span-1" x-effect="if(formPanen.status_panen == 2) { formPanen.luas_panen = 0; }">
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Luas Panen (Ha)</label>

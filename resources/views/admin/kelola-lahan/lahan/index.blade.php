@@ -108,42 +108,92 @@ $isPolres = auth()->user()->role === 'admin' ||
         </div>
     </div>
 
-    <div class="mx-4 mb-6 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
+    <div class="mx-4 mb-6 relative z-30 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
         <div class="flex flex-col gap-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">RESOR</label>
-                    <div class="relative">
-                        <select x-model="selectedResor" @change="selectedSektor = ''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA RESOR</option>
-                            @foreach($polresList as $resor)
-                            <option value="{{ $resor->id_tingkat }}">{{ $resor->id_tingkat }} - {{ $resor->nama_tingkat }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <div x-data='{
+                        polresListLocal: @json($polresList ?? []),
+                        polresOpen: false,
+                        polresSearch: "",
+                        get polresLabel() {
+                            if (!selectedResor) return "";
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            let p = list.find(x => x.id_tingkat == selectedResor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLRES") ? p.nama_tingkat : "POLRES " + p.nama_tingkat;
+                            return selectedResor;
+                        },
+                        get polresFiltered() {
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            if (this.polresSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polresSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedResor || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="SEMUA RESOR..."
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400">
+                            <div x-show="selectedResor && !polresOpen" @click="polresOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polresLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedResor" @click="selectedResor=''; selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedResor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polresFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedResor = item.id_tingkat; polresOpen = false; polresSearch = ''; selectedSektor = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLRES') ? item.nama_tingkat : 'POLRES ' + item.nama_tingkat"></div>
+                            </template>
                         </div>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">SEKTOR</label>
-                    <div class="relative">
-                        <select x-model="selectedSektor" @change="submitFilters()"
-                            class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer"
-                            :disabled="!selectedResor">
-                            <option value="">SEMUA SEKTOR</option>
-                            @foreach($polsekList as $p)
-                            @if(empty($filters['resor']) || str_starts_with($p->id_tingkat, $filters['resor'] . '.'))
-                            <option value="{{ $p->id_tingkat }}">{{ $p->id_tingkat }} - {{ $p->nama_tingkat }}</option>
-                            @endif
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <div x-data='{
+                        polsekListLocal: @json($polsekList ?? []),
+                        polsekOpen: false,
+                        polsekSearch: "",
+                        get polsekLabel() {
+                            if (!selectedSektor) return "";
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            let p = list.find(x => x.id_tingkat == selectedSektor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLSEK") ? p.nama_tingkat : "POLSEK " + p.nama_tingkat;
+                            return selectedSektor;
+                        },
+                        get polsekFiltered() {
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            if (this.polsekSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polsekSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedSektor || polsekOpen" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" placeholder="SEMUA SEKTOR..." :disabled="!selectedResor"
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div x-show="selectedSektor && !polsekOpen" @click="polsekOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polsekLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedSektor" @click="selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedSektor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polsekFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedSektor = item.id_tingkat; polsekOpen = false; polsekSearch = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLSEK') ? item.nama_tingkat : 'POLSEK ' + item.nama_tingkat"></div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -850,27 +900,30 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                     );
                                                     @endphp
                                                     @if(($tanam->status_akhiri_siklus ?? 0) == 1)
+                                                        {{-- Ada pengajuan dari Polres, Admin bisa Terima/Tolak --}}
                                                         @if(auth()->user()->role === 'admin')
                                                         <div class="flex flex-col gap-1 w-full max-w-[150px]">
-                                                            <form action="{{ route('admin.kelola-lahan.tanam.terima-siklus', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Terima pengajuan akhir siklus ini? Data akan diarsipkan.');">
-                                                                @csrf @method('PUT')
-                                                                <button type="submit" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex justify-center items-center gap-1 w-full"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <button type="button" @click="terimaAkhiriSiklus('{{ $tanam->id_tanam }}', 'pengajuan')" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex justify-center items-center gap-1 w-full"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                                     </svg> Terima</button>
-                                                            </form>
                                                             <button @click="submitTolakAkhiriSiklus('{{ $tanam->id_tanam }}', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2.5 py-1.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm flex justify-center items-center gap-1 w-full"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> Tolak</button>
                                                         </div>
                                                         @else
+                                                        {{-- Polres: tampilkan status menunggu --}}
                                                         <span class="px-2.5 py-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded text-[9px] font-black uppercase shadow-sm h-fit">Menunggu Persetujuan Akhir Siklus</span>
                                                         @endif
                                                     @else
-                                                        @if($isPolres && $canSelesai)
-                                                        <form action="{{ route($routePrefix.'.kelola-lahan.tanam.selesai', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Ajukan akhir siklus ke Admin?');">
-                                                            @csrf @method('PUT')
-                                                            <button type="submit" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        {{-- Belum ada pengajuan --}}
+                                                        @if(auth()->user()->role === 'admin' && $canSelesai)
+                                                        {{-- Admin: langsung akhiri siklus tanpa perlu pengajuan --}}
+                                                        <button type="button" @click="terimaAkhiriSiklus('{{ $tanam->id_tanam }}', 'langsung')" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                                </svg> Akhiri Siklus</button>
+                                                        @elseif($isPolres && $canSelesai)
+                                                        {{-- Polres: ajukan ke Admin --}}
+                                                        <button type="button" @click="ajukanAkhiriSiklus('{{ $tanam->id_tanam }}')" class="px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                                 </svg> Ajukan Akhiri Siklus</button>
-                                                        </form>
                                                         @endif
                                                     @endif
                                                     @if(($tanam->alasan_tolak_akhiri_siklus ?? null) && ($tanam->status_akhiri_siklus ?? 0) == 0)
@@ -1861,6 +1914,65 @@ $isPolres = auth()->user()->role === 'admin' ||
                         }
                         this.notify('success', 'Berhasil Ditolak', result.message || 'Data berhasil ditolak.');
                         setTimeout(() => window.location.reload(), 1500);
+                    } catch (error) {
+                        this.notify('error', 'Kesalahan Koneksi', error.message);
+                    }
+                },
+
+                async terimaAkhiriSiklus(id, mode) {
+                    const isPengajuan = mode === 'pengajuan';
+                    const ok = await this.askConfirm({
+                        type: 'success',
+                        title: isPengajuan ? 'Setujui Pengajuan Akhir Siklus?' : 'Akhiri Siklus Ini?',
+                        message: isPengajuan
+                            ? 'Anda akan menyetujui pengajuan dari Polres. Siklus ini akan diarsipkan ke Riwayat Lahan dan tidak bisa diaktifkan kembali.'
+                            : 'Anda akan mengakhiri siklus ini secara langsung. Data akan diarsipkan ke Riwayat Lahan dan tidak bisa diaktifkan kembali.',
+                        confirmText: isPengajuan ? 'Ya, Setujui & Arsipkan' : 'Ya, Akhiri Siklus'
+                    });
+                    if (!ok) return;
+                    try {
+                        const result = await this.fetchJson(`/admin/kelola-lahan/tanam/${id}/terima-siklus`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        if (result.success === false) {
+                            this.notify('error', 'Gagal Mengakhiri Siklus', result.message || 'Terjadi kesalahan server.');
+                            return;
+                        }
+                        this.notify('success', 'Siklus Berhasil Diakhiri', result.message || 'Siklus telah diarsipkan ke Riwayat Lahan.');
+                        setTimeout(() => window.location.reload(), 1800);
+                    } catch (error) {
+                        this.notify('error', 'Kesalahan Koneksi', error.message);
+                    }
+                },
+
+                async ajukanAkhiriSiklus(id) {
+                    const ok = await this.askConfirm({
+                        type: 'warning',
+                        title: 'Ajukan Akhir Siklus ke Admin?',
+                        message: 'Pengajuan akan dikirim ke Admin untuk disetujui. Pastikan semua data (Tanam, Panen, Serapan) sudah tervalidasi.',
+                        confirmText: 'Ya, Ajukan ke Admin'
+                    });
+                    if (!ok) return;
+                    try {
+                        const result = await this.fetchJson(`/{{ auth()->user()->role === 'admin' ? 'admin' : 'operator' }}/kelola-lahan/tanam/${id}/selesai`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        if (result.success === false) {
+                            this.notify('error', 'Gagal Mengajukan', result.message || 'Terjadi kesalahan server.');
+                            return;
+                        }
+                        this.notify('success', 'Pengajuan Berhasil Dikirim', result.message || 'Notifikasi telah dikirim ke Admin.');
+                        setTimeout(() => window.location.reload(), 1800);
                     } catch (error) {
                         this.notify('error', 'Kesalahan Koneksi', error.message);
                     }
