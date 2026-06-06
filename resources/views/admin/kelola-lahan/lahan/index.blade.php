@@ -510,137 +510,203 @@ $isPolres = auth()->user()->role === 'admin' ||
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-6 border-x border-slate-50 align-top">
+                        <td class="px-4 py-6 border-x border-slate-50 align-top h-full">
                             @if($row->id_tanam)
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("tanam", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Detail</button>
-                                    @if(auth()->user()->role === 'admin' || (!$isPolres && $row->tanam_alasan_tolak))
-                                    <button @click='editTanam("{{ $row->id_tanam }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-emerald-200 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                    @endif
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($row->luas_tanam, 2) }} HA</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Est. Panen</span>
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                @if(!$row->tanam_valid_oleh)
-                                @if($row->tanam_alasan_tolak)
-                                <div class="flex flex-col mt-1">
-                                    <span class="inline-flex items-center w-fit gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg shadow-sm">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> DITOLAK
-                                    </span>
-                                    <div class="text-[8px] text-rose-400 mt-1 italic line-clamp-2" title="{{ $row->tanam_alasan_tolak }}">{{ $row->tanam_alasan_tolak }}</div>
-                                </div>
-                                @elseif($isPolres)
-                                <div class="flex flex-col gap-1 w-full mt-1">
-                                    <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0">
-                                        @csrf @method('PUT')
-                                        <button class="px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
-                                    </form>
-                                    <button @click="submitTolakDirect('{{ $row->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
-                                </div>
-                                @else
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg shadow-sm">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Menunggu Validasi
-                                    </span>
-                                </div>
-                                @endif
-                                @else
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg shadow-sm">
-                                        Sudah Tervalidasi
-                                    </span>
-                                </div>
-                                @endif
-                            </div>
-                            @else
-                            <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-6 border-r border-slate-50 align-top">
-                            @if($row->id_panen)
-                            <div class="flex flex-col gap-1.5">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-xs font-black text-amber-600 bg-amber-50 w-fit px-2 py-0.5 rounded-lg border border-amber-100">{{ number_format($row->luas_panen, 2) }} HA</span>
-                                    <span class="text-[10px] font-bold text-amber-700 w-fit px-2 py-0.5 bg-amber-100 rounded-md">{{ number_format($row->total_panen, 2) }} TON</span>
-                                </div>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight mt-1">Tgl: {{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
-                                @php
-                                $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
-                                @endphp
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("panen", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Detail</button>
-                                    @if(auth()->user()->role === 'admin' || (!$isPolres && $row->panen_alasan_tolak))
-                                    <button @click='editPanen("{{ $row->id_panen }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-amber-200 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Edit</button>
-                                    @endif
-                                </div>
-                                @if(!$row->panen_valid_oleh)
-                                    @if($row->panen_alasan_tolak)
-                                    <span class="mt-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg w-fit inline-flex items-center gap-1">❌ DITOLAK</span>
+                                
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("tanam", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $row->tanam_alasan_tolak))
+                                        <button @click='editTanam("{{ $row->id_tanam }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> Edit
+                                        </button>
+                                        @endif
+                                    </div>
+
+                                    @if(!$row->tanam_valid_oleh)
+                                    @if($row->tanam_alasan_tolak)
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                        </div>
+                                        <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->tanam_alasan_tolak }}">{{ $row->tanam_alasan_tolak }}</div>
+                                    </div>
                                     @elseif($isPolres)
-                                    <div class="flex flex-col gap-1 w-full mt-1">
-                                        <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" data-ajax="true" class="m-0">
+                                    <div class="flex items-center gap-1.5 w-full">
+                                        <form action="{{ route($routePrefix.'.kelola-lahan.tanam.validasi', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0 flex-1">
                                             @csrf @method('PUT')
-                                            <button class="px-2 py-1 bg-amber-50 border border-amber-100 text-amber-600 rounded text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
+                                            <button class="w-full px-2 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-md text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-colors shadow-sm">Validasi</button>
                                         </form>
-                                        <button @click="submitTolakDirect('{{ $row->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                        <button @click="submitTolakDirect('{{ $row->id_tanam }}', 'tanam', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="flex-1 px-2 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-md text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm">Tolak</button>
                                     </div>
                                     @else
-                                    <span class="mt-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg w-fit inline-flex items-center gap-1">⏳ PROSES</span>
+                                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                    </div>
                                     @endif
-                                @else
-                                <span class="mt-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg w-fit inline-flex items-center gap-1">✅ VALID</span>
-                                @endif
+                                    @else
+                                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                    </div>
+                                    @endif
+                                </div>
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
                             @endif
                         </td>
-                        <td class="px-4 py-6 border-r border-slate-50 align-top">
-                            @if($row->id_distribusi)
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-black text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg border border-blue-100">{{ number_format($row->total_distribusi, 2) }} TON</span>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tgl: {{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
-                                @php
-                                $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
-                                @endphp
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
-                                <div class="flex flex-wrap items-center gap-1 mt-1">
-                                    <button @click='openDetailModal("serapan", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Detail</button>
-                                    @if(auth()->user()->role === 'admin' || (!$isPolres && $row->serapan_alasan_tolak))
-                                    <button @click='editSerapan("{{ $row->id_distribusi }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="px-2 py-1 bg-white border border-blue-200 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Edit</button>
+                        <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
+                            @if($row->id_panen)
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->luas_panen, 2) }} HA</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->total_panen, 2) }} TON</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
+                                        </div>
+                                        @php
+                                        $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
+                                        @endphp
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                            <span>{{ $stsPanen }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("panen", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $row->panen_alasan_tolak))
+                                        <button @click='editPanen("{{ $row->id_panen }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> Edit
+                                        </button>
+                                        @endif
+                                    </div>
+
+                                    @if(!$row->panen_valid_oleh)
+                                        @if($row->panen_alasan_tolak)
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                        </div>
+                                        @elseif($isPolres)
+                                        <div class="flex items-center gap-1.5 w-full">
+                                            <form action="{{ route($routePrefix.'.kelola-lahan.panen.validasi', $row->id_panen) }}" method="POST" data-ajax="true" class="m-0 flex-1">
+                                                @csrf @method('PUT')
+                                                <button class="w-full px-2 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-md text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-colors shadow-sm">Validasi</button>
+                                            </form>
+                                            <button @click="submitTolakDirect('{{ $row->id_panen }}', 'panen', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="flex-1 px-2 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-md text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm">Tolak</button>
+                                        </div>
+                                        @else
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">PROSES</span>
+                                        </div>
+                                        @endif
+                                    @else
+                                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                    </div>
                                     @endif
                                 </div>
-                                @if(!$row->serapan_valid_oleh)
-                                @if($row->serapan_alasan_tolak)
-                                <div class="flex flex-col mt-1">
-                                    <span class="inline-flex items-center w-fit gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg shadow-sm">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> DITOLAK
-                                    </span>
-                                    <div class="text-[8px] text-rose-400 mt-1 italic line-clamp-2" title="{{ $row->serapan_alasan_tolak }}">{{ $row->serapan_alasan_tolak }}</div>
+                            </div>
+                            @else
+                            <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
+                            @if($row->id_distribusi)
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-blue-700 bg-blue-100 rounded-md border border-blue-200 shadow-sm">{{ number_format($row->total_distribusi, 2) }} TON</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
+                                        </div>
+                                        @php
+                                        $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
+                                        @endphp
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span>{{ $dstKe }}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                @elseif($isPolres)
-                                <div class="flex flex-col gap-1 w-full mt-1">
-                                    <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" data-ajax="true" class="m-0">
-                                        @csrf @method('PUT')
-                                        <button class="px-2 py-1 bg-blue-50 border border-blue-100 text-blue-600 rounded text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm w-full text-center">Validasi</button>
-                                    </form>
-                                    <button @click="submitTolakDirect('{{ $row->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="px-2 py-1 bg-rose-50 border border-rose-100 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Tolak</button>
+                                
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("serapan", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $row->serapan_alasan_tolak))
+                                        <button @click='editSerapan("{{ $row->id_distribusi }}", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> Edit
+                                        </button>
+                                        @endif
+                                    </div>
+                                    
+                                    @if(!$row->serapan_valid_oleh)
+                                    @if($row->serapan_alasan_tolak)
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                        </div>
+                                        <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->serapan_alasan_tolak }}">{{ $row->serapan_alasan_tolak }}</div>
+                                    </div>
+                                    @elseif($isPolres)
+                                    <div class="flex items-center gap-1.5 w-full">
+                                        <form action="{{ route($routePrefix.'.kelola-lahan.serapan.validasi', $row->id_distribusi) }}" method="POST" data-ajax="true" class="m-0 flex-1">
+                                            @csrf @method('PUT')
+                                            <button class="w-full px-2 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-md text-[9px] font-black uppercase hover:bg-blue-500 hover:text-white transition-colors shadow-sm">Validasi</button>
+                                        </form>
+                                        <button @click="submitTolakDirect('{{ $row->id_distribusi }}', 'serapan', '{{ addslashes($row->nama_wilayah ?? $row->alamat_lahan ?? '') }}')" type="button" class="flex-1 px-2 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-md text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm">Tolak</button>
+                                    </div>
+                                    @else
+                                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                    </div>
+                                    @endif
+                                    @else
+                                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                        <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                    </div>
+                                    @endif
                                 </div>
-                                @else
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg shadow-sm">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Menunggu Validasi
-                                    </span>
-                                </div>
-                                @endif
-                                @else
-                                <div class="mt-1">
-                                    <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg shadow-sm">
-                                        Sudah Tervalidasi
-                                    </span>
-                                </div>
-                                @endif
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
@@ -783,7 +849,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                     $p->distribusis->every(fn($s) => !is_null($s->valid_oleh))
                                                     );
                                                     @endphp
-                                                    @if($tanam->status_akhiri_siklus == 1)
+                                                    @if(($tanam->status_akhiri_siklus ?? 0) == 1)
                                                         @if(auth()->user()->role === 'admin')
                                                         <div class="flex flex-col gap-1 w-full max-w-[150px]">
                                                             <form action="{{ route('admin.kelola-lahan.tanam.terima-siklus', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Terima pengajuan akhir siklus ini? Data akan diarsipkan.');">
@@ -807,7 +873,7 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                         </form>
                                                         @endif
                                                     @endif
-                                                    @if($tanam->alasan_tolak_akhiri_siklus && $tanam->status_akhiri_siklus == 0)
+                                                    @if(($tanam->alasan_tolak_akhiri_siklus ?? null) && ($tanam->status_akhiri_siklus ?? 0) == 0)
                                                     <div class="flex flex-col">
                                                         <span class="inline-flex items-center w-fit gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg shadow-sm">❌ AKHIR SIKLUS DITOLAK</span>
                                                         <div class="text-[8px] text-rose-400 mt-1 italic max-w-[150px]">{{ $tanam->alasan_tolak_akhiri_siklus }}</div>
@@ -832,17 +898,20 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                     @endif
                                                     @endif
                                                     @else
-                                                    @if(auth()->user()->role === 'admin')
-                                                    <form action="{{ route($routePrefix.'.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-emerald-600 transition-all shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                                                            </svg> Unvalidasi</button></form>
+                                                    @if($isPolres)
+                                                    <form action="{{ route($routePrefix.'.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0">
+                                                    @csrf @method('PUT')
+                                                    <button type="submit" title="Batalkan Validasi" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-emerald-600 transition-colors">
+                                                        TERVALIDASI
+                                                    </button>
+                                                    </form>
                                                     @else
                                                     <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg shadow-sm">
                                                         Sudah Tervalidasi
                                                     </span>
                                                     @endif
                                                     @endif
-                                                    @if(auth()->user()->role === 'admin' || (!$isPolres && $tanam->alasan_tolak))
+                                                    @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $tanam->alasan_tolak))
                                                     <button @click='editTanam("{{ $tanam->id_tanam }}", @json(array_merge((array)$row, (array)$tanam)))' class="px-2.5 py-1.5 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all shadow-sm">Edit</button>
                                                     <button @click='deleteTanam("{{ $tanam->id_tanam }}")' class="px-2.5 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all shadow-sm">Hapus</button>
                                                     @endif
@@ -895,15 +964,20 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                 @endif
                                                                 @endif
                                                                 @else
-                                                                @if(auth()->user()->role === 'admin')
-                                                                <form action="{{ route($routePrefix.'.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-amber-500 text-white rounded text-[9px] font-black uppercase hover:bg-amber-600 transition-colors flex items-center gap-1">Unvalidasi</button></form>
+                                                                @if($isPolres)
+                                                                <form action="{{ route($routePrefix.'.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" data-ajax="true" class="m-0">
+                                                                @csrf @method('PUT')
+                                                                <button type="submit" title="Batalkan Validasi" class="px-2 py-1 bg-emerald-500 text-white rounded text-[9px] font-black uppercase hover:bg-emerald-600 transition-colors">
+                                                                    TERVALIDASI
+                                                                </button>
+                                                                </form>
                                                                 @else
                                                                 <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg shadow-sm">
                                                                     Sudah Tervalidasi
                                                                 </span>
                                                                 @endif
                                                                 @endif
-                                                                @if(auth()->user()->role === 'admin' || (!$isPolres && $panen->alasan_tolak))
+                                                                @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $panen->alasan_tolak))
                                                                 <button @click='editPanen("{{ $panen->id_panen }}", @json(array_merge((array)$row, (array)$tanam, (array)$panen)))' class="px-2 py-1 bg-white text-amber-600 border border-amber-200 rounded text-[9px] font-black uppercase hover:bg-amber-50 transition-colors">Edit</button>
                                                                 <button @click='deletePanen("{{ $panen->id_panen }}")' class="px-2 py-1 bg-white text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase hover:bg-rose-50 transition-colors">Hapus</button>
                                                                 @endif
@@ -955,15 +1029,20 @@ $isPolres = auth()->user()->role === 'admin' ||
                                                                         @endif
                                                                         @endif
                                                                         @else
-                                                                        @if(auth()->user()->role === 'admin')
-                                                                        <form action="{{ route($routePrefix.'.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-blue-600 transition-colors flex items-center gap-1">Unvalidasi</button></form>
+                                                                        @if($isPolres)
+                                                                        <form action="{{ route($routePrefix.'.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" data-ajax="true" class="m-0">
+                                                                        @csrf @method('PUT')
+                                                                        <button type="submit" title="Batalkan Validasi" class="px-2 py-1 bg-emerald-500 text-white rounded text-[8px] font-black uppercase hover:bg-emerald-600 transition-colors">
+                                                                            TERVALIDASI
+                                                                        </button>
+                                                                        </form>
                                                                         @else
                                                                         <span class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg shadow-sm">
                                                                             Sudah Tervalidasi
                                                                         </span>
                                                                         @endif
                                                                         @endif
-                                                                        @if(auth()->user()->role === 'admin' || (!$isPolres && $distribusi->alasan_tolak))
+                                                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && $distribusi->alasan_tolak))
                                                                         @php
                                                                             $panenSisaEdit = max(0, $panen->total_panen - $panen->distribusis->where('id_distribusi', '!=', $distribusi->id_distribusi)->sum('total_distribusi'));
                                                                             $editSerapanData = array_merge((array)$row, (array)$tanam, (array)$panen, (array)$distribusi, ['sisa_panen' => $panenSisaEdit]);

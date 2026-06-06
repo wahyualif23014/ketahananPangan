@@ -84,8 +84,7 @@
                 {{-- Kategori Lokasi (Optimasi: Data dipassing via JSON/Blade JS) --}}
                 <div class="space-y-4" x-data="{
                     formEl: null,
-                    polresValue: '{{ request('polres', '') }}',
-                    polsekOpen: false, polsekSearch: '', polsekHighlight: -1, polsekLoading: false,
+                    polsekOpen: false, polsekSearch: '', polsekHighlight: -1,
                     polsekValue: '{{ request('polsek', '') }}',
                     polsekLabel: '{{ request('polsek') ? optional(collect($polsekList)->firstWhere('id_tingkat', request('polsek')))->nama_tingkat : '' }}',
                     polsekItems: @js($polsekList ? collect($polsekList)->map(fn($ps) => ['value' => $ps->id_tingkat, 'label' => $ps->nama_tingkat]) : []),
@@ -96,9 +95,6 @@
                 }" x-init="formEl = $el.closest('form')">
                     <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kategori Lokasi</h4>
                     <div class="space-y-3">
-                        {{-- Polres (Hidden, pre-filled with user occupied Polres) --}}
-                        <input type="hidden" name="polres" :value="polresValue">
- 
                         {{-- Polsek --}}
                         <div class="relative">
                             <label class="block text-xs font-semibold mb-1.5 ml-1 text-slate-600">Polsek / Sektor</label>

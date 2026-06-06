@@ -612,7 +612,7 @@
                                             </span>
                                             @endif
                                         @endif
-                                        @if($user->role === 'admin' || (!$canValidate && $item['status_lahan'] == '2'))
+                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && in_array($item['status_lahan'], ['0', '2'])))
                                         <button onclick='openEditModal(@json($item))'
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit

@@ -47,13 +47,13 @@ class RekapitulasiController extends Controller
 
         $dataRekap = $this->fetchRekapitulasiPaginated($request);
 
-        $polsekList = [];
-        if ($request->filled('polres')) {
-            $polsekList = DB::table('tingkat')
+        $polsekList = Cache::remember('rekap_all_polsek_list', 3600, function () {
+            return DB::table('tingkat')
                 ->select('id_tingkat', 'nama_tingkat')
-                ->where('id_tingkat', 'like', $request->polres . '.%')
+                ->whereRaw('LENGTH(TRIM(id_tingkat)) = 8')
+                ->orderBy('nama_tingkat', 'asc')
                 ->get();
-        }
+        });
 
         return view('admin.rekapitulasi.index', compact(
             'dataRekap',

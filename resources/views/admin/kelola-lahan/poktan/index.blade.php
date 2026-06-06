@@ -19,6 +19,12 @@
     <div class="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-transparent to-transparent pointer-events-none"></div>
         <div class="relative z-10 flex flex-col gap-6">
+            @php
+                $user = auth()->user();
+                $idTugas = (string)($user->id_tugas ?? '0');
+                $isAdmin = $user->role === 'admin' || $idTugas === '0';
+                $isPolsek = !$isAdmin && substr_count($idTugas, '.') >= 2;
+            @endphp
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
                 {{-- Search Filter --}}
@@ -32,6 +38,7 @@
                     </div>
                 </div>
 
+                @if($isAdmin)
                 {{-- Resor Filter --}}
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN WILAYAH (RESOR)</label>
@@ -47,7 +54,9 @@
                         </div>
                     </div>
                 </div>
+                @endif
 
+                @if(!$isPolsek)
                 {{-- Sektor Filter --}}
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN WILAYAH (SEKTOR)</label>
@@ -63,6 +72,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
 
             </div>
             
