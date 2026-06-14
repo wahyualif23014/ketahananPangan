@@ -683,16 +683,16 @@ class KelolaLahanController extends Controller
             ->whereNotNull('lahan.valid_oleh')
             ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
             ->select(
+                'lahan.id_lahan',
+                'lahan.luas_lahan',
+                'lahan.latitude',
+                'lahan.longitude',
                 'poktan.nama_poktan',
-                DB::raw('MAX(poktan.id_polda) as id_polda'),
-                DB::raw('MAX(poktan.id_polres) as id_polres'),
-                DB::raw('MAX(poktan.id_polsek) as id_polsek'),
-                DB::raw('SUM(lahan.luas_lahan) as luas_lahan'),
-                DB::raw('MAX(lahan.latitude) as latitude'),
-                DB::raw('MAX(lahan.longitude) as longitude'),
-                DB::raw('COUNT(lahan.id_lahan) as jumlah_lokasi')
-            )
-            ->groupBy('poktan.nama_poktan');
+                'poktan.id_polda',
+                'poktan.id_polres',
+                'poktan.id_polsek',
+                'lahan.id_wilayah as nama_desa'
+            );
 
         if ($filters['sektor']) {
             $query->where('lahan.id_tingkat', $filters['sektor']);
@@ -701,39 +701,16 @@ class KelolaLahanController extends Controller
         }
 
         if ($filters['search']) {
-            $query->where('poktan.nama_poktan', 'LIKE', '%' . $filters['search'] . '%');
+            $query->where('poktan.nama_poktan', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('lahan.id_wilayah', 'LIKE', '%' . $filters['search'] . '%');
         }
 
-        $data = $query->orderBy('poktan.nama_poktan')->paginate(20)->withQueryString();
-
-        $displayedNames = $data->pluck('nama_poktan')->filter()->unique();
-        
-        $detailsQuery = DB::table('lahan')
-            ->whereIn('poktan.nama_poktan', $displayedNames)
-            ->where('lahan.deletestatus', '!=', '0')
-            ->whereNotNull('lahan.id_poktan')
-            ->whereNotNull('lahan.valid_oleh')
-            ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
-            ->select(
-                'lahan.id_lahan',
-                'lahan.luas_lahan',
-                'lahan.latitude',
-                'lahan.longitude',
-                'poktan.nama_poktan',
-                'poktan.id_polda',
-                'poktan.id_polres',
-                'poktan.id_polsek'
-            );
-        if ($filters['sektor']) {
-            $detailsQuery->where('lahan.id_tingkat', $filters['sektor']);
-        } elseif ($filters['resor']) {
-            $detailsQuery->where('lahan.id_tingkat', 'LIKE', $filters['resor'] . '%');
-        }
-        $details = $detailsQuery->get()->groupBy('nama_poktan');
+        $data = $query->orderBy('poktan.id_polsek')->orderBy('poktan.nama_poktan')->paginate(20)->withQueryString();
 
         $tingkatMap = DB::table('tingkat')->pluck('nama_tingkat', 'id_tingkat');
+        $wilayahMap = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
 
-        return view('admin.kelola-lahan.poktan.index', compact('data', 'polresList', 'polsekList', 'filters', 'tingkatMap'));
+        return view('admin.kelola-lahan.poktan.index', compact('data', 'polresList', 'polsekList', 'filters', 'tingkatMap', 'wilayahMap'));
     }
 
     private function getScope()
@@ -830,7 +807,7 @@ class KelolaLahanController extends Controller
             'tgl_panen' => 'required|date',
             'luas_panen' => 'required|numeric|min:0',
             'total_panen' => 'nullable|numeric|min:0',
-            'status_panen' => 'required|integer|in:0,1,2',
+            'status_panen' => 'required|integer|in:0,1,2,3,4',
             'keterangan_panen' => 'nullable|string|max:1000',
         ]);
 
@@ -1023,7 +1000,7 @@ class KelolaLahanController extends Controller
             'tgl_panen' => 'required|date',
             'luas_panen' => 'required|numeric|min:0',
             'total_panen' => 'nullable|numeric|min:0',
-            'status_panen' => 'required|integer|in:0,1,2',
+            'status_panen' => 'required|integer|in:0,1,2,3,4',
             'keterangan_panen' => 'nullable|string|max:1000',
         ]);
 
@@ -1260,8 +1237,8 @@ class KelolaLahanController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
-        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Admin yang dapat menghapus data.'], 403);
         }
 
         if (empty($tanam->alasan_tolak)) {
@@ -1292,8 +1269,8 @@ class KelolaLahanController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
-        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Admin yang dapat menghapus data.'], 403);
         }
 
         if (empty($panen->alasan_tolak)) {
@@ -1320,8 +1297,8 @@ class KelolaLahanController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!'], 403);
         }
 
-        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Polsek yang dapat menghapus data.'], 403);
+        if ($user->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak: Hanya Admin yang dapat menghapus data.'], 403);
         }
 
         if (empty($serapan->alasan_tolak)) {

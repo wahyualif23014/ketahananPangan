@@ -576,10 +576,16 @@
                                             Detail
                                         </button>
                                         @if($item['status_lahan'] == '2')
-                                        {{-- Ditolak: Sembunyikan validasi, tampilkan pesan menunggu perbaikan --}}
-                                        <span class="inline-flex items-center gap-1 text-[9px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg">
+                                        {{-- Ditolak: Sembunyikan validasi, tampilkan pesan --}}
+                                        @if($canValidate)
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1.5 rounded-lg">
+                                            Data Ditolak
+                                        </span>
+                                        @else
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1.5 rounded-lg">
                                             Menunggu Perbaikan
                                         </span>
+                                        @endif
                                         @elseif(!$item['valid_oleh'])
                                             @if($canValidate)
                                             <div class="flex flex-col gap-1 w-full">
@@ -599,7 +605,7 @@
                                             </span>
                                             @endif
                                         @else
-                                            @if($canValidate)
+                                            @if($user->role === 'admin')
                                             <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.unvalidasi', $item['id_lahan']) }}" method="POST" data-ajax="true" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Batalkan Validasi?', 'Yakin ingin membatalkan validasi data lahan ini?', 'warning')">
                                                 @csrf @method('PUT')
                                                 <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-white transition-all">
@@ -617,6 +623,8 @@
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit
                                         </button>
+                                        @endif
+                                        @if($user->role === 'admin')
                                         <form action="{{ route($rolePrefix . '.kelola-lahan.potensi.destroy', $item['id_lahan']) }}" method="POST" data-ajax="true" class="inline m-0" onsubmit="return handleFormConfirm(event, 'Hapus Data Lahan?', 'Data ini akan dihapus dari sistem. Tindakan ini tidak dapat dibatalkan.', 'danger')">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2.5 py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">

@@ -691,14 +691,10 @@
 
                                             @if(auth()->user()->role === 'admin' && $row->id_tanam)
                                             <div class="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3">
-                                                <form action="{{ route('admin.kelola-lahan.tanam.unselesai', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan siklus ini ke Kelola Lahan Aktif? Status arsip akan dibatalkan.')">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    <button type="submit" class="w-full px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
-                                                        Batal Arsip
-                                                    </button>
-                                                </form>
+                                                <button @click="batalArsip('{{ $row->id_tanam }}')" type="button" class="w-full px-3 py-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-[9px] font-black uppercase hover:bg-amber-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                                    Batal Arsip
+                                                </button>
 
                                                 <form action="{{ route('admin.kelola-lahan.tanam.destroy', $row->id_tanam) }}" method="POST" data-ajax="true" class="m-0" onsubmit="return confirm('Peringatan: Seluruh data siklus ini (Tanam, Panen, Serapan) akan Dihapus Permanen! Lanjutkan?')">
                                                     @csrf
@@ -1277,10 +1273,38 @@
 
             isResorOpen(id) {
                 return this.openResors.includes(id);
-},
+            },
 
-
-
+            async batalArsip(id) {
+                const ok = await $confirm({
+                    type: 'warning',
+                    title: 'Batal Arsip?',
+                    message: 'Apakah Anda yakin ingin mengembalikan siklus ini ke Kelola Lahan Aktif? Status arsip akan dibatalkan.',
+                    confirmText: 'Ya, Batal Arsip'
+                });
+                if (!ok) return;
+                
+                try {
+                    const result = await fetch(`/admin/kelola-lahan/tanam/${id}/unselesai`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    }).then(r => r.json());
+                    
+                    if (result.success === false) {
+                        $notify('error', 'Gagal Membatalkan Arsip', result.message || 'Terjadi kesalahan server.');
+                        return;
+                    }
+                    
+                    $notify('success', 'Berhasil Batal Arsip', result.message || 'Data kembali aktif di Kelola Lahan.');
+                    setTimeout(() => window.location.reload(), 1500);
+                } catch (error) {
+                    $notify('error', 'Kesalahan Koneksi', error.message);
+                }
+            },
             submitFilters() {
                 const url = new URL(window.location.href);
                 const params = {

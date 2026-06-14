@@ -300,11 +300,14 @@ class PotensiLahanController extends Controller
                     if (count($parts) > 0) $idPolda = $parts[0];
                 }
                 
+                $namaDesa = $request->id_desa;
+                
                 $newPoktan = \App\Models\Poktan::create([
                     'id_polda' => $idPolda,
                     'id_polres' => $idResor,
                     'id_polsek' => $idSektor,
                     'nama_poktan' => $namaPoktan,
+                    'nama_desa' => $namaDesa,
                     'luas_lahan' => $request->luas_lahan,
                     'latitude' => $request->latitude,
                     'longitude' => $request->longitude,

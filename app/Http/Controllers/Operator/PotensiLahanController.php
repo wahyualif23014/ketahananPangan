@@ -385,11 +385,14 @@ class PotensiLahanController extends Controller
                     if (count($parts) > 0) $idPolda = $parts[0];
                 }
                 
+                $namaDesa = $request->id_desa;
+                
                 $newPoktan = \App\Models\Poktan::create([
                     'id_polda' => $idPolda,
                     'id_polres' => $idResor,
                     'id_polsek' => $idSektor,
                     'nama_poktan' => $namaPoktan,
+                    'nama_desa' => $namaDesa,
                     'luas_lahan' => $request->luas_lahan,
                     'latitude' => $request->latitude,
                     'longitude' => $request->longitude,
@@ -692,15 +695,15 @@ class PotensiLahanController extends Controller
     public function unvalidasi($id)
     {
         $user = auth()->user();
+        if ($user->role !== 'admin') {
+            return back()->with('error', 'Akses ditolak. Pembatalan validasi hanya dapat dilakukan oleh Admin.');
+        }
+
         $scope = $user->id_tugas ?? '0';
         $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
 
         if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
             return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
-        }
-
-        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
-            return back()->with('error', 'Akses ditolak. Pembatalan validasi hanya dapat dilakukan oleh tingkat Polres.');
         }
 
         DB::table('lahan')->where('id_lahan', $id)->update([
@@ -714,19 +717,15 @@ class PotensiLahanController extends Controller
     public function destroy($id)
     {
         $user = auth()->user();
+        if ($user->role !== 'admin') {
+            return back()->with('error', 'Akses ditolak: Hanya Admin yang dapat menghapus data.');
+        }
+
         $scope = $user->id_tugas ?? '0';
         $lahan = DB::table('lahan')->where('id_lahan', $id)->first();
 
         if (!$lahan || ($scope && $scope != '0' && ((string)$lahan->id_tingkat !== (string)$scope && !str_starts_with((string)$lahan->id_tingkat, (string)$scope . '.')))) {
             return back()->with('error', 'Akses ditolak: Data ini berada di luar wilayah tugas Anda!');
-        }
-
-        if ($user && substr_count((string)$user->id_tugas, '.') < 2) {
-            return back()->with('error', 'Akses ditolak: Hanya Polsek yang dapat menghapus data.');
-        }
-
-        if ($lahan->status_lahan != '2') {
-            return back()->with('error', 'Akses ditolak: Data hanya dapat dihapus jika berstatus ditolak.');
         }
 
         DB::transaction(function () use ($id, $lahan) {

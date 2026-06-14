@@ -570,16 +570,16 @@ class KelolaLahanController extends Controller
             ->whereNotNull('lahan.valid_oleh')
             ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
             ->select(
+                'lahan.id_lahan',
+                'lahan.luas_lahan',
+                'lahan.latitude',
+                'lahan.longitude',
                 'poktan.nama_poktan',
-                DB::raw('MAX(poktan.id_polda) as id_polda'),
-                DB::raw('MAX(poktan.id_polres) as id_polres'),
-                DB::raw('MAX(poktan.id_polsek) as id_polsek'),
-                DB::raw('SUM(lahan.luas_lahan) as luas_lahan'),
-                DB::raw('MAX(lahan.latitude) as latitude'),
-                DB::raw('MAX(lahan.longitude) as longitude'),
-                DB::raw('COUNT(lahan.id_lahan) as jumlah_lokasi')
-            )
-            ->groupBy('poktan.nama_poktan');
+                'poktan.id_polda',
+                'poktan.id_polres',
+                'poktan.id_polsek',
+                'lahan.id_wilayah as nama_desa'
+            );
 
         if ($filters['sektor']) {
             $query->where('lahan.id_tingkat', $filters['sektor']);
@@ -588,39 +588,16 @@ class KelolaLahanController extends Controller
         }
 
         if ($filters['search']) {
-            $query->where('poktan.nama_poktan', 'LIKE', '%' . $filters['search'] . '%');
+            $query->where('poktan.nama_poktan', 'LIKE', '%' . $filters['search'] . '%')
+                  ->orWhere('lahan.id_wilayah', 'LIKE', '%' . $filters['search'] . '%');
         }
 
-        $data = $query->orderBy('poktan.nama_poktan')->paginate(20)->withQueryString();
-
-        $displayedNames = $data->pluck('nama_poktan')->filter()->unique();
-        
-        $detailsQuery = DB::table('lahan')
-            ->whereIn('poktan.nama_poktan', $displayedNames)
-            ->where('lahan.deletestatus', '!=', '0')
-            ->whereNotNull('lahan.id_poktan')
-            ->whereNotNull('lahan.valid_oleh')
-            ->join('poktan', 'lahan.id_poktan', '=', 'poktan.id_poktan')
-            ->select(
-                'lahan.id_lahan',
-                'lahan.luas_lahan',
-                'lahan.latitude',
-                'lahan.longitude',
-                'poktan.nama_poktan',
-                'poktan.id_polda',
-                'poktan.id_polres',
-                'poktan.id_polsek'
-            );
-        if ($filters['sektor']) {
-            $detailsQuery->where('lahan.id_tingkat', $filters['sektor']);
-        } elseif ($filters['resor']) {
-            $detailsQuery->where('lahan.id_tingkat', 'LIKE', $filters['resor'] . '%');
-        }
-        $details = $detailsQuery->get()->groupBy('nama_poktan');
+        $data = $query->orderBy('poktan.id_polsek')->orderBy('poktan.nama_poktan')->paginate(20)->withQueryString();
 
         $tingkatMap = DB::table('tingkat')->pluck('nama_tingkat', 'id_tingkat');
+        $wilayahMap = DB::table('wilayah')->pluck('nama_wilayah', 'id_wilayah');
 
-        return view('admin.kelola-lahan.poktan.index', compact('data', 'polresList', 'polsekList', 'filters', 'tingkatMap', 'details'));
+        return view('admin.kelola-lahan.poktan.index', compact('data', 'polresList', 'polsekList', 'filters', 'tingkatMap', 'wilayahMap'));
     }
 
     public function indexOperator(Request $request)
@@ -712,7 +689,7 @@ class KelolaLahanController extends Controller
             'tgl_panen' => 'required|date',
             'luas_panen' => 'required|numeric|min:0',
             'total_panen' => 'nullable|numeric|min:0',
-            'status_panen' => 'required|integer|in:0,1,2',
+            'status_panen' => 'required|integer|in:0,1,2,3,4',
             'keterangan_panen' => 'nullable|string|max:1000',
         ]);
 
@@ -915,7 +892,7 @@ class KelolaLahanController extends Controller
             'tgl_panen' => 'required|date',
             'luas_panen' => 'required|numeric|min:0',
             'total_panen' => 'nullable|numeric|min:0',
-            'status_panen' => 'required|integer|in:0,1,2',
+            'status_panen' => 'required|integer|in:0,1,2,3,4',
             'keterangan_panen' => 'nullable|string|max:1000',
         ]);
 
@@ -1155,8 +1132,14 @@ class KelolaLahanController extends Controller
                 'label_modul' => 'Tanam #' . $id,
                 'keterangan'  => 'Validasi data tanam #' . $id,
             ]);
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Data Tanam berhasil divalidasi']);
+            }
             return back()->with('success', 'Data Tanam berhasil divalidasi');
         } catch (\Exception $e) {
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
+            }
             return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
         }
     }
@@ -1173,8 +1156,14 @@ class KelolaLahanController extends Controller
                 'label_modul' => 'Panen #' . $id,
                 'keterangan'  => 'Validasi data panen #' . $id,
             ]);
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Data Panen berhasil divalidasi']);
+            }
             return back()->with('success', 'Data Panen berhasil divalidasi');
         } catch (\Exception $e) {
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
+            }
             return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
         }
     }
@@ -1191,8 +1180,14 @@ class KelolaLahanController extends Controller
                 'label_modul' => 'Serapan #' . $id,
                 'keterangan'  => 'Validasi data serapan #' . $id,
             ]);
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Data Serapan berhasil divalidasi']);
+            }
             return back()->with('success', 'Data Serapan berhasil divalidasi');
         } catch (\Exception $e) {
+            if ($request->wantsJson() && !$request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Gagal memvalidasi: ' . $e->getMessage()], 500);
+            }
             return back()->with('error', 'Gagal memvalidasi: ' . $e->getMessage());
         }
     }
@@ -1641,20 +1636,99 @@ class KelolaLahanController extends Controller
         }
     }
 
+    public function selesaiSiklusTanam(Request $request, $id)
+    {
+        $user = auth()->user();
+        if ($user && substr_count((string)$user->id_tugas, '.') >= 2) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.'], 403);
+            return back()->with('error', 'Akses ditolak. Validasi hanya dapat dilakukan oleh tingkat Polres.');
+        }
+
+        try {
+            $tanam = DB::table('tanam')->where('id_tanam', $id)->where('is_active', 1)->first();
+
+            if (!$tanam) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam tidak ditemukan atau sudah tidak aktif.'], 422);
+                return back()->with('error', 'Data Tanam tidak ditemukan atau sudah tidak aktif.');
+            }
+
+            if (is_null($tanam->valid_oleh)) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Tanam belum divalidasi.'], 422);
+                return back()->with('error', 'Data Tanam belum divalidasi.');
+            }
+            
+            $panen = DB::table('panen')->where('id_tanam', $id)->first();
+            if (!$panen) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Panen belum dicatat.'], 422);
+                return back()->with('error', 'Siklus belum selesai. Panen belum dicatat.');
+            }
+            if (is_null($panen->valid_oleh)) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Panen belum divalidasi.'], 422);
+                return back()->with('error', 'Data Panen belum divalidasi.');
+            }
+
+            $serapan = DB::table('distribusi')
+                ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
+                ->where('panen.id_tanam', $id)
+                ->select('distribusi.*')
+                ->first();
+            if (!$serapan) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus belum selesai. Serapan belum dicatat.'], 422);
+                return back()->with('error', 'Siklus belum selesai. Serapan belum dicatat.');
+            }
+            if (is_null($serapan->valid_oleh)) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Data Serapan belum divalidasi.'], 422);
+                return back()->with('error', 'Data Serapan belum divalidasi.');
+            }
+
+            DB::table('tanam')->where('id_tanam', $id)->update(['status_akhiri_siklus' => 1]);
+            
+            // Send notification to Admin
+            $admins = DB::table('anggota')->where('role', 'admin')->pluck('id_anggota')->toArray();
+            $namaPolres = $user->nama_anggota ?? 'Polres';
+            $alamat = DB::table('lahan')->where('id_lahan', $tanam->id_lahan)->value('alamat_lahan') ?? '-';
+            
+            foreach ($admins as $adminId) {
+                \App\Models\Pesan::create([
+                    'id_pesan'     => \Illuminate\Support\Str::uuid(),
+                    'sender_id'    => $user->id_anggota ?? 0,
+                    'recipient_id' => $adminId,
+                    'judul'        => '🔔 Pengajuan Akhiri Siklus Lahan #' . $tanam->id_lahan,
+                    'isi_pesan'    => "{$namaPolres} mengajukan Akhiri Siklus untuk Lahan:\n\n" .
+                                      "📍 **Lokasi Lahan:** {$alamat}\n" .
+                                      "🆔 **ID Lahan:** #{$tanam->id_lahan}\n\n" .
+                                      "Silakan cek dan lakukan Persetujuan di menu Kelola Lahan.",
+                    'is_read'      => false,
+                ]);
+            }
+
+            if ($request->wantsJson() && !$request->ajax()) return response()->json(['success' => true, 'message' => 'Pengajuan Akhiri Siklus berhasil dikirim ke Admin.']);
+            return back()->with('success', 'Pengajuan Akhiri Siklus berhasil dikirim ke Admin.');
+        } catch (\Exception $e) {
+            if ($request->wantsJson() && !$request->ajax()) return response()->json(['success' => false, 'message' => 'Gagal menyelesaikan siklus: ' . $e->getMessage()], 500);
+            return back()->with('error', 'Gagal menyelesaikan siklus: ' . $e->getMessage());
+        }
+    }
+
     public function unvalidasiSiklusTanam(Request $request, $id)
     {
         // Hanya admin yang boleh unvalidasi
         if (auth()->user() && auth()->user()->role !== 'admin') {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Anda tidak memiliki izin untuk membatalkan arsip siklus.'], 403);
             return back()->with('error', 'Anda tidak memiliki izin untuk membatalkan arsip siklus.');
         }
 
         try {
             $tanam = DB::table('tanam')->where('id_tanam', $id)->first();
             if (!$tanam) {
+                if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Siklus tidak ditemukan.'], 422);
                 return back()->with('error', 'Siklus tidak ditemukan.');
             }
 
-            DB::table('tanam')->where('id_tanam', $id)->update(['is_active' => 1]);
+            DB::table('tanam')->where('id_tanam', $id)->update([
+                'is_active' => 1,
+                'status_akhiri_siklus' => 0
+            ]);
             
             AktivitasLog::catat('unselesai_siklus', 'tanam', [
                 'record_id'   => $id,
@@ -1662,8 +1736,10 @@ class KelolaLahanController extends Controller
                 'keterangan'  => 'Membatalkan penyelesaian siklus tanam #' . $id . ' (diaktifkan kembali).',
             ]);
 
+            if ($request->wantsJson()) return response()->json(['success' => true, 'message' => 'Berhasil membatalkan arsip. Data siklus kembali aktif di Kelola Lahan.']);
             return back()->with('success', 'Berhasil mengembalikan siklus. Data kembali aktif.');
         } catch (\Exception $e) {
+            if ($request->wantsJson()) return response()->json(['success' => false, 'message' => 'Gagal membatalkan arsip: ' . $e->getMessage()], 500);
             return back()->with('error', 'Gagal membatalkan arsip: ' . $e->getMessage());
         }
     }
