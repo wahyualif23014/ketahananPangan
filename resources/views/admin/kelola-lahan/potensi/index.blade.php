@@ -66,7 +66,12 @@
             <div class="flex items-center gap-3">
                 <h2 class="text-3xl lg:text-5xl font-black text-slate-800 tracking-tight uppercase leading-none drop-shadow-sm">
                     POTENSI <span class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">LAHAN</span>
-                </h2>
+                                </h2>
+                @if(collect($filters ?? [])->filter()->isNotEmpty())
+                <a href="{{ route('admin.kelola-lahan.potensi.index') }}" class="text-[10px] font-black text-rose-500 hover:text-rose-700 bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl transition-all shadow-sm">
+                    RESET FILTER
+                </a>
+                @endif
                 @if(request('search'))
                 <div class="flex items-center gap-2 mt-1 sm:mt-0">
                     <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5 shadow-sm">
@@ -127,33 +132,87 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN RESOR</label>
-                    <div class="relative">
-                        <select x-model="selectedResor" @change="selectedSektor=''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA POLRES</option>
-                            @foreach($polresList as $polres)
-                            <option value="{{ $polres->id_tingkat }}">{{ $polres->nama_tingkat }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <div x-data='{
+                        polresListLocal: @json($polresList ?? []),
+                        polresOpen: false,
+                        polresSearch: "",
+                        get polresLabel() {
+                            if (!selectedResor) return "";
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            let p = list.find(x => x.id_tingkat == selectedResor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLRES") ? p.nama_tingkat : "POLRES " + p.nama_tingkat;
+                            return selectedResor;
+                        },
+                        get polresFiltered() {
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            if (this.polresSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polresSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedResor || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="SEMUA RESOR..."
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400">
+                            <div x-show="selectedResor && !polresOpen" @click="polresOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polresLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedResor" @click="selectedResor=''; selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedResor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polresFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedResor = item.id_tingkat; polresOpen = false; polresSearch = ''; selectedSektor = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLRES') ? item.nama_tingkat : 'POLRES ' + item.nama_tingkat"></div>
+                            </template>
                         </div>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KESATUAN SEKTOR</label>
-                    <div class="relative">
-                        <select x-model="selectedSektor" @change="submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA POLSEK</option>
-                            <template x-for="polsek in filteredFilterPolsek" :key="polsek.id_tingkat">
-                                <option :value="polsek.id_tingkat" x-text="polsek.nama_tingkat" :selected="polsek.id_tingkat === selectedSektor"></option>
+                    <div x-data='{
+                        polsekListLocal: @json($polsekList ?? []),
+                        polsekOpen: false,
+                        polsekSearch: "",
+                        get polsekLabel() {
+                            if (!selectedSektor) return "";
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            let p = list.find(x => x.id_tingkat == selectedSektor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLSEK") ? p.nama_tingkat : "POLSEK " + p.nama_tingkat;
+                            return selectedSektor;
+                        },
+                        get polsekFiltered() {
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            if (this.polsekSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polsekSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedSektor || polsekOpen" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" placeholder="SEMUA SEKTOR..." :disabled="!selectedResor"
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div x-show="selectedSektor && !polsekOpen" @click="polsekOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polsekLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedSektor" @click="selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedSektor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polsekFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedSektor = item.id_tingkat; polsekOpen = false; polsekSearch = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLSEK') ? item.nama_tingkat : 'POLSEK ' + item.nama_tingkat"></div>
                             </template>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
                         </div>
                     </div>
                 </div>
@@ -227,15 +286,18 @@
                                 class="w-full sm:w-40 h-10 text-[11px] font-bold px-4 border rounded-xl outline-none transition-all">
                         </div>
                     </div>
-                    <div class="flex items-end mt-4 lg:mt-0">
-                        <a href="{{ route($rolePrefix . '.kelola-lahan.potensi.index') }}" class="flex items-center gap-2 px-5 py-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all text-[10px] font-black uppercase tracking-widest border border-rose-100 shadow-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                            Reset Filter
-                        </a>
-                    </div>
                 </div>
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4 w-full lg:w-auto mt-4 lg:mt-0">
+                    <div class="h-10 w-px bg-slate-100 hidden lg:block mx-2"></div>
+                    <div class="space-y-2 w-full sm:w-auto">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">KATEGORI PRODUKSI</label>
+                        <select x-model="kategoriProduksi" @change="submitFilters()" class="w-full sm:w-48 h-12 text-[11px] font-black px-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all uppercase tracking-widest cursor-pointer shadow-sm">
+                            <option value="semua">SEMUA / POTENSI</option>
+                            <option value="tanam">PROSES TANAM</option>
+                            <option value="panen">HASIL PANEN</option>
+                            <option value="serapan">SERAPAN</option>
+                        </select>
+                    </div>
             </div>
         </div>
 
@@ -618,7 +680,7 @@
                                             </span>
                                             @endif
                                         @endif
-                                        @if($user->role === 'admin' || (!$canValidate && $item['status_lahan'] == '2'))
+                                        @if(auth()->user()->role === 'admin' || (auth()->user()->role === 'operator' && substr_count((string)auth()->user()->id_tugas, '.') >= 2 && in_array($item['status_lahan'], ['0', '2'])))
                                         <button onclick='openEditModal(@json($item))'
                                             class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                                             Edit
@@ -2009,6 +2071,7 @@
                 selectedResor: '{{ $filters["resor"] ?? "" }}',
                 selectedSektor: '{{ $filters["sektor"] ?? "" }}',
                 selectedJenis: '{{ $filters["jenis"] ?? "" }}',
+                kategoriProduksi: '{{ $filters["kategori"] ?? "semua" }}',
                 selectedValidasi: '{{ $filters["validasi"] ?? "" }}',
                 periodMode: '{{ ($filters["start_date"] ?? "") || ($filters["end_date"] ?? "") ? "tanggal" : "semua" }}',
                 get filteredFilterPolsek() {
@@ -2023,6 +2086,8 @@
                     else url.searchParams.delete('sektor');
                     if (this.selectedJenis) url.searchParams.set('jenis', this.selectedJenis);
                     else url.searchParams.delete('jenis');
+                    if (this.kategoriProduksi && this.kategoriProduksi !== 'semua') url.searchParams.set('kategori', this.kategoriProduksi);
+                    else url.searchParams.delete('kategori');
                     if (this.selectedValidasi) url.searchParams.set('validasi', this.selectedValidasi);
                     else url.searchParams.delete('validasi');
 

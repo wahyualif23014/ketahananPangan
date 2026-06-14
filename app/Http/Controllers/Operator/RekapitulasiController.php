@@ -85,6 +85,17 @@ class RekapitulasiController extends Controller
             $userLevel = count(explode('.', $scope));
         }
 
+        // Inject scope ke request filter agar scopeFilter() di model konsisten
+        if ($userLevel == 2) {
+            // Operator Polres: paksa filter polres = id_tugas
+            $request->merge(['polres' => $scope]);
+        } elseif ($userLevel >= 3) {
+            // Operator Polsek: paksa filter polsek = id_tugas (3 segment pertama)
+            $polsekScope = implode('.', array_slice(explode('.', $scope), 0, 3));
+            $polresScope = implode('.', array_slice(explode('.', $scope), 0, 2));
+            $request->merge(['polres' => $polresScope, 'polsek' => $polsekScope]);
+        }
+
         // 1. OPTIMASI: Cache list Polres (Hanya jika userLevel < 2, misal Polda)
         $polresList = collect();
         if ($userLevel < 2) {
@@ -97,30 +108,14 @@ class RekapitulasiController extends Controller
             });
         }
 
-        // 2. OPTIMASI: Polsek List (Cache 5 Menit jika sedang memfilter polres tertentu)
-        $polsekList = collect();
-        if ($userLevel == 2) {
-            // Operator Polres: Load polsek di bawah yurisdiksi polres-nya
-            $polresReq = $scope;
-            $polsekList = Cache::remember("op_polsek_list_{$userId}_{$polresReq}", 300, function() use ($applyTingkat, $polresReq) {
-                return $applyTingkat(DB::table('tingkat'))
-                    ->select('id_tingkat', 'nama_tingkat') // Explicit Select
-                    ->where('id_tingkat', 'like', $polresReq . '.%')
-                    ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-                    ->orderBy('nama_tingkat')
-                    ->get();
-            });
-        } elseif ($userLevel < 2 && $request->filled('polres')) {
-            $polresReq = $request->polres;
-            $polsekList = Cache::remember("op_polsek_list_{$userId}_{$polresReq}", 300, function() use ($applyTingkat, $polresReq) {
-                return $applyTingkat(DB::table('tingkat'))
-                    ->select('id_tingkat', 'nama_tingkat') // Explicit Select
-                    ->where('id_tingkat', 'like', $polresReq . '.%')
-                    ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-                    ->orderBy('nama_tingkat')
-                    ->get();
-            });
-        }
+        // 2. OPTIMASI: Polsek List (Cache 5 Menit)
+        $polsekList = Cache::remember("op_all_polsek_list_{$userId}_{$scope}", 300, function() use ($applyTingkat) {
+            return $applyTingkat(DB::table('tingkat'))
+                ->select('id_tingkat', 'nama_tingkat')
+                ->whereRaw("LENGTH(TRIM(id_tingkat)) = 8")
+                ->orderBy('nama_tingkat')
+                ->get();
+        });
 
         // 3. OPTIMASI: Cache Data Lahan & Komoditi (TTL 1 Jam)
         $jenisLahanList = Cache::remember('global_jenis_lahan', 3600, function() {
@@ -156,6 +151,18 @@ class RekapitulasiController extends Controller
 
         if (! $request->ajax() && ! $request->wantsJson()) {
             return redirect()->route('operator.rekapitulasi.index', $request->query());
+        }
+
+        $scope     = auth()->user()->id_tugas ?? '0';
+        $userLevel = ($scope !== '0' && !empty($scope)) ? count(explode('.', $scope)) : 0;
+
+        // Inject scope ke request filter agar konsisten dengan index()
+        if ($userLevel == 2) {
+            $request->merge(['polres' => $scope]);
+        } elseif ($userLevel >= 3) {
+            $polsekScope = implode('.', array_slice(explode('.', $scope), 0, 3));
+            $polresScope = implode('.', array_slice(explode('.', $scope), 0, 2));
+            $request->merge(['polres' => $polresScope, 'polsek' => $polsekScope]);
         }
 
         $applyScope = $this->makeScopeClosure();

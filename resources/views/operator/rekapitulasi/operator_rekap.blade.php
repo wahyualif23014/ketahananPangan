@@ -88,83 +88,53 @@ $groupedData = $allItems->groupBy('nama_polres');
 
         <div x-show="open" x-collapse x-cloak class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                {{-- Hidden inputs scope (untuk user Polres/Polsek yang sudah terkunci wilayah) --}}
+                @if($userLevel >= 2)
+                    <input type="hidden" name="polres" value="{{ implode('.', array_slice(explode('.', $scope), 0, 2)) }}">
+                @endif
+                @if($userLevel >= 3)
+                    <input type="hidden" name="polsek" value="{{ implode('.', array_slice(explode('.', $scope), 0, 3)) }}">
+                @endif
+
                 @if($userLevel < 3)
                     {{-- Kategori Lokasi --}}
                     <div class="space-y-4" x-data="{
-                    formEl: null,
-                    polresOpen: false, polresSearch: '', polresHighlight: -1,
-                    polresValue: '{{ request('polres', '') }}',
-                    polresLabel: '{{ request('polres') ? optional(($polresList ?? collect())->firstWhere('id_tingkat', request('polres')))->nama_tingkat : '' }}',
-                    polresItems: @js($polresList->map(fn($p) => ['value' => $p->id_tingkat, 'label' => $p->nama_tingkat])),
-                    polsekOpen: false, polsekSearch: '', polsekHighlight: -1, polsekLoading: false,
-                    polsekValue: '{{ request('polsek', '') }}',
-                    polsekLabel: '{{ request('polsek') ? optional(($polsekList ?? collect())->firstWhere('id_tingkat', request('polsek')))->nama_tingkat : '' }}',
-                    polsekItems: @js($polsekList ? collect($polsekList)->map(fn($ps) => ['value' => $ps->id_tingkat, 'label' => $ps->nama_tingkat]) : []),
-                    
-                    get polresFiltered() {
-                        return this.polresSearch === '' ? this.polresItems : this.polresItems.filter(i => i.label.toLowerCase().includes(this.polresSearch.toLowerCase()));
-                    },
-                    get polsekFiltered() {
-                        return this.polsekSearch === '' ? this.polsekItems : this.polsekItems.filter(i => i.label.toLowerCase().includes(this.polsekSearch.toLowerCase()));
-                    },
-                    selectPolres(item) {
-                        this.polresValue = item.value; this.polresLabel = item.label; this.polresOpen = false; this.polresSearch = '';
-                        this.polsekValue = ''; this.polsekLabel = ''; this.polsekItems = [];
-                        this.fetchPolsek(item.value);
-                    },
-                    async fetchPolsek(polresId) {
-                        this.polsekLoading = true;
-                        try {
-                            const res = await fetch(`{{ route($routePrefix . '.rekapitulasi.polsek') }}?polres=${encodeURIComponent(polresId)}`, {
-                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                            });
-                            this.polsekItems = await res.json();
-                        } catch(e) { this.polsekItems = []; } finally { this.polsekLoading = false; }
-                    }
-                }" x-init="formEl = $el.closest('form')">
-                    <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kategori Lokasi</h4>
-                    <div class="space-y-3">
-                        @if($userLevel < 2)
+                        formEl: null,
+                        polsekOpen: false, polsekSearch: '', polsekHighlight: -1,
+                        polsekValue: '{{ request('polsek', '') }}',
+                        polsekLabel: '{{ request('polsek') ? optional(($polsekList ?? collect())->firstWhere('id_tingkat', request('polsek')))->nama_tingkat : '' }}',
+                        polsekItems: @js($polsekList ? collect($polsekList)->map(fn($ps) => ['value' => $ps->id_tingkat, 'label' => $ps->nama_tingkat]) : []),
+                        get polsekFiltered() {
+                            return this.polsekSearch === '' ? this.polsekItems : this.polsekItems.filter(i => i.label.toLowerCase().includes(this.polsekSearch.toLowerCase()));
+                        }
+                    }" x-init="formEl = $el.closest('form');">
+                        <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Kategori Lokasi</h4>
+                        <div class="space-y-3">
                             <div class="relative">
-                            <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Polres / Satwil</label>
-                            <input type="hidden" name="polres" :value="polresValue">
-                            <div class="relative">
-                                <input type="text" x-ref="polresInput" x-show="!polresLabel || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="Cari polres..."
-                                    class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
-                                <div x-show="polresLabel && !polresOpen" @click="polresOpen = true; $nextTick(() => $refs.polresInput.focus())" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
-                                    <span class="truncate text-slate-800 font-medium" x-text="polresLabel"></span>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1.5 ml-1">Polsek / Sektor</label>
+                                <input type="hidden" name="polsek" :value="polsekValue">
+                                <div class="relative">
+                                    <input type="text" x-ref="polsekInput" x-show="!polsekLabel || polsekOpen" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" placeholder="Cari polsek..."
+                                        class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
+                                    <div x-show="polsekLabel && !polsekOpen" @click="polsekOpen = true; $nextTick(() => $refs.polsekInput.focus())" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
+                                        <span class="truncate text-slate-800 font-medium" x-text="polsekLabel"></span>
+                                    </div>
+                                    <button type="button" x-show="polsekValue" @click="polsekValue=''; polsekLabel=''; $nextTick(() => formEl.submit())" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
                                 </div>
-                                <button type="button" x-show="polresValue" @click="polresValue=''; polresLabel=''; polsekValue=''; polsekLabel='';" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg></button>
-                            </div>
-                            <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
-                                <template x-for="item in polresFiltered" :key="item.value">
-                                    <div @mousedown.prevent="selectPolres(item)" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
-                                </template>
-                            </div>
-                    </div>
-                    @endif
-
-                    <div class="relative">
-                        <label class="block text-xs font-semibold mb-1.5 ml-1" :class="polresValue || {{ $userLevel == 2 ? 'true' : 'false' }} ? 'text-slate-600' : 'text-slate-400'">Polsek / Sektor</label>
-                        <input type="hidden" name="polsek" :value="polsekValue">
-                        <div class="relative">
-                            <input type="text" x-ref="polsekInput" x-show="(polresValue || {{ $userLevel == 2 ? 'true' : 'false' }}) && (!polsekLabel || polsekOpen)" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" :disabled="polsekLoading || !(polresValue || {{ $userLevel == 2 ? 'true' : 'false' }})" placeholder="Cari polsek..."
-                                class="w-full h-10 pl-9 pr-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5">
-                            <div x-show="polsekLabel && !polsekOpen" @click="polsekOpen = true; $nextTick(() => $refs.polsekInput.focus())" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
-                                <span class="truncate text-slate-800 font-medium" x-text="polsekLabel"></span>
+                                <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
+                                    <template x-for="item in polsekFiltered" :key="item.value">
+                                        <div @mousedown.prevent="polsekValue = item.value; polsekLabel = item.label; polsekOpen = false; $nextTick(() => formEl.submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
-                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
-                            <template x-for="item in polsekFiltered" :key="item.value">
-                                <div @mousedown.prevent="polsekValue = item.value; polsekLabel = item.label; polsekOpen = false; $nextTick(() => formEl.submit())" class="px-3.5 py-2.5 text-sm cursor-pointer hover:bg-emerald-50 hover:text-emerald-700" x-text="item.label"></div>
-                            </template>
-                        </div>
                     </div>
-            </div>
-        </div>
-        @endif
+                @endif
 
         {{-- Spesifikasi Lahan --}}
         <div class="space-y-4">

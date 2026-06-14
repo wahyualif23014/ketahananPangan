@@ -82,36 +82,47 @@ return new class extends Migration
             LEFT JOIN (
                 SELECT 
                     l.id_wilayah, 
-                    MIN(tn.tgl_tanam) as datetransaction, 
-                    COALESCE(YEAR(MIN(tn.tgl_tanam)), MAX(l.tahun_lahan)) as tahun_rekap, 
-                    COUNT(DISTINCT l.id_lahan) as total_titik,
+                    MAX(tn.max_tgl_tanam) as datetransaction, 
+                    MAX(l.tahun_lahan) as tahun_rekap, 
+                    COUNT(l.id_lahan) as total_titik,
                     SUM(l.luas_lahan) as total_luas,
                     SUM(l.jml_petani) as total_sdm,
                     GROUP_CONCAT(DISTINCT l.id_jenis_lahan) as ids_jenis,
                     GROUP_CONCAT(DISTINCT l.id_komoditi) as ids_komoditi,
                     GROUP_CONCAT(DISTINCT jl.nama_jenis_lahan SEPARATOR ', ') as names_jenis,
                     GROUP_CONCAT(DISTINCT k.nama_komoditi SEPARATOR ', ') as names_komoditi,
-                    SUM(COALESCE(tn.luas_tanam, 0)) as aktual_tanam,
+                    SUM(COALESCE(tn.sum_aktual_tanam, 0)) as aktual_tanam,
                     SUM(COALESCE(p_sub.sum_panen_ha, 0)) as aktual_panen,
                     SUM(COALESCE(p_sub.sum_panen_ton, 0)) as total_produksi
                 FROM lahan l
-                LEFT JOIN tanam tn ON l.id_lahan = tn.id_lahan AND tn.deletestatus = '1'
-                LEFT JOIN jenislahan jl ON l.id_jenis_lahan = jl.id_jenis_lahan
-                LEFT JOIN komoditi k ON l.id_komoditi = k.id_komoditi
                 LEFT JOIN (
                     SELECT id_lahan, 
-                           YEAR(tgl_panen) as thn, 
-                           QUARTER(tgl_panen) as qtr, 
+                           MAX(tgl_tanam) as max_tgl_tanam,
+                           SUM(luas_tanam) as sum_aktual_tanam
+                    FROM tanam 
+                    WHERE deletestatus != '0' AND is_active = 1
+                    GROUP BY id_lahan
+                ) tn ON l.id_lahan = tn.id_lahan
+                LEFT JOIN (
+                    SELECT id_jenis_lahan, MIN(nama_jenis_lahan) as nama_jenis_lahan 
+                    FROM jenislahan 
+                    GROUP BY id_jenis_lahan
+                ) jl ON l.id_jenis_lahan = jl.id_jenis_lahan
+                LEFT JOIN (
+                    SELECT id_komoditi, MIN(nama_komoditi) as nama_komoditi
+                    FROM komoditi
+                    GROUP BY id_komoditi
+                ) k ON l.id_komoditi = k.id_komoditi
+                LEFT JOIN (
+                    SELECT id_lahan, 
                            SUM(luas_panen) as sum_panen_ha, 
                            SUM(total_panen) as sum_panen_ton 
                     FROM panen 
-                    WHERE deletestatus = '1' 
-                    GROUP BY id_lahan, thn, qtr
-                ) p_sub ON l.id_lahan = p_sub.id_lahan 
-                     AND p_sub.thn = YEAR(tn.tgl_tanam)
-                     AND p_sub.qtr = QUARTER(tn.tgl_tanam)
-                WHERE l.deletestatus = '1' 
-                GROUP BY l.id_wilayah, YEAR(tn.tgl_tanam), QUARTER(tn.tgl_tanam)
+                    WHERE deletestatus != '0' 
+                    GROUP BY id_lahan
+                ) p_sub ON l.id_lahan = p_sub.id_lahan
+                WHERE l.deletestatus != '0' 
+                GROUP BY l.id_wilayah
             ) l_sum ON w_desa.id_wilayah = l_sum.id_wilayah
         ");
     }

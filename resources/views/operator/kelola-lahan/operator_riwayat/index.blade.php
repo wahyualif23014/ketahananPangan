@@ -94,40 +94,92 @@
         </div>
     </div>
 
-    <div class="mx-4 mb-6 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
+    <div class="mx-4 mb-6 relative z-30 glass-card border border-slate-200/60 rounded-[2rem] shadow-xl shadow-slate-200/40 p-6 animate-in fade-in zoom-in duration-500">
         <div class="flex flex-col gap-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">RESOR</label>
-                    <div class="relative">
-                        <select x-model="selectedResor" @change="selectedSektor = ''; submitFilters()" class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer">
-                            <option value="">SEMUA RESOR</option>
-                            @foreach($polresList as $resor)
-                            <option value="{{ $resor->id_tingkat }}">{{ $resor->id_tingkat }} - {{ $resor->nama_tingkat }}</option>
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
+                    <div x-data='{
+                        polresListLocal: @json($polresList ?? []),
+                        polresOpen: false,
+                        polresSearch: "",
+                        get polresLabel() {
+                            if (!selectedResor) return "";
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            let p = list.find(x => x.id_tingkat == selectedResor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLRES") ? p.nama_tingkat : "POLRES " + p.nama_tingkat;
+                            return selectedResor;
+                        },
+                        get polresFiltered() {
+                            let list = typeof polresList !== "undefined" ? polresList : this.polresListLocal;
+                            if (this.polresSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polresSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedResor || polresOpen" x-model="polresSearch" @focus="polresOpen = true" @click.away="polresOpen = false" placeholder="SEMUA RESOR..."
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400">
+                            <div x-show="selectedResor && !polresOpen" @click="polresOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polresLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedResor" @click="selectedResor=''; selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedResor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polresFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedResor = item.id_tingkat; polresOpen = false; polresSearch = ''; selectedSektor = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLRES') ? item.nama_tingkat : 'POLRES ' + item.nama_tingkat"></div>
+                            </template>
                         </div>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">SEKTOR</label>
-                    <div class="relative">
-                        <select x-model="selectedSektor" @change="submitFilters()"
-                            class="appearance-none bg-none w-full h-12 text-[11px] font-bold px-4 bg-slate-50/50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-slate-700 uppercase tracking-wider cursor-pointer"
-                            :disabled="!selectedResor">
-                            <option value="">SEMUA SEKTOR</option>
-                            <template x-for="p in filteredPolseks" :key="p.id_tingkat">
-                                <option :value="p.id_tingkat" x-text="p.id_tingkat + ' - ' + p.nama_tingkat"></option>
+                    <div x-data='{
+                        polsekListLocal: @json($polsekList ?? []),
+                        polsekOpen: false,
+                        polsekSearch: "",
+                        get polsekLabel() {
+                            if (!selectedSektor) return "";
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            let p = list.find(x => x.id_tingkat == selectedSektor);
+                            if (p) return p.nama_tingkat.toUpperCase().includes("POLSEK") ? p.nama_tingkat : "POLSEK " + p.nama_tingkat;
+                            return selectedSektor;
+                        },
+                        get polsekFiltered() {
+                            let list = typeof filteredPolseks !== "undefined" ? filteredPolseks : (typeof filteredFilterPolsek !== "undefined" ? filteredFilterPolsek : this.polsekListLocal);
+                            if (this.polsekSearch === "") return list;
+                            return list.filter(p => p.nama_tingkat.toLowerCase().includes(this.polsekSearch.toLowerCase()));
+                        }
+                    }' class="relative">
+                        <div class="relative">
+                            <input type="text" x-show="!selectedSektor || polsekOpen" x-model="polsekSearch" @focus="polsekOpen = true" @click.away="polsekOpen = false" placeholder="SEMUA SEKTOR..." :disabled="!selectedResor"
+                                class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold focus:bg-white transition-all outline-none focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 uppercase tracking-wider text-slate-700 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <div x-show="selectedSektor && !polsekOpen" @click="polsekOpen = true" class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center cursor-pointer hover:bg-white transition-all uppercase tracking-wider text-slate-700">
+                                <span class="truncate" x-text="polsekLabel"></span>
+                            </div>
+                            <button type="button" x-show="selectedSektor" @click="selectedSektor=''; submitFilters()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500 z-10">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <div x-show="!selectedSektor" class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto uppercase text-[11px] font-bold tracking-wider" x-cloak>
+                            <template x-for="item in polsekFiltered" :key="item.id_tingkat">
+                                <div @mousedown.prevent="selectedSektor = item.id_tingkat; polsekOpen = false; polsekSearch = ''; submitFilters()" class="px-4 py-3 cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 transition-colors text-slate-700" x-text="item.nama_tingkat.toUpperCase().includes('POLSEK') ? item.nama_tingkat : 'POLSEK ' + item.nama_tingkat"></div>
                             </template>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
-                            </svg>
                         </div>
                     </div>
                 </div>
@@ -595,18 +647,39 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-6 border-x border-slate-50 align-top">
+                        <td class="px-4 py-6 border-x border-slate-50 align-top h-full">
                             @if($row->id_tanam)
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">{{ number_format($row->luas_tanam, 2) }} HA</span>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Est. Panen:<br>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($row->luas_tanam, 2) }} HA</span>
+                                    </div>
 
-                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
-                                    @if(!$row->tanam_valid_oleh)
-                                        @if($row->tanam_alasan_tolak)
-                                            <div class="flex flex-col gap-1 group relative mt-1">
-                                                <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                                <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->tanam_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Est. Panen</span>
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("tanam", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                        @if(!$row->tanam_valid_oleh)
+                                            @if($row->tanam_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->tanam_alasan_tolak }}">{{ $row->tanam_alasan_tolak }}</div>
                                             </div>
                                         @else
                                             <div class="flex flex-col gap-1 mt-1">
@@ -616,45 +689,73 @@
                                             </div>
                                         @endif
                                     @else
-                                        <span class="text-[9px] font-black text-emerald-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                        <form action="{{ route('operator.kelola-lahan.tanam.unvalidasi', $row->id_tanam) }}" method="POST" data-ajax="true" class="mt-1">@csrf @method('PUT')
-                                            <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
-                                        </form>
+                                        {{-- Polsek --}}
+                                        @if($row->tanam_valid_oleh)
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                            </div>
+                                        @elseif($row->tanam_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->tanam_alasan_tolak }}">{{ $row->tanam_alasan_tolak }}</div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                            </div>
+                                        @endif
                                     @endif
-                                @else
-                                    {{-- Polsek --}}
-                                    @if($row->tanam_valid_oleh)
-                                        <span class="text-[9px] font-black text-emerald-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                    @elseif($row->tanam_alasan_tolak)
-                                        <div class="flex flex-col gap-1 group relative">
-                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->tanam_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
-                                        </div>
-                                    @else
-                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
-                                    @endif
-                                @endif
+                                </div>
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
                             @endif
                         </td>
-                        <td class="px-4 py-6 border-r border-slate-50 align-top">
+                        <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
                             @if($row->id_panen)
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-black text-amber-600 bg-amber-50 w-fit px-2 py-0.5 rounded-lg border border-amber-100">{{ number_format($row->total_panen, 2) }} TON</span>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tgl: {{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
-                                @php
-                                $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
-                                @endphp
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Jenis: {{ $stsPanen }}</span>
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->luas_panen, 2) }} HA</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->total_panen, 2) }} TON</span>
+                                    </div>
 
-                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
-                                    @if(!$row->panen_valid_oleh)
-                                        @if($row->panen_alasan_tolak)
-                                            <div class="flex flex-col gap-1 group relative mt-1">
-                                                <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                                <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->panen_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
+                                        </div>
+                                        @php
+                                        $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
+                                        @endphp
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                            <span>{{ $stsPanen }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("panen", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                        @if(!$row->panen_valid_oleh)
+                                            @if($row->panen_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->panen_alasan_tolak }}">{{ $row->panen_alasan_tolak }}</div>
                                             </div>
                                         @else
                                             <div class="flex flex-col gap-1 mt-1">
@@ -664,45 +765,72 @@
                                             </div>
                                         @endif
                                     @else
-                                        <span class="text-[9px] font-black text-amber-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                        <form action="{{ route('operator.kelola-lahan.panen.unvalidasi', $row->id_panen) }}" method="POST" data-ajax="true" class="mt-1">@csrf @method('PUT')
-                                            <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
-                                        </form>
+                                        {{-- Polsek --}}
+                                        @if($row->panen_valid_oleh)
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                            </div>
+                                        @elseif($row->panen_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->panen_alasan_tolak }}">{{ $row->panen_alasan_tolak }}</div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                            </div>
+                                        @endif
                                     @endif
-                                @else
-                                    {{-- Polsek --}}
-                                    @if($row->panen_valid_oleh)
-                                        <span class="text-[9px] font-black text-amber-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                    @elseif($row->panen_alasan_tolak)
-                                        <div class="flex flex-col gap-1 group relative">
-                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->panen_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
-                                        </div>
-                                    @else
-                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
-                                    @endif
-                                @endif
+                                </div>
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
                             @endif
                         </td>
-                        <td class="px-4 py-6 border-r border-slate-50 align-top">
+                        <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
                             @if($row->id_distribusi)
-                            <div class="flex flex-col gap-1.5">
-                                <span class="text-xs font-black text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg border border-blue-100">{{ number_format($row->total_distribusi, 2) }} TON</span>
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tgl: {{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
-                                @php
-                                $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
-                                @endphp
-                                <span class="text-[9px] font-bold text-slate-500 tracking-tight">Tujuan: {{ $dstKe }}</span>
+                            <div class="flex flex-col justify-between h-full min-h-[150px]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-blue-700 bg-blue-100 rounded-md border border-blue-200 shadow-sm">{{ number_format($row->total_distribusi, 2) }} TON</span>
+                                    </div>
 
-                                @if(substr_count(auth()->user()->id_tugas, '.') < 2)
-                                    @if(!$row->serapan_valid_oleh)
-                                        @if($row->serapan_alasan_tolak)
-                                            <div class="flex flex-col gap-1 group relative mt-1">
-                                                <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                                <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->serapan_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>{{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
+                                        </div>
+                                        @php
+                                        $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
+                                        @endphp
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span>{{ $dstKe }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("serapan", @json(collect($row)->merge(['sisa_lahan' => max(0, $row->luas_lahan - $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum('luas_tanam'))])))' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if(substr_count(auth()->user()->id_tugas, '.') < 2)
+                                        @if(!$row->serapan_valid_oleh)
+                                            @if($row->serapan_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->serapan_alasan_tolak }}">{{ $row->serapan_alasan_tolak }}</div>
                                             </div>
                                         @else
                                             <div class="flex flex-col gap-1 mt-1">
@@ -711,24 +839,28 @@
                                             </div>
                                         @endif
                                     @else
-                                        <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                        <form action="{{ route('operator.kelola-lahan.serapan.unvalidasi', $row->id_distribusi) }}" method="POST" data-ajax="true" class="mt-1">@csrf @method('PUT')
-                                            <button class="px-2 py-1 bg-rose-50 border border-rose-200 text-rose-600 rounded text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition-colors shadow-sm w-full text-center">Unvalidasi</button>
-                                        </form>
+                                        {{-- Polsek --}}
+                                        @if($row->serapan_valid_oleh)
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                            </div>
+                                        @elseif($row->serapan_alasan_tolak)
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
+                                                </div>
+                                                <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->serapan_alasan_tolak }}">{{ $row->serapan_alasan_tolak }}</div>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                            </div>
+                                        @endif
                                     @endif
-                                @else
-                                    {{-- Polsek: hanya tampilkan status saja --}}
-                                    @if($row->serapan_valid_oleh)
-                                        <span class="text-[9px] font-black text-indigo-500 tracking-tight mt-1 text-center">✅ Tervalidasi</span>
-                                    @elseif($row->serapan_alasan_tolak)
-                                        <div class="flex flex-col gap-1 group relative">
-                                            <span class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-[9px] font-black uppercase shadow-sm flex items-center justify-center cursor-help">❌ Ditolak</span>
-                                            <div class="absolute bottom-full left-0 mb-2 w-56 p-2 bg-white rounded-lg shadow-xl border border-rose-100 text-[9px] text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-bold whitespace-pre-wrap">{{ $row->serapan_alasan_tolak }}<br><span class="text-slate-400 mt-1 block">Perbaiki data lalu edit untuk mengajukan ulang.</span></div>
-                                        </div>
-                                    @else
-                                        <span class="text-[9px] font-black text-slate-400 tracking-tight mt-1 text-center">⏳ Menunggu Validasi</span>
-                                    @endif
-                                @endif
+                                </div>
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
@@ -865,7 +997,7 @@
                                                                 </div>
                                                             @endif
                                                         @else
-                                                            <form action="{{ route('operator.kelola-lahan.tanam.unvalidasi', $tanam->id_tanam) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="px-2.5 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase hover:bg-rose-500 transition-all shadow-sm">Unvalidasi</button></form>
+                                                            <span class="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[9px] font-black uppercase shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Tervalidasi</span>
                                                         @endif
                                                     @else
                                                         @if(is_null($tanam->valid_oleh))
@@ -918,7 +1050,7 @@
                                                                             </div>
                                                                         @endif
                                                                     @else
-                                                                        <form action="{{ route('operator.kelola-lahan.panen.unvalidasi', $panen->id_panen) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-amber-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
+                                                                        <span class="w-full px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase text-center flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Tervalidasi</span>
                                                                     @endif
                                                                 @else
                                                                     @if(is_null($panen->valid_oleh))
@@ -967,7 +1099,7 @@
                                                                                         </div>
                                                                                     @endif
                                                                                 @else
-                                                                                    <form action="{{ route('operator.kelola-lahan.serapan.unvalidasi', $distribusi->id_distribusi) }}" method="POST" data-ajax="true" class="m-0">@csrf @method('PUT')<button type="submit" class="w-full px-2 py-1 bg-blue-500 text-white rounded text-[8px] font-black uppercase hover:bg-rose-500 transition-colors">Unvalidasi</button></form>
+                                                                                    <span class="w-full px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-[8px] font-black uppercase text-center flex items-center justify-center gap-1"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Tervalidasi</span>
                                                                                 @endif
                                                                             @else
                                                                                 @if(is_null($distribusi->valid_oleh))
@@ -1741,8 +1873,8 @@
 </div>
 
 <!-- MODAL VALIDASI LAHAN -->
-<div x-show="modalValidasi" 
-     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" 
+<div x-show="modalValidasi"
+     class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
      x-cloak x-transition.opacity>
     <div @click.outside="modalValidasi = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
         <div class="px-8 py-6 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between">
@@ -1760,7 +1892,7 @@
             </button>
         </div>
         <div class="p-8 overflow-y-auto custom-scrollbar space-y-6">
-            
+
             <div x-show="validasiData.tanam.length === 0 && validasiData.panen.length === 0 && validasiData.serapan.length === 0" class="text-center p-4 text-slate-500 font-bold text-xs">
                 <span x-show="validasiData.has_active" class="text-emerald-600">Semua data pada siklus ini telah tervalidasi. Anda dapat menyelesaikan siklus ini.</span>
                 <span x-show="!validasiData.has_active">Siklus lahan ini belum dimulai atau sudah selesai (kosong).</span>

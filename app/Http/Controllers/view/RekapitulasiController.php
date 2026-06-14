@@ -81,19 +81,14 @@ class RekapitulasiController extends Controller
             return $query->orderBy('id_tingkat')->get();
         });
 
-        // 2. OPTIMASI: Polsek List (Cache 5 Menit jika sedang memfilter polres tertentu)
-        $polsekList = collect();
-        if ($request->filled('polres')) {
-            $polresReq = $request->polres;
-            $polsekList = Cache::remember("view_polsek_list_{$userId}_{$polresReq}", 300, function() use ($applyTingkat, $polresReq) {
-                return $applyTingkat(DB::table('tingkat'))
-                    ->select('id_tingkat', 'nama_tingkat') // Explicit Select
-                    ->where('id_tingkat', 'like', $polresReq . '.%')
-                    ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+\\.[0-9]+$'")
-                    ->orderBy('nama_tingkat')
-                    ->get();
-            });
-        }
+        // 2. OPTIMASI: Polsek List (Cache 5 Menit)
+        $polsekList = Cache::remember("view_all_polsek_list_{$userId}_{$scope}", 300, function() use ($applyTingkat) {
+            return $applyTingkat(DB::table('tingkat'))
+                ->select('id_tingkat', 'nama_tingkat')
+                ->whereRaw("LENGTH(TRIM(id_tingkat)) = 8")
+                ->orderBy('nama_tingkat')
+                ->get();
+        });
 
         // 3. OPTIMASI: Cache Global untuk Jenis Lahan & Komoditi (TTL 1 Jam)
         $jenisLahanList = Cache::remember('global_jenis_lahan_view', 3600, function() {

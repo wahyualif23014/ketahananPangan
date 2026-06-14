@@ -134,6 +134,11 @@
                                 <div x-show="polresLabel && !polresOpen" @click="polresOpen = true" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
                                     <span class="truncate text-slate-800 font-medium" x-text="polresLabel"></span>
                                 </div>
+                                <button type="button" x-show="polresValue" @click="polresValue=''; polresLabel=''; polsekValue=''; polsekLabel=''; polsekItems=[]; $nextTick(() => formEl.submit())" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
                             </div>
                             <div x-show="polresOpen && polresFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
                                 <template x-for="item in polresFiltered" :key="item.value">
@@ -151,6 +156,11 @@
                                 <div x-show="polsekLabel && !polsekOpen" @click="polsekOpen = true" class="w-full h-10 pl-9 pr-9 bg-slate-50 border border-slate-200 rounded-lg text-sm flex items-center cursor-pointer hover:bg-white transition-all">
                                     <span class="truncate text-slate-800 font-medium" x-text="polsekLabel"></span>
                                 </div>
+                                <button type="button" x-show="polsekValue" @click="polsekValue=''; polsekLabel=''; $nextTick(() => formEl.submit())" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-rose-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
                             </div>
                             <div x-show="polsekOpen && polsekFiltered.length > 0" class="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto" x-cloak>
                                 <template x-for="item in polsekFiltered" :key="item.value">
