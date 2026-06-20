@@ -124,8 +124,14 @@ class KelolaLahanController extends Controller
             ->whereRaw("id_tingkat REGEXP '^[0-9]+\\.[0-9]+$'");
 
         $matchingResors = (clone $dataQuery)
-            ->selectRaw("LEFT(lahan.id_tingkat, 5) as resor_id")
-            ->distinct()->pluck('resor_id')->toArray();
+            ->distinct()
+            ->pluck('lahan.id_tingkat')
+            ->map(function ($id) {
+                $parts = explode('.', $id);
+                return count($parts) >= 2 ? $parts[0] . '.' . $parts[1] : $id;
+            })
+            ->unique()
+            ->toArray();
 
         $lahanStagesMap = [];
         $data = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
@@ -149,9 +155,11 @@ class KelolaLahanController extends Controller
                     'tingkat.nama_tingkat', 'wilayah.nama_wilayah',
                     'anggota.nama_anggota', 'komoditi.nama_komoditi', 'komoditi.jenis_komoditi',
                     't.id_tanam', 't.luas_tanam', 't.tgl_tanam', 't.est_awal_panen', 't.est_akhir_panen',
+                    't.valid_oleh as tanam_valid_oleh', 't.edit_oleh as tanam_edit_oleh',
                     'p.id_panen', 'p.total_panen', 'p.tgl_panen', 'p.status_panen', 'p.luas_panen',
+                    'p.valid_oleh as panen_valid_oleh', 'p.edit_oleh as panen_edit_oleh',
                     'd.id_distribusi', 'd.total_distribusi', 'd.tgl_distribusi', 'd.distribusi_ke',
-                    'd.valid_oleh as serapan_valid_oleh'
+                    'd.valid_oleh as serapan_valid_oleh', 'd.edit_oleh as serapan_edit_oleh'
                 )
                 ->where(function($q) use ($resorIds) {
                     foreach ($resorIds as $id) $q->orWhere('lahan.id_tingkat', 'LIKE', $id . '%');
@@ -230,11 +238,23 @@ class KelolaLahanController extends Controller
 
             // Build hierarchy
             $groupedItems = collect($paginator->items())->map(function($resor) use ($allSektors, $recordsCollection) {
-                $resor->sektors = $allSektors->filter(fn($s) => str_starts_with($s->id_tingkat, $resor->id_tingkat . '.'))
+                $sektors = $allSektors->filter(fn($s) => str_starts_with($s->id_tingkat, $resor->id_tingkat . '.'))
                     ->map(function($sektor) use ($recordsCollection) {
                         $sektor->lahans = $recordsCollection->filter(fn($l) => $l->id_tingkat === $sektor->id_tingkat);
                         return $sektor;
-                    })->filter(fn($s) => $s->lahans->isNotEmpty());
+                    })->filter(fn($s) => $s->lahans->isNotEmpty())->values();
+
+                // Tambahkan virtual sektor untuk Lahan yang langsung berada di bawah Polres/Resor
+                $resorLahans = $recordsCollection->filter(fn($l) => $l->id_tingkat === $resor->id_tingkat);
+
+                if ($resorLahans->isNotEmpty()) {
+                    $virtualSektor = clone $resor;
+                    $virtualSektor->nama_tingkat = $resor->nama_tingkat; // Label akan menunjukkan nama Polres
+                    $virtualSektor->lahans = $resorLahans;
+                    $sektors->prepend($virtualSektor);
+                }
+
+                $resor->sektors = $sektors;
                 return $resor;
             })->filter(fn($r) => $r->sektors->isNotEmpty());
 

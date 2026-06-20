@@ -769,7 +769,7 @@
                          x-transition:leave-start="opacity-100" 
                          x-transition:leave-end="opacity-0" 
                          @click="isDetailOpen = false" 
-                         class="fixed inset-0 bg-slate-900/30 transition-opacity">
+                         class="fixed inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity">
                     </div>
 
                     <!-- Modal Content -->
@@ -998,8 +998,8 @@
             </template>
 
             <!-- 2. EDIT MODAL -->
-            <div x-show="isEditOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/30" x-cloak>
-                <div @click.outside="isEditOpen = false" x-show="isEditOpen" x-transition.opacity.duration.300ms class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <div x-show="isEditOpen" class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 md:pt-16 bg-slate-900/40 backdrop-blur-md overflow-y-auto" x-cloak>
+                <div @click.outside="isEditOpen = false" x-show="isEditOpen" x-transition.opacity.duration.300ms class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100/80 flex flex-col max-h-[85vh] md:max-h-[90vh]">
                     <div class="px-8 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between">
                         <h3 class="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1087,16 +1087,16 @@
             <template x-teleport="body">
                 <div x-show="isOpen" class="fixed inset-0 z-[100] overflow-y-auto" x-cloak>
 
-                    <div class="flex items-center justify-center min-h-screen p-4">
+                    <div class="flex items-start justify-center min-h-screen p-4 pt-12 md:pt-16">
                         {{-- Overlay --}}
-                        <div @click="closeModal()" class="fixed inset-0 bg-slate-900/30 transition-opacity">
+                        <div @click="closeModal()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity">
                         </div>
 
                         {{-- Modal Content --}}
                         <div x-show="isOpen" x-transition:enter="ease-out duration-300"
                             x-transition:enter-start="opacity-0 translate-y-4 sm:scale-[0.98]"
                             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                            class="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+                            class="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl border border-slate-200/80 overflow-hidden transform transition-all flex flex-col max-h-[85vh] md:max-h-[90vh]">
 
                             {{-- Header & Step Indicator --}}
                             <div class="bg-white border-b border-slate-100 px-8 py-6">

@@ -392,7 +392,6 @@ class PotensiLahanController extends Controller
                     'id_polres' => $idResor,
                     'id_polsek' => $idSektor,
                     'nama_poktan' => $namaPoktan,
-                    'nama_desa' => $namaDesa,
                     'luas_lahan' => $request->luas_lahan,
                     'latitude' => $request->latitude,
                     'longitude' => $request->longitude,

@@ -816,8 +816,8 @@
                                     @endif
                                 </div>
 
-                                @php
-                                    $activeTanamList = $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1);
+                                                                                                                                                                @php
+                                $activeTanamList = $row->history_tanam->filter(fn($t) => ($t->is_active ?? 1) == 1);
                                 @endphp
                                 @if($activeTanamList->isEmpty())
                                 <div class="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
@@ -843,11 +843,13 @@
                                                 </div>
                                                 <div class="flex gap-2">
                                                     @php
+                                                        $allPanenGagal = $tanam->panens->count() > 0 && $tanam->panens->every(fn($p) => $p->status_panen == 2);
+                                                        $hasValidSerapan = $tanam->distribusis->count() > 0 && $tanam->distribusis->every(fn($s) => !is_null($s->valid_oleh));
+                                                        
                                                         $canSelesai = !is_null($tanam->valid_oleh) && 
                                                                       $tanam->panens->count() > 0 && 
                                                                       $tanam->panens->every(fn($p) => !is_null($p->valid_oleh)) && 
-                                                                      $tanam->distribusis->count() > 0 && 
-                                                                      $tanam->distribusis->every(fn($s) => !is_null($s->valid_oleh));
+                                                                      ($allPanenGagal || $hasValidSerapan);
                                                     @endphp
                                                     @if(substr_count(auth()->user()->id_tugas, '.') < 2 && $canSelesai)
                                                     <form action="{{ route('operator.kelola-lahan.tanam.selesai', $tanam->id_tanam) }}" method="POST" class="m-0" onsubmit="return confirm('Selesaikan siklus ini? Data akan diarsipkan ke Riwayat Lahan.');">
@@ -1475,9 +1477,9 @@
 
     <!-- MODAL PROSES TANAM -->
     <div x-show="modalTanam"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 md:pt-16 bg-slate-900/40 backdrop-blur-md"
         x-cloak x-transition.opacity>
-        <div @click.outside="modalTanam = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+        <div @click.outside="modalTanam = false" class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100/80 flex flex-col max-h-[85vh] md:max-h-[90vh]">
             <div class="px-8 py-6 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -1544,9 +1546,9 @@
 
     <!-- MODAL PROSES PANEN -->
     <div x-show="modalPanen"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 md:pt-16 bg-slate-900/40 backdrop-blur-md"
         x-cloak x-transition.opacity>
-        <div @click.outside="modalPanen = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+        <div @click.outside="modalPanen = false" class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100/80 flex flex-col max-h-[85vh] md:max-h-[90vh]">
             <div class="px-8 py-6 bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -1627,9 +1629,9 @@
 
     <!-- MODAL SERAPAN DATA -->
     <div x-show="modalSerapan"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-12 md:pt-16 bg-slate-900/40 backdrop-blur-md"
         x-cloak x-transition.opacity>
-        <div @click.outside="modalSerapan = false" class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+        <div @click.outside="modalSerapan = false" class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100/80 flex flex-col max-h-[85vh] md:max-h-[90vh]">
             <div class="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
@@ -1797,7 +1799,6 @@
         </div>
         <div class="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
             <button @click="modalValidasi = false" class="flex-1 px-6 py-3.5 bg-white border border-slate-200 rounded-2xl text-[11px] font-black text-slate-500 hover:bg-slate-100 transition-all uppercase tracking-widest shadow-sm">Tutup</button>
-            <button @click="submitValidasi()" x-show="validasiData.tanam.length === 0 && validasiData.panen.length === 0 && validasiData.serapan.length === 0 && validasiData.has_active" class="flex-[2] px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.98] transition-all shadow-lg">Selesai Siklus Kelola Lahan</button>
         </div>
     </div>
 </div>
