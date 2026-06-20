@@ -1,0 +1,43 @@
+# ----------------------------------------------------------------------
+# Keamanan Tambahan: Proteksi Root Direktori Laravel
+# Proyek: SIKAP Presisi - Satgas Pangan Polda Jatim
+# ----------------------------------------------------------------------
+
+# 1. Nonaktifkan Directory Listing (Directory Browsing) secara global
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# 2. Proteksi Akses Menggunakan mod_rewrite (Tingkat Utama)
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+
+    # Blokir akses langsung ke file ekstensi sensitif (.env, .sql, file git, dll.)
+    # Flag [F] memaksa server mengembalikan respon 403 Forbidden
+    RewriteRule \.(env|sql|git|gitattributes|gitignore|dockerignore)$ - [F,NC,L]
+    
+    # Blokir akses langsung ke file konfigurasi framework
+    RewriteRule ^(composer|package)\.(json|lock)$ - [F,NC,L]
+    RewriteRule ^(artisan|Dockerfile|docker-compose.*)$ - [F,NC,L]
+    
+    # Blokir akses langsung ke folder-folder internal Laravel di tingkat root
+    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)(/|$) - [F,NC,L]
+
+    # Alihkan request yang tersisa (jika bukan folder/file fisik) ke folder public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# 3. Proteksi Cadangan Menggunakan FilesMatch (Tingkat Kedua)
+#    Berfungsi jika modul rewrite dinonaktifkan atau terlewati
+<FilesMatch "\.(env|sql|git.*|json|lock)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
