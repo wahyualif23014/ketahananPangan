@@ -155,11 +155,11 @@ class KelolaLahanController extends Controller
                     'tingkat.nama_tingkat', 'wilayah.nama_wilayah',
                     'anggota.nama_anggota', 'komoditi.nama_komoditi', 'komoditi.jenis_komoditi',
                     't.id_tanam', 't.luas_tanam', 't.tgl_tanam', 't.est_awal_panen', 't.est_akhir_panen',
-                    't.valid_oleh as tanam_valid_oleh', 't.edit_oleh as tanam_edit_oleh',
+                    't.valid_oleh as tanam_valid_oleh', 't.edit_oleh as tanam_edit_oleh', 't.alasan_tolak as tanam_alasan_tolak',
                     'p.id_panen', 'p.total_panen', 'p.tgl_panen', 'p.status_panen', 'p.luas_panen',
-                    'p.valid_oleh as panen_valid_oleh', 'p.edit_oleh as panen_edit_oleh',
+                    'p.valid_oleh as panen_valid_oleh', 'p.edit_oleh as panen_edit_oleh', 'p.alasan_tolak as panen_alasan_tolak',
                     'd.id_distribusi', 'd.total_distribusi', 'd.tgl_distribusi', 'd.distribusi_ke',
-                    'd.valid_oleh as serapan_valid_oleh', 'd.edit_oleh as serapan_edit_oleh'
+                    'd.valid_oleh as serapan_valid_oleh', 'd.edit_oleh as serapan_edit_oleh', 'd.alasan_tolak as serapan_alasan_tolak'
                 )
                 ->where(function($q) use ($resorIds) {
                     foreach ($resorIds as $id) $q->orWhere('lahan.id_tingkat', 'LIKE', $id . '%');
@@ -177,7 +177,7 @@ class KelolaLahanController extends Controller
             if (!empty($lahanIds)) {
                 $allTanamsRaw = DB::table('tanam')
                     ->whereIn('id_lahan', $lahanIds)
-                    ->where('deletestatus', '1')
+                    ->where('deletestatus', '!=', '0')
                     ->orderBy('id_tanam')
                     ->get();
 
@@ -185,19 +185,24 @@ class KelolaLahanController extends Controller
 
                 $allPanens = DB::table('panen')
                     ->whereIn('id_tanam', $tanamIdsAll)
-                    ->where('deletestatus', '1')
+                    ->where('deletestatus', '!=', '0')
                     ->orderBy('id_panen')
-                    ->get()->groupBy('id_tanam');
+                    ->get();
+                $panenIdsAll = $allPanens->pluck('id_panen')->toArray();
+                $allPanensGrouped = $allPanens->groupBy('id_tanam');
 
-                $allDistribusis = DB::table('distribusi')
-                    ->whereIn('id_tanam', $tanamIdsAll)
-                    ->where('deletestatus', '1')
+                $allDistribusis = empty($panenIdsAll) ? collect() : DB::table('distribusi')
+                    ->whereIn('id_panen', $panenIdsAll)
+                    ->where('deletestatus', '!=', '0')
                     ->orderBy('id_distribusi')
-                    ->get()->groupBy('id_tanam');
+                    ->get()->groupBy('id_panen');
 
-                $allTanams = $allTanamsRaw->map(function($t) use ($allPanens, $allDistribusis) {
-                    $t->panens     = $allPanens[$t->id_tanam]     ?? collect();
-                    $t->distribusis = $allDistribusis[$t->id_tanam] ?? collect();
+                $allTanams = $allTanamsRaw->map(function($t) use ($allPanensGrouped, $allDistribusis) {
+                    $t->panens = $allPanensGrouped[$t->id_tanam] ?? collect();
+                    foreach ($t->panens as $p) {
+                        $p->distribusis = $allDistribusis[$p->id_panen] ?? collect();
+                    }
+                    $t->distribusis = $t->panens->flatMap->distribusis;
                     return $t;
                 })->groupBy('id_lahan');
             }
@@ -278,7 +283,7 @@ class KelolaLahanController extends Controller
         // Tanam / Panen / Serapan stats via scoped joins
         $tanamStats = $applyScope(
             DB::table('tanam')->join('lahan', 'tanam.id_lahan', '=', 'lahan.id_lahan')
-                ->where('tanam.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->where('tanam.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('tanam.valid_oleh')->where('tanam.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
@@ -294,7 +299,7 @@ class KelolaLahanController extends Controller
         $panenStats = $applyScope(
             DB::table('panen')->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
                 ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
-                ->where('panen.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->where('panen.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('panen.valid_oleh')->where('panen.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );
@@ -313,7 +318,7 @@ class KelolaLahanController extends Controller
                 ->join('panen', 'distribusi.id_panen', '=', 'panen.id_panen')
                 ->join('tanam', 'panen.id_tanam', '=', 'tanam.id_tanam')
                 ->join('lahan', 'panen.id_lahan', '=', 'lahan.id_lahan')
-                ->where('distribusi.deletestatus', '1')->where('lahan.deletestatus', '!=', '0')
+                ->where('distribusi.deletestatus', '!=', '0')->where('lahan.deletestatus', '!=', '0')
                 ->whereNotNull('distribusi.valid_oleh')->where('distribusi.valid_oleh', '!=', ''),
             'lahan.id_tingkat'
         );

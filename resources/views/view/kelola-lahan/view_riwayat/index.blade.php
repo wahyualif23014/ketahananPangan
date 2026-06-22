@@ -497,7 +497,21 @@
                     </tr>
 
                     @foreach($resor->sektors as $sektor)
-                    @foreach($sektor->lahans as $row)
+                    @foreach($sektor->lahans->unique('id_lahan') as $row)
+                        @php
+                            $totalTanamHa = collect($row->history_tanam)->sum('luas_tanam');
+                                $activeTanams = $row->history_tanam ?? collect();
+                            $activePanens = $activeTanams->flatMap->panens;
+                            $activeDistribusis = $activePanens->flatMap->distribusis;
+                            $enrichedRow = collect($row)->merge([
+                                "sisa_lahan" => max(0, $row->luas_lahan - $activeTanams->filter(fn($t) => ($t->is_active ?? 1) == 1)->sum("luas_tanam")),
+                                "nama_polres" => str_replace('POLRES ', '', $resor->nama_tingkat ?? '-'),
+                                "nama_polsek" => str_replace('POLSEK ', '', $sektor->nama_tingkat ?? '-'),
+                                "nama_jenis_lahan" => $row->jenis_komoditi ?? '-',
+                                "nama_kecamatan" => $row->nama_kecamatan ?? '',
+                                "nama_wilayah" => $row->nama_wilayah ?? ''
+                            ]);
+                        @endphp
                     <tr x-show="isResorOpen('{{ $resorId }}')"
                         x-transition:enter="transition ease-out duration-300"
                         x-transition:enter-start="opacity-0 -translate-y-4"
@@ -531,9 +545,9 @@
                             <div class="flex flex-col justify-between h-full min-h-[150px]">
                                 <div class="flex flex-col gap-3">
                                     <div class="flex items-center gap-1.5">
-                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($row->luas_tanam, 2) }} HA</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($totalTanamHa, 2) }} HA</span>
                                     </div>
-                                    
+
                                     <div class="flex flex-col gap-1">
                                         <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">Est. Panen</span>
                                         <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
@@ -541,27 +555,32 @@
                                             <span>{{ \Carbon\Carbon::parse($row->est_awal_panen)->format('d M') }} - {{ \Carbon\Carbon::parse($row->est_akhir_panen)->format('d M Y') }}</span>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="flex flex-col gap-2.5 mt-4">
-                                    <div class="border-t border-slate-100 pt-2.5">
-                                        @if($row->tanam_valid_oleh)
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
-                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
-                                            </div>
-                                        @elseif($row->tanam_alasan_tolak)
+                                    <div class="flex flex-col gap-2.5 mt-4">
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("tanam", { lahan: @json($enrichedRow), items: @json(($row->history_tanam ?? collect())->values()) })' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if($row->tanam_valid_oleh)
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                        </div>
+                                    @elseif($row->tanam_alasan_tolak)
+                                        <div class="flex flex-col">
                                             <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
                                                 <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
                                             </div>
-                                        @else
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
-                                            </div>
-                                        @endif
-                                    </div>
+                                            <div class="text-[9px] font-bold text-rose-500 mt-1.5 italic line-clamp-2 px-1" title="{{ $row->tanam_alasan_tolak }}">{{ $row->tanam_alasan_tolak }}</div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                             @else
@@ -569,97 +588,142 @@
                             @endif
                         </td>
                         <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
-                            @if($row->id_panen)
+                            @php
+                                $totalTanamHa = collect($row->history_tanam)->sum('luas_tanam');
+                                $activeTanams = $row->history_tanam ?? collect();
+                                $activePanens = $activeTanams->flatMap->panens;
+                                $activeDistribusis = $activePanens->flatMap->distribusis;
+                            @endphp
+                            @if($activePanens->isNotEmpty())
+                            @php
+                                $totalLuasPanen = $activePanens->sum('luas_panen');
+                                $totalHasilPanen = $activePanens->sum('total_panen');
+                                $jumlahPanen = $activePanens->count();
+                                $jumlahGagal = $activePanens->where('status_panen', 2)->count();
+                                $jumlahBerhasil = $activePanens->where('status_panen', '!=', 2)->count();
+                                $allPanenValidated = $activePanens->every(fn($p) => $p->valid_oleh);
+                                $anyPanenRejected = $activePanens->contains(fn($p) => $p->alasan_tolak && !$p->valid_oleh);
+                                $latestPanen = $activePanens->sortByDesc('tgl_panen')->first();
+                            @endphp
                             <div class="flex flex-col justify-between h-full min-h-[150px]">
                                 <div class="flex flex-col gap-3">
                                     <div class="flex flex-wrap items-center gap-1.5">
-                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->luas_panen, 2) }} HA</span>
-                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($row->total_panen, 2) }} TON</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($totalLuasPanen, 2) }} HA</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-amber-700 bg-amber-100 rounded-md border border-amber-200 shadow-sm">{{ number_format($totalHasilPanen, 2) }} TON</span>
                                     </div>
-                                    
                                     <div class="flex flex-col gap-1.5">
+                                        @if($jumlahBerhasil > 1 || $jumlahGagal > 0)
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            @if($jumlahBerhasil > 0)
+                                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                                <span>{{ $jumlahBerhasil }} kali panen</span>
+                                            </div>
+                                            @endif
+                                            @if($jumlahGagal > 0)
+                                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-1 rounded-md w-fit shadow-sm">
+                                                <svg class="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                                <span>{{ $jumlahGagal }} gagal panen</span>
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @endif
                                         <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
                                             <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                            <span>{{ \Carbon\Carbon::parse($row->tgl_panen)->format('d M Y') }}</span>
-                                        </div>
-                                        @php
-                                        $stsPanen = $row->status_panen == 1 ? 'Normal' : ($row->status_panen == 2 ? 'Gagal' : ($row->status_panen == 3 ? 'Dini' : 'Tebasan'));
-                                        @endphp
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
-                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
-                                            <span>{{ $stsPanen }}</span>
+                                            <span>{{ \Carbon\Carbon::parse($latestPanen->tgl_panen)->format('d M Y') }}</span>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="flex flex-col gap-2.5 mt-4">
-                                    <div class="border-t border-slate-100 pt-2.5">
-                                        @if($row->panen_valid_oleh)
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
-                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
-                                            </div>
-                                        @elseif($row->panen_alasan_tolak)
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("panen", { lahan: @json($enrichedRow), items: @json($activePanens->values()) })' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if($allPanenValidated)
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                        </div>
+                                    @elseif($anyPanenRejected)
+                                        <div class="flex flex-col">
                                             <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
                                                 <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
                                             </div>
-                                        @else
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
-                                            </div>
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                             @else
                             <span class="text-[10px] font-bold text-slate-400 italic">Belum Input</span>
                             @endif
                         </td>
-
                         <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
-                            @if($row->id_distribusi)
+                            @if($activeDistribusis->isNotEmpty())
+                            @php
+                                $totalSerapan = $activeDistribusis->sum('total_distribusi');
+                                $jumlahSerapan = $activeDistribusis->count();
+                                $allSerapanValidated = $activeDistribusis->every(fn($d) => $d->valid_oleh);
+                                $anySerapanRejected = $activeDistribusis->contains(fn($d) => $d->alasan_tolak && !$d->valid_oleh);
+                                $tujuanList = $activeDistribusis->map(function($d) {
+                                    return $d->distribusi_ke == 1 ? 'Bulog' : ($d->distribusi_ke == 2 ? 'Pabrik Pakan' : ($d->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
+                                })->unique()->values();
+                            @endphp
                             <div class="flex flex-col justify-between h-full min-h-[150px]">
                                 <div class="flex flex-col gap-3">
                                     <div class="flex items-center gap-1.5">
-                                        <span class="px-2.5 py-1 text-[11px] font-black text-blue-700 bg-blue-100 rounded-md border border-blue-200 shadow-sm">{{ number_format($row->total_distribusi, 2) }} TON</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-blue-700 bg-blue-100 rounded-md border border-blue-200 shadow-sm">{{ number_format($totalSerapan, 2) }} TON</span>
                                     </div>
-                                    
+
                                     <div class="flex flex-col gap-1.5">
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
-                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                            <span>{{ \Carbon\Carbon::parse($row->tgl_distribusi)->format('d M Y') }}</span>
+                                        @if($jumlahSerapan > 1)
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded-md w-fit shadow-sm">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                            <span>{{ $jumlahSerapan }} distribusi</span>
                                         </div>
-                                        @php
-                                        $dstKe = $row->distribusi_ke == 1 ? 'Bulog' : ($row->distribusi_ke == 2 ? 'Pabrik Pakan' : ($row->distribusi_ke == 3 ? 'Tengkulak' : 'Konsumsi Sendiri'));
-                                        @endphp
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-md w-fit shadow-sm">
-                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                            <span>{{ $dstKe }}</span>
+                                        @endif
+                                        @if($tujuanList->isNotEmpty())
+                                        <div class="flex items-start gap-1.5 text-[9px] font-bold text-slate-600 bg-slate-50 border border-slate-100 px-2 py-1.5 rounded-md w-fit max-w-[160px] shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span class="leading-snug">{{ $tujuanList->implode(', ') }}</span>
                                         </div>
+                                        @endif
                                     </div>
                                 </div>
-                                
+
                                 <div class="flex flex-col gap-2.5 mt-4">
-                                    <div class="border-t border-slate-100 pt-2.5">
-                                        @if($row->serapan_valid_oleh)
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
-                                                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                                <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
-                                            </div>
-                                        @elseif($row->serapan_alasan_tolak)
+                                    <div class="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2.5">
+                                        <button @click='openDetailModal("serapan", { lahan: @json($enrichedRow), items: @json($activeDistribusis->values()) })' class="flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-md text-[9px] font-black uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> Detail
+                                        </button>
+                                    </div>
+
+                                    @if($allSerapanValidated)
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm w-fit">
+                                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider">TERVALIDASI</span>
+                                        </div>
+                                    @elseif($anySerapanRejected)
+                                        <div class="flex flex-col">
                                             <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-md shadow-sm w-fit">
                                                 <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 <span class="text-[9px] font-black text-rose-700 uppercase tracking-wider">DITOLAK</span>
                                             </div>
-                                        @else
-                                            <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
-                                            </div>
-                                        @endif
-                                    </div>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md shadow-sm w-fit">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            <span class="text-[9px] font-black text-amber-700 uppercase tracking-wider">Menunggu Validasi</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                             @else
@@ -929,6 +993,19 @@
                 kategoriProduksi: @json($filters['kategori'] ?? 'semua'),
                 polseks: @json($polsekList),
                 openResors: [],
+                detailModalData: { isOpen: false, type: '', data: {} },
+
+                openDetailModal(type, data) {
+                    this.detailModalData = {
+                        isOpen: true,
+                        type,
+                        data: data || {}
+                    };
+                },
+
+                closeDetailModal() {
+                    this.detailModalData.isOpen = false;
+                },
                 activeHistory: null,
                 lahanStages: @json($lahanStagesMap ?? new stdClass()),
 

@@ -620,7 +620,8 @@
                     @foreach($resor->sektors as $sektor)
                     @foreach($sektor->lahans->unique('id_lahan') as $row)
                         @php
-                            $activeTanams = $row->history_tanam ?? collect();
+                            $totalTanamHa = collect($row->history_tanam)->sum('luas_tanam');
+                                $activeTanams = $row->history_tanam ?? collect();
                             $activePanens = $activeTanams->flatMap->panens;
                             $activeDistribusis = $activePanens->flatMap->distribusis;
                             $enrichedRow = collect($row)->merge([
@@ -665,7 +666,7 @@
                             <div class="flex flex-col justify-between h-full min-h-[150px]">
                                 <div class="flex flex-col gap-3">
                                     <div class="flex items-center gap-1.5">
-                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($row->luas_tanam, 2) }} HA</span>
+                                        <span class="px-2.5 py-1 text-[11px] font-black text-emerald-700 bg-emerald-100 rounded-md border border-emerald-200 shadow-sm">{{ number_format($totalTanamHa, 2) }} HA</span>
                                     </div>
 
                                     <div class="flex flex-col gap-1">
@@ -709,6 +710,7 @@
                         </td>
                         <td class="px-4 py-6 border-r border-slate-50 align-top h-full">
                             @php
+                                $totalTanamHa = collect($row->history_tanam)->sum('luas_tanam');
                                 $activeTanams = $row->history_tanam ?? collect();
                                 $activePanens = $activeTanams->flatMap->panens;
                                 $activeDistribusis = $activePanens->flatMap->distribusis;
