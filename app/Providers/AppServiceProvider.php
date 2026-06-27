@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Enforce strict mode for database security (prevents mass assignment vulnerabilities and silent discards)
+        \Illuminate\Database\Eloquent\Model::shouldBeStrict();
     }
 }

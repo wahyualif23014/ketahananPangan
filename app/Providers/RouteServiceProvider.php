@@ -38,9 +38,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(3)->by($request->ip());
         });
 
-        // RateLimiter::for('uploads', function (Request $request) {
-        //     return Limit::perMinute(50)->by($request->user()?->id ?: $request->ip());
-        // });
+        RateLimiter::for('web-action', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip())->response(function () {
+                return response('Terlalu banyak request. Silakan coba lagi nanti (Anti-Spam/DoS).', 429);
+            });
+        });
 
         $this->routes(function () {
             Route::middleware('api')

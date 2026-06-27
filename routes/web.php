@@ -31,7 +31,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth', 'throttle:100,1'])->group(function () {
+Route::middleware(['auth', 'throttle:60,1'])->group(function () {
 
     // 1. Group Khusus Admin
     Route::middleware(['checkrole:admin'])->prefix('admin')->name('admin.')->group(function () {
